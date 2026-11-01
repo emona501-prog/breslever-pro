@@ -43,7 +43,10 @@ jobs:
           KEYSTORE_PASS: ${{ env.KS_PASS }}
           VERSION_NAME: ${{ steps.ver.outputs.v }}
           VERSION_CODE: ${{ github.run_number }}
-        run: chmod +x gradlew && ./gradlew assembleRelease --no-daemon
+        run: |
+          chmod +x gradlew
+          set -o pipefail
+          ./gradlew assembleRelease --no-daemon 2>&1 | tee "$RUNNER_TEMP/gradle.log" || { M=$(grep -E "error|Error|FAILURE|What went wrong|wrong:|> " "$RUNNER_TEMP/gradle.log" | tail -40 | sed ':a;N;$!ba;s/%/%25/g;s/\r//g;s/\n/%0A/g'); echo "::error title=gradle::$M"; exit 1; }
       - name: שם הקובץ
         run: cp android/app/build/outputs/apk/release/app-release.apk breslever-pro.apk
       - name: פרסום בעמוד ההורדות
