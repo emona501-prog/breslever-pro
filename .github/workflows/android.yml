@@ -1,0 +1,51 @@
+# בונה APK חתום של ברסלב PRO ומפרסם אותו בעמוד ההורדות (Releases).
+# רץ בכל העלאה לענף main, או בלחיצה ידנית (Actions ← Build APK ← Run workflow).
+name: Build APK
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - name: בדיקת מפתח החתימה
+        env:
+          KEYSTORE_B64: ${{ secrets.KEYSTORE_B64 }}
+          KEYSTORE_PASS: ${{ secrets.KEYSTORE_PASS }}
+        run: |
+          if [ -z "$KEYSTORE_B64" ] || [ -z "$KEYSTORE_PASS" ]; then echo "חסרים הסודות KEYSTORE_B64 / KEYSTORE_PASS בהגדרות הפרויקט"; exit 1; fi
+          echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/release.jks"
+      - run: npm ci || npm install
+      - run: npx cap sync android
+      - name: גרסה
+        id: ver
+        run: echo "v=$(jq -r .version version.json)" >> "$GITHUB_OUTPUT"
+      - name: בניית APK חתום
+        working-directory: android
+        env:
+          KEYSTORE_PATH: ${{ runner.temp }}/release.jks
+          KEYSTORE_PASS: ${{ secrets.KEYSTORE_PASS }}
+          VERSION_NAME: ${{ steps.ver.outputs.v }}
+          VERSION_CODE: ${{ github.run_number }}
+        run: chmod +x gradlew && ./gradlew assembleRelease --no-daemon
+      - name: שם הקובץ
+        run: cp android/app/build/outputs/apk/release/app-release.apk breslever-pro.apk
+      - name: פרסום בעמוד ההורדות
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.ver.outputs.v }}
+          name: ברסלב PRO ${{ steps.ver.outputs.v }}
+          body_path: RELEASE_NOTES.md
+          files: breslever-pro.apk
+          make_latest: true
