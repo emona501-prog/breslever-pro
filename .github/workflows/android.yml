@@ -46,7 +46,7 @@ jobs:
         run: |
           chmod +x gradlew
           set -o pipefail
-          ./gradlew assembleRelease --no-daemon 2>&1 | tee "$RUNNER_TEMP/gradle.log" || { M=$(grep -E "error|Error|FAILURE|What went wrong|wrong:|> " "$RUNNER_TEMP/gradle.log" | tail -40 | sed ':a;N;$!ba;s/%/%25/g;s/\r//g;s/\n/%0A/g'); echo "::error title=gradle::$M"; exit 1; }
+          ./gradlew assembleRelease --no-daemon --stacktrace 2>&1 | tee "$RUNNER_TEMP/gradle.log" || { M=$(grep -v "^\s*$" "$RUNNER_TEMP/gradle.log" | grep -B30 -A12 "What went wrong" | head -60 | sed ':a;N;$!ba;s/%/%25/g;s/\r//g;s/\n/%0A/g'); echo "::error title=gradle::$M"; exit 1; }
       - name: שם הקובץ
         run: cp android/app/build/outputs/apk/release/app-release.apk breslever-pro.apk
       - name: פרסום בעמוד ההורדות
