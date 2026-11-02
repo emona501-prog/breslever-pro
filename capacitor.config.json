@@ -11,7 +11,7 @@
   },
   "plugins": {
     "SplashScreen": {
-      "launchShowDuration": 1200,
+      "launchShowDuration": 400,
       "backgroundColor": "#020E29",
       "showSpinner": false,
       "androidScaleType": "CENTER_CROP"
@@ -20,8 +20,7 @@
       "iconColor": "#E8A33D"
     },
     "SystemBars": {
-      "insetsHandling": "css",
-      "initialViewportFitValueHint": "cover"
+      "insetsHandling": "disable"
     }
   }
 }
