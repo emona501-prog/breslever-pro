@@ -37,14 +37,15 @@ public class MainActivity extends BridgeActivity {
         c.setAppearanceLightNavigationBars(true);
 
         View root = w.getDecorView();
+        root.setBackgroundColor(Color.parseColor("#FBF7EE"));
         ViewCompat.setOnApplyWindowInsetsListener(root, (v, insets) -> {
             Insets s = insets.getInsets(WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout());
             Insets ime = insets.getInsets(WindowInsetsCompat.Type.ime());
             boolean kb = insets.isVisible(WindowInsetsCompat.Type.ime());
-            v.setPadding(0, 0, 0, kb ? ime.bottom : 0);
-            float d = getResources().getDisplayMetrics().density;
-            insetTop = Math.round(s.top / d);
-            insetBottom = kb ? 0 : Math.round(s.bottom / d);
+            // שורת השעון ופס הניווט מקבלים פס משלהם – האפליקציה מתחילה מתחתיהם ולא מתערבבת איתם
+            v.setPadding(s.left, s.top, s.right, kb ? Math.max(ime.bottom, s.bottom) : s.bottom);
+            insetTop = 0;
+            insetBottom = 0;
             pushInsets();
             return WindowInsetsCompat.CONSUMED;
         });
