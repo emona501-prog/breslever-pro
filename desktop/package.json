@@ -5,15 +5,69 @@
   "description": "ברסלב PRO – ספרי רבנו הקדוש ותלמידיו",
   "author": "חי אפליקציות",
   "main": "main.js",
-  "dependencies": { "electron-updater": "^6.3.9" },
-  "devDependencies": { "electron": "^33.2.1", "electron-builder": "^25.1.8" },
+  "dependencies": {
+    "electron-updater": "^6.3.9"
+  },
+  "devDependencies": {
+    "electron": "^33.2.1",
+    "electron-builder": "^25.1.8"
+  },
   "build": {
     "appId": "com.chaiproductions.breslovpro",
     "productName": "Breslov PRO",
     "artifactName": "breslever-pro-setup.${ext}",
-    "files": ["main.js", "icon.png", "app/**/*", "package.json"],
-    "win": { "target": [{ "target": "nsis", "arch": ["x64"] }], "icon": "icon.png" },
-    "nsis": { "oneClick": false, "perMachine": false, "allowToChangeInstallationDirectory": true, "createDesktopShortcut": true, "createStartMenuShortcut": true, "shortcutName": "ברסלב PRO", "language": "1037" },
-    "publish": [{ "provider": "github", "owner": "emona501-prog", "repo": "breslever-pro" }]
+    "files": [
+      "main.js",
+      "icon.png",
+      "app/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "ברסלב PRO",
+      "language": "1037"
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "emona501-prog",
+        "repo": "breslever-pro"
+      }
+    ],
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "universal"
+          ]
+        }
+      ],
+      "category": "public.app-category.education",
+      "icon": "icon.png",
+      "identity": "-",
+      "artifactName": "breslever-pro-mac.${ext}",
+      "hardenedRuntime": false,
+      "gatekeeperAssess": false
+    },
+    "dmg": {
+      "title": "ברסלב PRO",
+      "artifactName": "breslever-pro-mac.${ext}"
+    }
   }
 }

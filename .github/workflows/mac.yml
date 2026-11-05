@@ -1,0 +1,36 @@
+# בונה התקנה למחשבי מק (breslever-pro-mac.dmg) ומוסיף אותה לעמוד ההורדות של הגרסה – אחרי שבניית ה-APK הסתיימה
+name: Build Mac
+on:
+  workflow_run:
+    workflows: ["Build APK"]
+    types: [completed]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  mac:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: גרסה
+        id: ver
+        run: echo "v=$(node -p "require('./version.json').version")" >> "$GITHUB_OUTPUT"
+      - name: בנייה
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+        run: |
+          cp -r www desktop/app
+          cd desktop
+          npm install --no-audit --no-fund
+          npm version "${{ steps.ver.outputs.v }}" --no-git-tag-version --allow-same-version
+          npx electron-builder --mac --universal --publish never
+          ls dist
+      - name: פרסום בעמוד ההורדות
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.ver.outputs.v }}
+          files: desktop/dist/breslever-pro-mac.dmg
