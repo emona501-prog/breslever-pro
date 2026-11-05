@@ -23,6 +23,7 @@ public class MainActivity extends BridgeActivity {
     public void onCreate(Bundle savedInstanceState) {
         registerPlugin(WebPrintPlugin.class);
         registerPlugin(WidgetBridgePlugin.class);
+        registerPlugin(CompassPlugin.class);
         super.onCreate(savedInstanceState);
 
         // מסך מלא "קצה לקצה": האפליקציה נמשכת מתחת לשעון ולפס הניווט, בדיוק כמו באתר המותקן
