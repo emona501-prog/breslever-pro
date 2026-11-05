@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut android:shortcutId="cont" android:enabled="true" android:icon="@mipmap/ic_launcher" android:shortcutShortLabel="@string/sc_cont">
+        <intent android:action="bp.w.cont" android:targetPackage="com.chaiproductions.breslovpro" android:targetClass="com.chaiproductions.breslovpro.MainActivity" />
+    </shortcut>
+    <shortcut android:shortcutId="tikkun" android:enabled="true" android:icon="@mipmap/ic_launcher" android:shortcutShortLabel="@string/sc_tikkun">
+        <intent android:action="bp.w.tikkun" android:targetPackage="com.chaiproductions.breslovpro" android:targetClass="com.chaiproductions.breslovpro.MainActivity" />
+    </shortcut>
+    <shortcut android:shortcutId="cal" android:enabled="true" android:icon="@mipmap/ic_launcher" android:shortcutShortLabel="@string/sc_cal">
+        <intent android:action="bp.w.cal" android:targetPackage="com.chaiproductions.breslovpro" android:targetClass="com.chaiproductions.breslovpro.MainActivity" />
+    </shortcut>
+    <shortcut android:shortcutId="random" android:enabled="true" android:icon="@mipmap/ic_launcher" android:shortcutShortLabel="@string/sc_rand">
+        <intent android:action="bp.w.random" android:targetPackage="com.chaiproductions.breslovpro" android:targetClass="com.chaiproductions.breslovpro.MainActivity" />
+    </shortcut>
+</shortcuts>

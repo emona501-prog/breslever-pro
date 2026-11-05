@@ -1,5 +1,6 @@
 package com.chaiproductions.breslovpro;
 
+import android.content.Intent;
 import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
@@ -21,6 +22,7 @@ public class MainActivity extends BridgeActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         registerPlugin(WebPrintPlugin.class);
+        registerPlugin(WidgetBridgePlugin.class);
         super.onCreate(savedInstanceState);
 
         // מסך מלא "קצה לקצה": האפליקציה נמשכת מתחת לשעון ולפס הניווט, בדיוק כמו באתר המותקן
@@ -51,7 +53,45 @@ public class MainActivity extends BridgeActivity {
         });
         // אחרי טעינת הדף – לשלוח שוב (הדף עשוי להיטען אחרי החישוב הראשון)
         for (int ms : new int[] { 600, 1500, 3000, 6000 }) root.postDelayed(this::pushInsets, ms);
+        takeWidgetAction(getIntent());
     }
+
+    // לחיצה בווידג'ט / בקיצור דרך: מעבירים לאפליקציה את הפעולה (פתיחה אקראית, המשך לימוד, מצפן...)
+    private String pendingAct = null;
+    private int actTries = 0;
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        takeWidgetAction(intent);
+    }
+
+    private void takeWidgetAction(Intent intent) {
+        if (intent == null) return;
+        String a = intent.getStringExtra("wact");
+        String ac = intent.getAction();
+        if (a == null && ac != null && ac.startsWith("bp.w.")) a = ac.substring(5);
+        if (a == null || a.isEmpty() || !a.matches("[a-z:0-9]+")) return;
+        intent.removeExtra("wact");
+        if (ac != null && ac.startsWith("bp.w.")) intent.setAction(Intent.ACTION_MAIN);
+        pendingAct = a; actTries = 0;
+        getWindow().getDecorView().postDelayed(this::deliverAct, 400);
+    }
+
+    private void deliverAct() {
+        if (pendingAct == null) return;
+        try {
+            WebView wv = getBridge() != null ? getBridge().getWebView() : null;
+            if (wv == null) { retryAct(); return; }
+            final String a = pendingAct;
+            wv.evaluateJavascript("(function(){try{return window.__wAct?window.__wAct('" + a + "'):'no'}catch(e){return 'no'}})()", v -> {
+                if (v != null && v.contains("ok")) pendingAct = null; else retryAct();
+            });
+        } catch (Exception e) { retryAct(); }
+    }
+
+    private void retryAct() { if (++actTries < 25) getWindow().getDecorView().postDelayed(this::deliverAct, 600); else pendingAct = null; }
 
     private void pushInsets() {
         try {

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="widget_desc">ברסלב PRO – היום: תאריך עברי, פרשה, הזמן הקרוב, הילולות, תזכורות וכפתורים מהירים</string>
+    <string name="sc_tikkun">תיקון הכללי</string>
+    <string name="sc_cont">המשך לימוד</string>
+    <string name="sc_cal">לוח הילולות</string>
+    <string name="sc_rand">פתיחה אקראית</string>
+</resources>

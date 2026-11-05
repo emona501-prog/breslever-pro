@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:id="@+id/w_root" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="horizontal" android:gravity="center_vertical" android:layoutDirection="rtl" android:background="@drawable/widget_bg" android:paddingStart="12dp" android:paddingEnd="12dp" android:paddingTop="4dp" android:paddingBottom="4dp">
+    <TextView android:id="@+id/w_heb" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="#FFF3D78E" android:textSize="14sp" android:textStyle="bold" android:maxLines="1" />
+    <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent" android:orientation="vertical" android:layout_marginStart="10dp" android:gravity="center_vertical">
+        <LinearLayout android:id="@+id/w_zrow" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical">
+            <TextView android:id="@+id/w_zl" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:textColor="#FFF6EFDC" android:textSize="12sp" android:maxLines="1" android:ellipsize="end" />
+            <Chronometer android:id="@+id/w_cd" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="#FFF3D78E" android:textSize="12sp" android:textStyle="bold" android:layout_marginStart="4dp" />
+        </LinearLayout>
+        <ViewFlipper android:id="@+id/w_flip" android:layout_width="match_parent" android:layout_height="20dp" android:autoStart="true" android:flipInterval="4500" android:inAnimation="@android:anim/fade_in" android:outAnimation="@android:anim/fade_out" />
+    </LinearLayout>
+</LinearLayout>
