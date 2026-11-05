@@ -29,7 +29,9 @@ public class CompassPlugin extends Plugin implements SensorEventListener {
             sm = (SensorManager) getContext().getSystemService(Context.SENSOR_SERVICE);
             if (sm == null) { call.reject("no sensor manager"); return; }
             sensor = sm.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR);
-            if (sensor == null) sensor = sm.getDefaultSensor(Sensor.TYPE_GEOMAGNETIC_ROTATION_VECTOR);
+            src = "rv";
+            if (sensor == null) { sensor = sm.getDefaultSensor(Sensor.TYPE_GEOMAGNETIC_ROTATION_VECTOR); src = "geo"; }
+            inited = false;
             if (sensor == null) { call.reject("no rotation sensor"); return; }
             Double lat = call.getDouble("lat"), lon = call.getDouble("lon");
             if (lat != null && lon != null) {
@@ -52,20 +54,25 @@ public class CompassPlugin extends Plugin implements SensorEventListener {
     @Override
     protected void handleOnPause() { try { if (sm != null) sm.unregisterListener(this); } catch (Exception e) { } }
 
+    private double fs = 0, fc = 0; private boolean inited = false, flatState = true; private String src = "rv";
+
     @Override
     public void onSensorChanged(SensorEvent ev) {
-        long now = System.currentTimeMillis();
-        if (now - last < 40) return;
-        last = now;
         SensorManager.getRotationMatrixFromVector(R, ev.values);
-        // R[8] = רכיב ה"למעלה" של ציר המסך: קרוב ל־1 כשהטלפון שוכב שטוח
-        boolean flat = Math.abs(R[8]) > 0.66f;
-        double h;
-        if (flat) h = Math.toDegrees(Math.atan2(R[1], R[4]));            // לאן מצביע ראש המסך
-        else h = Math.toDegrees(Math.atan2(-R[2], -R[5]));               // לאן פונה גב הטלפון (המצלמה)
-        h = ((h + decl) % 360 + 360) % 360;
+        // שטוח / זקוף – עם "השהיה" כדי שלא יקפוץ בין המצבים
+        float up = Math.abs(R[8]);
+        if (flatState && up < 0.55f) flatState = false; else if (!flatState && up > 0.75f) flatState = true;
+        double h = flatState ? Math.atan2(R[1], R[4]) : Math.atan2(-R[2], -R[5]);
+        // סינון רעידות: ממוצע נע על הכיוון (סינוס/קוסינוס) – חלק ויציב
+        double s1 = Math.sin(h), c1 = Math.cos(h);
+        if (!inited) { fs = s1; fc = c1; inited = true; } else { fs += (s1 - fs) * 0.18; fc += (c1 - fc) * 0.18; }
+        long now = System.currentTimeMillis();
+        if (now - last < 50) return;
+        last = now;
+        double hd = ((Math.toDegrees(Math.atan2(fs, fc)) + decl) % 360 + 360) % 360;
         JSObject o = new JSObject();
-        o.put("h", h); o.put("flat", flat); o.put("acc", acc);
+        o.put("h", hd); o.put("flat", flatState); o.put("acc", acc); o.put("src", src); o.put("decl", decl);
+        if (ev.values.length > 4 && ev.values[4] >= 0) o.put("accDeg", Math.toDegrees(ev.values[4]));
         notifyListeners("heading", o);
     }
 
