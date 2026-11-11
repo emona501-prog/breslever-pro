@@ -8,6 +8,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.view.View;
@@ -27,6 +28,7 @@ import java.util.Locale;
 public class BpWidget extends AppWidgetProvider {
     public static final String PREFS = "bp_widget";
     public static final String TICK = "com.chaiproductions.breslovpro.WIDGET_TICK";
+    public static final String DICE = "com.chaiproductions.breslovpro.WIDGET_DICE";
 
     @Override
     public void onUpdate(Context ctx, AppWidgetManager mgr, int[] ids) {
@@ -43,6 +45,14 @@ public class BpWidget extends AppWidgetProvider {
     public void onReceive(Context ctx, Intent intent) {
         super.onReceive(ctx, intent);
         String a = intent.getAction();
+        if (DICE.equals(a)) {
+            // 🎲 דיבור חדש בווידג'ט עצמו
+            try {
+                SharedPreferences sp = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+                sp.edit().putInt("qoff", sp.getInt("qoff", 0) + 1 + (int) (Math.random() * 17)).apply();
+            } catch (Exception e) { }
+            updateAll(ctx);
+        }
         if (TICK.equals(a) || Intent.ACTION_TIME_CHANGED.equals(a) || Intent.ACTION_TIMEZONE_CHANGED.equals(a)) updateAll(ctx);
     }
 
@@ -58,6 +68,12 @@ public class BpWidget extends AppWidgetProvider {
         i.setAction("bp.w." + a);
         i.putExtra("wact", a);
         i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        return PendingIntent.getActivity(ctx, req, i, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+    }
+
+    private static PendingIntent web(Context ctx, String url, int req) {
+        Intent i = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+        i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         return PendingIntent.getActivity(ctx, req, i, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
     }
 
@@ -93,6 +109,11 @@ public class BpWidget extends AppWidgetProvider {
                 mgr.updateAppWidget(id, rv);
                 return;
             }
+            JSONObject cfg = d.optJSONObject("cfg");
+            if (cfg == null) cfg = new JSONObject();
+            // לוגו ערוץ "גאולה וישועה" – קישור לערוץ
+            rv.setViewVisibility(R.id.w_yt, cfg.optBoolean("yt", true) ? View.VISIBLE : View.GONE);
+            rv.setOnClickPendingIntent(R.id.w_yt, web(ctx, d.optString("yt", "https://www.youtube.com/@yeshurun148"), 30));
             // היום (התאריך העברי מתחלף בצאת הכוכבים)
             JSONArray days = d.optJSONArray("days");
             JSONObject day = null;
@@ -118,12 +139,12 @@ public class BpWidget extends AppWidgetProvider {
 
             // סרגל מתחלף: הילולות, תזכורות, חומש היום, עוד זמנים
             List<String> tick = new ArrayList<>();
-            if (day != null) { JSONArray hil = day.optJSONArray("hil"); if (hil != null) for (int k = 0; k < hil.length(); k++) tick.add("🕯️ " + hil.getString(k)); }
+            if (day != null && cfg.optBoolean("tHil", true)) { JSONArray hil = day.optJSONArray("hil"); if (hil != null) for (int k = 0; k < hil.length(); k++) tick.add("🕯️ " + hil.getString(k)); }
             JSONArray rem = d.optJSONArray("rem");
-            if (rem != null) for (int k = 0; k < rem.length(); k++) { JSONObject r = rem.getJSONObject(k); long t = r.optLong("t", 0); if (t > now && t - now < 36L * 3600000L) tick.add("⏰ " + hm(t) + " · " + r.optString("n")); }
-            if (day != null && !day.optString("aly", "").isEmpty()) tick.add("📖 " + day.optString("aly"));
-            if (day != null && !day.optString("ev", "").isEmpty()) tick.add("✨ " + day.optString("ev"));
-            tick.addAll(moreZ);
+            if (rem != null && cfg.optBoolean("tRem", true)) for (int k = 0; k < rem.length(); k++) { JSONObject r = rem.getJSONObject(k); long t = r.optLong("t", 0); if (t > now && t - now < 36L * 3600000L) tick.add("⏰ " + hm(t) + " · " + r.optString("n")); }
+            if (day != null && !day.optString("aly", "").isEmpty() && cfg.optBoolean("tAly", true) && !(size == 2 && cfg.optBoolean("aly", true))) tick.add("📖 " + day.optString("aly"));
+            if (day != null && !day.optString("ev", "").isEmpty() && cfg.optBoolean("tEv", true)) tick.add("✨ " + day.optString("ev"));
+            if (cfg.optBoolean("tZm", true)) tick.addAll(moreZ);
             if (tick.isEmpty()) tick.add("✦ יום טוב! לחצו לפתיחת האפליקציה");
             rv.removeAllViews(R.id.w_flip);
             for (String t : tick) { RemoteViews it = new RemoteViews(ctx.getPackageName(), R.layout.widget_tick); it.setTextViewText(R.id.w_tick_t, t); rv.addView(R.id.w_flip, it); }
@@ -135,7 +156,33 @@ public class BpWidget extends AppWidgetProvider {
                 rv.setOnClickPendingIntent(R.id.b_dir, act(ctx, "dir", 12));
                 rv.setOnClickPendingIntent(R.id.b_tik, act(ctx, "tikkun", 13));
             }
+            // דיבור מתחלף (מהספרים שנבחרו באפליקציה). בגדול – תמיד; בבינוני – אם סומן.
+            boolean qShown = false;
+            if (size > 0) {
+                JSONArray qs = d.optJSONArray("quotes");
+                boolean want = cfg.optBoolean("quote", true) && qs != null && qs.length() > 0 && (size == 2 || cfg.optBoolean("quoteMed", false));
+                if (want) {
+                    long qms = Math.max(1, cfg.optInt("qmin", 10)) * 60000L;
+                    int off = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getInt("qoff", 0);
+                    JSONObject q = qs.getJSONObject((int) (((now / qms) + off) % qs.length()));
+                    String src = q.optString("s", "");
+                    rv.setTextViewText(R.id.w_quote, q.optString("t", "") + (src.isEmpty() ? "" : "\n— " + src));
+                    rv.setOnClickPendingIntent(R.id.w_quote, act(ctx, "q:" + q.optString("id", ""), 20));
+                    qShown = true;
+                }
+                rv.setViewVisibility(R.id.w_quote, want ? View.VISIBLE : View.GONE);
+                if (qShown) {
+                    Intent di = new Intent(ctx, BpWidget.class); di.setAction(DICE);
+                    rv.setOnClickPendingIntent(R.id.b_rand, PendingIntent.getBroadcast(ctx, 78, di, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE));
+                    rv.setTextViewText(R.id.b_rand, "🎲\nדיבור חדש");
+                } else rv.setTextViewText(R.id.b_rand, "🎲\nפתיחה אקראית");
+            }
             if (size == 2) {
+                rv.setViewVisibility(R.id.w_aly, cfg.optBoolean("aly", true) ? View.VISIBLE : View.GONE);
+                rv.setViewVisibility(R.id.w_cont, cfg.optBoolean("cont", true) ? View.VISIBLE : View.GONE);
+                rv.setViewVisibility(R.id.w_dir, cfg.optBoolean("dir", true) ? View.VISIBLE : View.GONE);
+                rv.setViewVisibility(R.id.w_row1, cfg.optBoolean("row1", true) ? View.VISIBLE : View.GONE);
+                rv.setViewVisibility(R.id.w_row2, cfg.optBoolean("row2", true) ? View.VISIBLE : View.GONE);
                 rv.setTextViewText(R.id.w_aly, day != null && !day.optString("aly", "").isEmpty() ? "📖 " + day.optString("aly") : "📖 חומש היום");
                 rv.setOnClickPendingIntent(R.id.w_aly, act(ctx, "aly", 4));
                 rv.setTextViewText(R.id.w_dir, "🧭 " + d.optString("dir", "כיוון התפילה"));
@@ -160,6 +207,12 @@ public class BpWidget extends AppWidgetProvider {
             if (d != null) {
                 JSONArray zm = d.optJSONArray("zm");
                 if (zm != null) for (int k = 0; k < zm.length(); k++) { long t = zm.getJSONObject(k).optLong("t", 0); if (t > now + 5000) { next = Math.min(next, t + 3000); break; } }
+                JSONObject cfg = d.optJSONObject("cfg");
+                JSONArray qs = d.optJSONArray("quotes");
+                if (qs != null && qs.length() > 1 && (cfg == null || cfg.optBoolean("quote", true))) {
+                    long qms = Math.max(1, cfg == null ? 10 : cfg.optInt("qmin", 10)) * 60000L;
+                    next = Math.min(next, ((now / qms) + 1) * qms + 800);
+                }
                 JSONArray days = d.optJSONArray("days");
                 if (days != null) for (int k = 0; k < days.length(); k++) { long t = days.getJSONObject(k).optLong("from", 0); if (t > now + 5000) { next = Math.min(next, t + 3000); break; } }
             }

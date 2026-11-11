@@ -8,4 +8,5 @@
         </LinearLayout>
         <ViewFlipper android:id="@+id/w_flip" android:layout_width="match_parent" android:layout_height="20dp" android:autoStart="true" android:flipInterval="4500" android:inAnimation="@android:anim/fade_in" android:outAnimation="@android:anim/fade_out" />
     </LinearLayout>
+    <ImageView android:id="@+id/w_yt" android:layout_width="24dp" android:layout_height="24dp" android:layout_marginStart="8dp" android:src="@drawable/widget_yt" android:contentDescription="ערוץ גאולה וישועה" android:scaleType="fitCenter" />
 </LinearLayout>
