@@ -24264,17 +24264,12 @@ function MAIN(t) {
         .trim();
       if (!e) return null;
       const i = Cs(t),
-        c = $t.findIndex((t) => t && "tanach" === t.cat),
-        l =
-          c < 0
-            ? -1
-            : n.findIndex(
-                (t) =>
-                  t.g === "V" + c &&
-                  m(g(t.short || ""))
-                    .replace(/^פרשת\s*/, "")
-                    .trim() === e,
-              ),
+        c = (t) =>
+          m(g(t || ""))
+            .replace(/^פרשת\s*/, "")
+            .replace(/[וי\s]/g, "")
+            .replace(/^שלחלך$/, "שלח"),
+        l = n.findIndex((t) => (($t[+String(t.g || "").slice(1)] || {}).tnx ? c(t.short) === c(e) : !1)),
         a = (l >= 0 ? ni(l) : [])[i];
       return { lbl: "חומש היום: פרשת " + e + " · " + si[i] + " – " + (a ? a.name : oi[i]), si: l, k: a ? a.k : -1 };
     } catch (t) {

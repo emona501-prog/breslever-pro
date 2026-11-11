@@ -27,17 +27,25 @@ def split_parshiot(r,first):
     return res
 def add(cfg,secs,mg): vols.append((cfg,secs,mg))
 CH=[('5daeb546','בראשית','סֵפֶר בְּרֵאשִׁית','רִאשׁוֹן'),('8758a269','שמות','סֵפֶר שְׁמוֹת','שֵׁנִי'),('4fc99d88','ויקרא','סֵפֶר וַיִּקְרָא','שְׁלִישִׁי'),('0315f37c','במדבר','סֵפֶר בְּמִדְבַּר','רְבִיעִי'),('9e200499','דברים','סֵפֶר דְּבָרִים','חֲמִישִׁי')]
-# 1) שמו"ת + רש"י ל-4 חומשים
+# 1) שמו"ת + רש"י ל-4 חומשים: מקרא (עם טעמים), תרגום ועליות מקובצי "מקרא ותרגום"; רש"י מקובצי המקראות הגדולות
+S=pickle.load(open('smt.pkl','rb'))
+SMT={'שמות':'7fac3472','ויקרא':'27ebfb7f','במדבר':'ba104fed','דברים':'fd137603'}
 for fid,name,nq,ordn in CH[1:]:
-    r=R[fid]; secs=[]
-    for pn,chs in split_parshiot(r,name):
+    r=R[fid]; q=S[SMT[name]]; secs=[]
+    for ci,c in enumerate(q['chs']):
+        assert len(c['v'])==len(r['chs'][ci]['v']),(name,ci)
+        for vi,v in enumerate(c['v']): v['t']=v['mq']; v['mf']=r['chs'][ci]['v'][vi]['mf']
+    q['parshiot']=[(n.replace('פרשת ',''),a,b_) for n,a,b_ in q['parsh']]
+    for pn,chs in split_parshiot(q,q['toc'][0].replace('פרשת ','')):
         cs=[]
         for ch,vs,rng in chs:
             its=[]
             for v in vs:
                 mf=dict(v['mf'])
-                it={'n':v['n'],'b':[['p',plain(v['t'])]],'mq':v['t']}
-                if mf.get('אונקלוס'): it['tg']=mf['אונקלוס']
+                bl=[['p',plain(v['mq'])]]
+                if v.get('al'): bl.insert(0,['sl',v['al'].split(' - ')[0].strip()])
+                it={'n':v['n'],'b':bl,'mq':v['mq']}
+                if v.get('tg'): it['tg']=v['tg']
                 if mf.get('רש"י'): it['rs']='<span class="rs-s">'+esc(mf['רש"י'])+'</span>'
                 its.append(it)
             cs.append({'t':chap_t(ch,rng),'i':its})
