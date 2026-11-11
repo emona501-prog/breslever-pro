@@ -144,6 +144,7 @@ public class BpWidget extends AppWidgetProvider {
             if (rem != null && cfg.optBoolean("tRem", true)) for (int k = 0; k < rem.length(); k++) { JSONObject r = rem.getJSONObject(k); long t = r.optLong("t", 0); if (t > now && t - now < 36L * 3600000L) tick.add("⏰ " + hm(t) + " · " + r.optString("n")); }
             if (day != null && !day.optString("aly", "").isEmpty() && cfg.optBoolean("tAly", true) && !(size == 2 && cfg.optBoolean("aly", true))) tick.add("📖 " + day.optString("aly"));
             if (day != null && !day.optString("ev", "").isEmpty() && cfg.optBoolean("tEv", true)) tick.add("✨ " + day.optString("ev"));
+            if (day != null && !day.optString("hal", "").isEmpty() && cfg.optBoolean("tHal", true)) tick.add("⚖️ " + day.optString("hal"));
             if (cfg.optBoolean("tZm", true)) tick.addAll(moreZ);
             if (tick.isEmpty()) tick.add("✦ יום טוב! לחצו לפתיחת האפליקציה");
             rv.removeAllViews(R.id.w_flip);

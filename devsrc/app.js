@@ -2125,6 +2125,13 @@ function MAIN(t) {
         } catch (t) {
           console.error(t);
         }
+      if (c && "sa" === Ge())
+        try {
+          const t = document.createElement("div");
+          ((t.className = "hal-wrap"), (t.innerHTML = halCardHtml()), i.appendChild(t));
+        } catch (t) {
+          console.error(t);
+        }
       const f = c
         ? Fe()
             .filter((t) => !we.length || Re(t) === Ge())
@@ -6147,7 +6154,7 @@ function MAIN(t) {
     if (mgv) {
       i = i.replace('<div class="item', '<div class="item tnv mgv' + ("clean" === mgv ? " tnc" : ""));
       const e = l.filter((t) => "p" === t[0]),
-        c = e.length ? e[0][1] : "";
+        c = e.map((t) => t[1]).join("clean" === mgv ? " " : "<br>");
       return (
         (i +=
           ("clean" === mgv ? "" : '<button class="more" aria-label="אפשרויות לקטע"><i>⋮</i></button>') +
@@ -11523,6 +11530,508 @@ function MAIN(t) {
   try {
     new MutationObserver(() => setTimeout(nudgeCheck, 1500)).observe(document.getElementById("reader"), { childList: !0 });
   } catch (t) {}
+  // ⚖️ הלכה יומית לפי סדר השולחן ערוך
+  const HAL_DEF = { on: !1, per: 2, time: "08:00", pos: 0, d0: 0 };
+  function halPlan() {
+    return Object.assign({}, HAL_DEF, s.get("halPlan", {}) || {});
+  }
+  function halDay(t) {
+    const e = t || new Date();
+    return Math.round((new Date(e.getFullYear(), e.getMonth(), e.getDate()) - new Date(2020, 0, 1)) / 864e5);
+  }
+  let halSeqC = null;
+  function halSeq() {
+    return halSeqC || (halSeqC = h.filter((t) => ($t[+String(t.s.g).slice(1)] || {}).sa && t.it.n).map((t) => t.id));
+  }
+  function halIdx(t) {
+    const e = halPlan(),
+      i = halSeq().length || 1;
+    return (((e.pos + (halDay() + (t || 0) - e.d0) * e.per) % i) + i) % i;
+  }
+  function halIds(t) {
+    const e = halPlan(),
+      i = halSeq(),
+      c = halIdx(t),
+      l = [];
+    for (let t = 0; t < e.per && i.length; t++) l.push(i[(c + t) % i.length]);
+    return l;
+  }
+  function halLabel(t) {
+    try {
+      const e = halIds(t).map((t) => y[t]).filter(Boolean);
+      if (!e.length) return "";
+      const i = e[0],
+        c = e[e.length - 1],
+        l = (t) => m(g(t.c.t)).split(" – ")[0],
+        a = ($t[+String(i.s.g).slice(1)] || {}).base || "";
+      return i.c === c.c
+        ? a + " · " + l(i) + " · " + (e.length > 1 ? "סעיפים " + m(i.it.n) + "–" + m(c.it.n) : "סעיף " + m(i.it.n))
+        : a + " · " + l(i) + " סעיף " + m(i.it.n) + " – " + l(c) + " סעיף " + m(c.it.n);
+    } catch (t) {
+      return "";
+    }
+  }
+  function halOpen(t) {
+    const e = halIds(t || 0);
+    if (!e.length || !y[e[0]]) return void st("השולחן ערוך עוד לא נטען");
+    (s.set("halSeen", halDay()), Ye(e[0]));
+  }
+  window.__halOpen = halOpen;
+  function halMark() {
+    const t = halPlan();
+    if (!t.on || "reader" !== Bt.v) return;
+    const e = new Set(halIds(0));
+    a("#reader .item[data-id]").forEach((t) => t.classList.toggle("hal-today", e.has(t.dataset.id)));
+  }
+  try {
+    new MutationObserver(() => setTimeout(halMark, 60)).observe(document.getElementById("reader"), { childList: !0 });
+  } catch (t) {}
+  function halSet(t) {
+    const e = halPlan(),
+      i = Object.assign({}, e, t);
+    (e.on && (null != t.per || null != t.on) && ((i.pos = halIdx(0)), (i.d0 = halDay())), s.set("halPlan", i));
+    try {
+      Jd();
+    } catch (t) {}
+    try {
+      halSeqC = halSeqC;
+    } catch (t) {}
+  }
+  function halSheet() {
+    const t = halPlan(),
+      e = Ut(
+        '<h3>⚖️ הלכה יומית</h3><div class="sh-sub">כל יום מגיעות ההלכות הבאות לפי סדר השולחן ערוך: אורח חיים, יורה דעה, אבן העזר וחושן משפט – ובסוף מתחילים מחדש. ההתראה מגיעה בשעה שתבחרו, ומופיעה גם בווידג\'ט.</div>' +
+          (t.on ? '<div class="hal-now">📖 היום: <b>' + o(halLabel(0)) + "</b></div>" : "") +
+          '<div class="field"><label>כמה סעיפים בכל יום?</label><div class="seg" id="halPer">' +
+          [1, 2, 3, 5, 10].map((e) => '<button data-v="' + e + '"' + (t.per === e ? ' class="on"' : "") + ">" + e + "</button>").join("") +
+          '</div></div><div class="field"><label>שעת ההתראה</label><input type="time" id="halTime" value="' +
+          o(t.time) +
+          '"></div>' +
+          (t.on
+            ? '<div class="row2" style="flex-wrap:wrap"><button class="btn pri" id="halGo">📖 ללמוד עכשיו</button><button class="btn sm" id="halRe">⏮ להתחיל מההתחלה</button><button class="btn sm" id="halOff">לכבות</button></div>'
+            : '<button class="btn pri" id="halOn" style="width:100%">✅ כן, שלחו לי כל יום הלכות לפי הסדר</button>'),
+      );
+    (a("#halPer button", e).forEach(
+      (t) =>
+        (t.onclick = () => {
+          (halSet({ per: +t.dataset.v }), a("#halPer button", e).forEach((e) => e.classList.toggle("on", e === t)));
+        }),
+    ),
+      (l("#halTime", e).onchange = (t) => halSet({ time: t.target.value || "08:00" })));
+    const i = (t, i) => {
+      const c = l(t, e);
+      c && (c.onclick = i);
+    };
+    (i("#halOn", () => {
+      (s.set("halPlan", Object.assign(halPlan(), { on: !0, pos: 0, d0: halDay() })), halSet({}), Wt(), st("⚖️ מעולה! כל יום תקבלו הלכות לפי סדר השולחן ערוך", 3e3), halRefresh());
+      try {
+        NAT.on && NAT.P("LocalNotifications") && NAT.P("LocalNotifications").requestPermissions();
+      } catch (t) {}
+    }),
+      i("#halGo", () => {
+        (Wt(), setTimeout(() => halOpen(0), 250));
+      }),
+      i("#halRe", () => {
+        confirm("להתחיל שוב מסימן א באורח חיים?") && (s.set("halPlan", Object.assign(halPlan(), { pos: 0, d0: halDay() })), halSet({}), Wt(), halRefresh());
+      }),
+      i("#halOff", () => {
+        (halSet({ on: !1 }), Wt(), st("הלימוד היומי כובה"), halRefresh());
+      }));
+  }
+  window.__halSheet = halSheet;
+  function halCardHtml() {
+    const t = halPlan();
+    return t.on
+      ? '<div class="hal-card"><div class="hal-ic">⚖️</div><div class="hal-tx"><b>ההלכות של היום</b><small>' + o(halLabel(0)) + '</small></div><button class="btn pri sm" type="button" onclick="window.__halOpen()">ללמוד</button><button class="btn sm" type="button" onclick="window.__halSheet()" aria-label="הגדרות">⚙️</button></div>'
+      : '<div class="hal-card"><div class="hal-ic">⚖️</div><div class="hal-tx"><b>רוצה לקבל כל יום ' + t.per + ' הלכות לפי סדר השולחן ערוך?</b><small>התראה יומית, בווידג\'ט ובראש המסך. אפשר לבחור כמה סעיפים.</small></div><button class="btn pri sm" type="button" onclick="window.__halSheet()">כן!</button></div>';
+  }
+  function halRefresh() {
+    a(".hal-card").forEach((t) => {
+      t.outerHTML = halCardHtml();
+    });
+  }
+  window.__halCard = halCardHtml;
+  setTimeout(() => {
+    try {
+      const t = halPlan();
+      t.on &&
+        s.get("halSeen", 0) !== halDay() &&
+        nudge("hal" + halDay(), "⚖️ <b>ההלכות של היום</b><br>" + o(halLabel(0)), [
+          ["📖 ללמוד עכשיו", () => halOpen(0)],
+          ["אחר כך", () => {}],
+        ]);
+    } catch (t) {}
+  }, 9e3);
+
+  // 🤖 העוזר של ברסלב PRO – בלי בינה מלאכותית: מאגר מתוך ההסברים שבאפליקציה + חיפוש לפי מילים
+  const BOT_STOP = new Set("יש לכם לנו האם איך אפשר את של על מה זה זו אני רוצה רציתי לי אתם אותו אותה פונקציה פונקציות אפשרות אפשרויות באפליקציה אפליקציה האפליקציה עם בלי כל גם רק או אם כן לא כמו היא הוא הם הן שלי שלכם איפה איזה איזו מתי למה כדי צריך יכול יכולה ניתן מאפשר מאפשרת שם פה כאן עוד בבקשה תודה דבר משהו לעשות עושים".split(" "));
+  const BOT_SYN = {
+    שיתוף: "שתף שיתוף לשתף ווצאפ וואטסאפ whatsapp שליחה לשלוח",
+    מעוצב: "מעוצב תמונה תמונות עיצוב עורך גלויה סטטוס",
+    תזכורת: "תזכורת תזכורות התראה התראות שעון מעורר להזכיר",
+    חיפוש: "חיפוש לחפש חפש מצוא למצוא",
+    הקראה: "הקראה הקראת קריאה בקול להקריא קול שמע לשמוע דיבור",
+    סימניה: "סימניה סימניות לסמן סימון שמירה לשמור",
+    הגדרות: "הגדרות הגדרה להגדיר לשנות שינוי",
+    גופן: "גופן אות אותיות פונט",
+    לילה: "לילה חושך כהה",
+    ווידגט: "ווידגט וידגט ווידג'ט וידג'ט מסך הבית",
+    זמנים: "זמנים זמני היום שקיעה זריחה קריאת שמע תפילה שבת",
+    מצפן: "מצפן כיוון התפילה ירושלים מזרח",
+    הלכה: "הלכה הלכות שולחן ערוך שלחן פוסקים",
+    חדר: "חדר פרטי החדר",
+    גיבוי: "גיבוי שחזור לגבות להעביר טלפון חדש",
+    הדפסה: "הדפסה להדפיס חוברת קונטרס pdf",
+    תהלים: "תהלים תהילים פרקי",
+    תנך: "תנך חומש פרשה פרשת עליה עליות שניים מקרא תרגום רשי מקראות נביאים כתובים",
+    זוהר: "זוהר זהר ארמית תיקוני",
+    רעיון: "רעיון הצעה לשפר שיפור חסר",
+    גודל: "להגדיל להקטין מגדילים מקטינים מגדיל מקטין גודל גדולות קטנות אות אותיות גופן",
+    ניגון: "ניגון לנגן מוזיקה שיר שירים ברקע מנגינה",
+    שבת: "שבת שבתות כניסת יציאת הדלקת נרות",
+    כהה: "לילה כהה חושך",
+  };
+  function botNorm(t) {
+    return m(String(t || ""))
+      .replace(/<[^>]+>/g, " ")
+      .replace(/['"׳״`]/g, "")
+      .replace(/[^א-תa-z0-9 ]/gi, " ")
+      .replace(/ך/g, "כ")
+      .replace(/ם/g, "מ")
+      .replace(/ן/g, "נ")
+      .replace(/ף/g, "פ")
+      .replace(/ץ/g, "צ")
+      .toLowerCase()
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+  let botStopN = null,
+    botSynN = null;
+  function botTok(t) {
+    (botStopN || (botStopN = new Set([...BOT_STOP].map(botNorm))),
+      botSynN || ((botSynN = {}), Object.keys(BOT_SYN).forEach((t) => (botSynN[t] = botNorm(BOT_SYN[t]).split(" ")))));
+    const e = [];
+    return (
+      botNorm(t)
+        .split(" ")
+        .forEach((t) => {
+          if (!t || botStopN.has(t)) return;
+          e.push(t);
+          t.length > 3 && /^[הובלשמכ]/.test(t) && !botStopN.has(t.slice(1)) && e.push(t.slice(1));
+          t.length > 4 && /^(וה|שה|וב|ול|מה|כש|וכ|לה|בה)/.test(t) && e.push(t.slice(2));
+        }),
+      [...new Set(e)]
+    );
+  }
+  let botKb = null;
+  function botBuild() {
+    if (botKb) return botKb;
+    const t = [],
+      e = (e, i, c, l, a) => t.push({ ic: e, t: i, txt: botNorm(i + " " + (c || "")) + " " + botNorm(l || ""), raw: c, go: a, kt: botNorm(i) + " " + botNorm(l || "") });
+    // פעולות עם "קח אותי לשם"
+    [
+      ["⚙️", "הגדרות", "כל ההגדרות של האפליקציה: גופן, תצוגה, צבעים, תזכורות, ווידג'ט, גיבוי ועוד.", "הגדרות", () => It("settings")],
+      ["⚖️", "הלכה יומית לפי סדר השולחן ערוך", "כל יום מקבלים הלכות לפי הסדר – אורח חיים, יורה דעה, אבן העזר וחושן משפט – עם התראה ובווידג'ט. בוחרים כמה סעיפים ובאיזו שעה.", "הלכה יומית שולחן ערוך סעיפים כל יום", () => halSheet()],
+      ["✍️", "תזכורת אישית", "תזכורת עם טקסט שאתם כותבים, בשעה שתבחרו – קופצת כהתראה ומופיעה גם בווידג'ט.", "תזכורת אישית טקסט חופשי", () => selfRem()],
+      ["🔎", "חיפוש מהיר של ספר או כותרת", "כותבים שם של ספר, חלק או כותרת (למשל: הלל) ומגיעים ישר למקום.", "חיפוש ספר כותרת הלל", () => sfOpen()],
+      ["🔍", "חיפוש בתוך הספרים", "חיפוש מילים בתוך כל הטקסטים של הספרים – בסרגל התחתון.", "חיפוש מילה טקסט תוכן", () => It("search")],
+      ["🗂️", "מפתחות", "מפתחות נושאים לכל הספרים.", "מפתחות נושאים", () => It("index")],
+      ["🔖", "האזור שלי – סימניות, הערות והדגשות", "כל מה שסימנתם, כתבתם והדגשתם במקום אחד.", "סימניות הערות הדגשות האזור שלי", () => It("mine")],
+      ["📜", "התיקון הכללי", "התיקון הכללי עם סימון 'אמרתי' והקראה.", "תיקון הכללי", () => It("tikkun")],
+      ["🕯️", "לוח הילולות וזמני היום", "לוח שנה עברי, הילולות צדיקים, זמני היום והתראות לפני סוף זמן.", "לוח הילולות זמני היום תאריך עברי", () => It("calendar")],
+      ["🧭", "מצפן – כיוון התפילה", "מצפן שמראה את הכיוון לירושלים ולהר הבית.", "מצפן כיוון התפילה", () => It("dir")],
+      ["🎲", "פתיחה אקראית", "דיבור אקראי מהספרים. לחיצה ארוכה על שם ספר מוסיפה אותו לרשימת הספרים שמהם מגרילים.", "פתיחה אקראית הגרלה קוביה דיבור", () => It("random")],
+      ["💎", "דיבורים נבחרים", "לקט דיבורים נבחרים לפי נושאים.", "דיבורים נבחרים", () => It("pearls")],
+      ["📅", "סדר היום שלי", "סדר לימוד יומי אישי.", "סדר היום", () => It("day")],
+      ["📖", "תוכנית לימוד", "תוכנית לסיום ספר עד תאריך שתבחרו.", "תוכנית לימוד סיום", () => It("plan")],
+      ["🍞", "ברכת המזון", "ברכת המזון בנוסחים השונים.", "ברכת המזון", () => It("birkat")],
+      ["📱", "הגדרות הווידג'ט", "בוחרים מה יופיע בווידג'ט, דיבור מתחלף, לוגו הערוץ ועוד.", "ווידגט מסך הבית", () => botSettings("wdgCard")],
+      ["📣", "הודעות מהעורך", "מדי פעם הודעה קצרה מעורך האפליקציה – מפעילים בהגדרות.", "הודעות עורך", () => botSettings("edMsgC")],
+      ["🅰", "גודל האותיות, גופן, ניקוד ומצב לילה", "בהגדרות ← \"תצוגת הטקסט\": מגדילים או מקטינים את האותיות, בוחרים גופן, מציגים או מסתירים ניקוד, ומעבירים למצב לילה (כהה). גם הכפתור א בסרגל העליון של הספר משנה את גודל האותיות.", "גודל אותיות אות גופן ניקוד לילה כהה מגדילים מקטינים", () => botSettings(() => botCard("תצוגת הטקסט"))],
+      ["💾", "גיבוי ושחזור", "בהגדרות ← \"גיבוי ושחזור\": מייצאים קובץ גיבוי עם כל הסימניות, ההערות וההגדרות, ומשחזרים אותו בטלפון אחר. יש גם גיבוי אוטומטי.", "גיבוי שחזור טלפון חדש להעביר", () => botSettings(() => botCard("גיבוי"))],
+      ["🔊", "הקראה – קול ומהירות", "בהגדרות ← \"הקראה\": בוחרים קול ומהירות. מתחילים להקריא מהכפתור 🔊 בסרגל העליון של הספר.", "הקראה קול קולות מהירות להקריא", () => botSettings(() => botCard("הקראה"))],
+    ].forEach((t) => e(t[0], t[1], t[2], t[3], t[4]));
+    // ההגדרות: כל כרטיס וכל שורה במסך ההגדרות
+    try {
+      const i = l("#setBody");
+      (i && !i.children.length && Ft.settings(),
+        a("#setBody .pcard").forEach((i, c) => {
+          const l = i.firstElementChild,
+            a = l ? l.textContent.trim() : "";
+          if (!a) return;
+          (i.id || (i.id = "pc" + c), (i.dataset.bk = 1));
+          const o = i.id,
+            s = [...i.querySelectorAll("label, .sw > span, .field > label, button, summary, .zm-chk")]
+              .map((t) => t.textContent.trim())
+              .filter((t) => t && t.length < 160);
+          (e(a.split(" ")[0], a.replace(/^\S+\s/, "") + " (הגדרות)", s.slice(0, 14).join(" · "), a, () => botSettings(() => botCard(a))),
+            s.forEach((t) => {
+              t.length > 5 && e("⚙️", t, "נמצא בהגדרות ← " + a, a, () => botSettings(() => botCard(a)));
+            }));
+        }));
+    } catch (t) {}
+    // כפתורי הכפתור הצף ✦
+    a("#fabPanel .fi").forEach((t) => {
+      const i = t.querySelector("span");
+      i && e(t.textContent.replace(i.textContent, "").trim() || "✦", i.textContent.trim(), "נמצא בכפתור הצף ✦ (בפינת המסך): לוחצים עליו ובוחרים \"" + i.textContent.trim() + "\".", "כפתור צף", null);
+    });
+    // הספרים עצמם
+    try {
+      const t = {};
+
+      VOLS.forEach((i, c) => {
+        const l = $t[c];
+        if (!l || l.hidden || "hidden" === l.cat || ce(c)) return;
+        const a = m(l.title || i),
+          o = (BOOK.libTabs || []).find((t) => t.id === l.cat);
+        e("📚", a, "הספר נמצא בספרייה" + (o ? ", בלשונית \"" + o.t + "\"" : "") + (l.author ? ". " + m(l.author) : "") + ".", "ספר " + a + " " + m(i), () => It("home", { b: c }));
+      });
+    } catch (t) {}
+    // ההסברים שבמדריך
+    Er.forEach((t) => e(t[0], t[1], g(t[2]), "", null));
+    // מה חדש
+    (rr.items || []).forEach((t) => e(t[1], t[2], g(t[3]), "", null));
+    return (botKb = t);
+  }
+  function botCard(t) {
+    const e = a("#setBody .pcard").find((e) => e.firstElementChild && e.firstElementChild.textContent.includes(t));
+    return e ? e.id || (e.id = "pcx" + Math.random().toString(36).slice(2, 7)) : "";
+  }
+  function botSettings(t) {
+    (It("settings"),
+      setTimeout(() => {
+        const e = document.getElementById("function" == typeof t ? t() : t);
+        e && e.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 450));
+  }
+  function botFind(t) {
+    let e = botTok(t);
+    if (!e.length) return { q: e, r: [] };
+    // מספר המילים "האמיתיות" (בלי הגרסאות בלי אות השימוש)
+    const n = Math.max(1, botNorm(t).split(" ").filter((t) => t && !botStopN.has(t)).length);
+    // לכל מילה בשאלה – קבוצת מילים נרדפות
+    const i = e.map((t) => {
+      const e = new Set();
+      for (const i in botSynN) {
+        const c = botSynN[i];
+        c.some((e) => e === t || (t.length > 3 && (e.startsWith(t) || t.startsWith(e) && e.length > 3))) && c.forEach((t) => e.add(t));
+      }
+      return [...e].filter((e) => e !== t);
+    });
+    const c = botBuild()
+      .map((t) => {
+        let c = 0,
+          l = 0;
+        const a = " " + t.txt + " ",
+          o = " " + t.kt + " ";
+        (e.forEach((t, e) => {
+          let r = o.includes(" " + t) ? 4 : a.includes(" " + t + " ") ? 2 : t.length > 3 && a.includes(" " + t) ? 1.5 : 0;
+          if (!r)
+            for (const t of i[e])
+              if (o.includes(" " + t)) {
+                r = 2;
+                break;
+              } else a.includes(" " + t + " ") && (r = Math.max(r, 0.8));
+          (r >= 0.8 && l++, (c += r));
+        }),
+          t.go && (c += 0.3));
+        return { e: t, sc: c, hit: l };
+      })
+      .filter((t) => t.sc >= 2 && t.hit >= Math.max(1, Math.min(2, Math.ceil(n / 2))))
+      .sort((t, e) => e.sc - t.sc);
+    const d = new Set();
+    return { q: e, r: c.filter((t) => !d.has(t.e.t) && d.add(t.e.t)).slice(0, 3) };
+  }
+  // 📥 תיבת רעיונות: נשלח לגיליון גוגל של העורך (Apps Script). אם עוד אין כתובת – נשמר בתור ונשלח אחר כך.
+  function inboxUrl() {
+    return ((s.get("live", {}) || {}).inbox || "").trim();
+  }
+  function ideaSend(t) {
+    const e = s.get("ideaQ", []);
+    (e.push({ t: String(t).slice(0, 1500), ts: Date.now(), v: pr }), s.set("ideaQ", e.slice(-30)), ideaFlush());
+  }
+  function ideaFlush() {
+    const t = inboxUrl(),
+      e = s.get("ideaQ", []);
+    if (!t || !e.length || !navigator.onLine) return;
+    s.set("ideaQ", []);
+    e.forEach((e) => {
+      fetch(t, { method: "POST", mode: "no-cors", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(e) }).catch(() => {
+        const t = s.get("ideaQ", []);
+        (t.push(e), s.set("ideaQ", t));
+      });
+    });
+  }
+  setTimeout(ideaFlush, 12e3);
+  function botOpen(t) {
+    const e = Ut(
+      '<h3>🤖 העוזר של ברסלב PRO</h3><div class="sh-sub">שאלו על כל דבר באפליקציה – איפה נמצאת הגדרה, איך עושים משהו, האם יש פונקציה מסוימת.</div><div class="bot-row"><input type="search" id="botQ" placeholder="למשל: יש שיתוף מעוצב? איך מגדילים אותיות?" enterkeyhint="search"><button class="btn pri" id="botGo">שאל</button></div><div id="botR" class="bot-res"></div>',
+    );
+    const i = l("#botQ", e),
+      c = l("#botR", e),
+      n = () => {
+        const t = (i.value || "").trim();
+        if (t.length < 2) return void (c.innerHTML = '<div class="bot-tip">💡 אפשר לשאול למשל: "איך מקבלים הלכה יומית?", "יש מצפן?", "איך משתפים כתמונה?"</div>');
+        const e = botFind(t);
+        (e.r.length
+          ? ((c.innerHTML =
+              e.r
+                .map(
+                  (t, e) =>
+                    '<div class="bot-a"><b>' +
+                    t.e.ic +
+                    " " +
+                    o(t.e.t) +
+                    "</b><p>" +
+                    o(String(t.e.raw || "").slice(0, 420)) +
+                    (String(t.e.raw || "").length > 420 ? "…" : "") +
+                    "</p>" +
+                    (t.e.go ? '<button class="btn pri sm" data-bg="' + e + '">👈 קח אותי לשם</button>' : "") +
+                    "</div>",
+                )
+                .join("") + '<div class="bot-more">לא מה שחיפשתם? <button class="btn sm" id="botIdea">💡 להציע את זה כרעיון לעורך</button></div>'),
+            a("[data-bg]", c).forEach(
+              (t) =>
+                (t.onclick = () => {
+                  const i = e.r[+t.dataset.bg].e.go;
+                  (Wt(), setTimeout(i, 250));
+                }),
+            ))
+          : (c.innerHTML =
+              '<div class="bot-a bot-new"><b>💡 זה יכול להיות רעיון מצוין!</b><p>לא מצאתי באפליקציה פונקציה כזו. רוצים לשלוח את הרעיון לעורך? הוא קורא כל הצעה.</p><textarea id="botTxt" rows="3">' +
+              o(t) +
+              '</textarea><button class="btn pri" id="botSend" style="width:100%;margin-top:8px">📨 שליחת הרעיון</button></div>'),
+          (function () {
+            const t = l("#botIdea", c);
+            t &&
+              (t.onclick = () => {
+                ((c.innerHTML =
+                  '<div class="bot-a bot-new"><b>💡 הצעה לעורך</b><textarea id="botTxt" rows="3">' + o(i.value) + '</textarea><button class="btn pri" id="botSend" style="width:100%;margin-top:8px">📨 שליחת הרעיון</button></div>'),
+                  e());
+              });
+            const e = () => {
+              const t = l("#botSend", c);
+              t &&
+                (t.onclick = () => {
+                  const t = (l("#botTxt", c).value || "").trim();
+                  t &&
+                    (ideaSend(t),
+                    (c.innerHTML = '<div class="bot-a"><b>🙏 תודה רבה!</b><p>הרעיון נשלח לעורך' + (inboxUrl() ? "" : " (יישלח ברגע שיהיה חיבור)") + ". כל הצעה עוזרת לשפר את האפליקציה.</p></div>"));
+                });
+            };
+            e();
+          })());
+      };
+    ((l("#botGo", e).onclick = n), (i.onkeydown = (t) => "Enter" === t.key && n()), t && ((i.value = t), n()), setTimeout(() => { try { i.focus(); } catch (t) {} }, 250), n());
+  }
+  window.__botOpen = botOpen;
+  window.__botFind = (t) => { const e = botFind(t); return { q: e.q, r: e.r.map((t) => [t.e.t, t.sc, t.hit]) }; };
+  window.__botKb = () => botBuild().map((t) => t.t + ' ## ' + t.kt);
+  document.addEventListener(
+    "click",
+    (t) => {
+      const e = t.target.closest && t.target.closest('[data-f="bot"],#toolBot,#helpBot');
+      e && (t.preventDefault(), t.stopPropagation(), Wt && document.querySelector("#sheet.open,.sheet.open") && Wt(), setTimeout(() => botOpen(), 120), "fi" === e.className.split(" ")[0] && document.body.classList.remove("fab-open"));
+    },
+    !0,
+  );
+  // 📥 תיבת הרעיונות – רק בעיני העורך
+  const INBOX_GS = `// ברסלב PRO – תיבת רעיונות. מדביקים בגיליון גוגל ← הרחבות ← Apps Script
+const KEY = 'החליפו-לסיסמה-שלכם';
+function sheet_(){ const ss = SpreadsheetApp.getActive(); return ss.getSheetByName('רעיונות') || ss.insertSheet('רעיונות'); }
+function doPost(e){
+  try{
+    const d = JSON.parse(e.postData.contents || '{}');
+    const t = String(d.t || '').slice(0, 1500).trim();
+    if(!t) return ContentService.createTextOutput('no');
+    const sh = sheet_();
+    if(sh.getLastRow() === 0) sh.appendRow(['זמן','רעיון','גרסה','סטטוס']);
+    sh.appendRow([new Date(), t, String(d.v || ''), 'חדש']);
+    MailApp.sendEmail(Session.getEffectiveUser().getEmail(), '💡 רעיון חדש מברסלב PRO', t);
+    return ContentService.createTextOutput('ok');
+  }catch(err){ return ContentService.createTextOutput('err'); }
+}
+function doGet(e){
+  const p = e.parameter || {};
+  if(p.key !== KEY) return ContentService.createTextOutput(JSON.stringify({err:'key'})).setMimeType(ContentService.MimeType.JSON);
+  const sh = sheet_();
+  if(p.a === 'done' && p.r) sh.getRange(Number(p.r), 4).setValue('טופל');
+  if(p.a === 'del' && p.r) sh.deleteRow(Number(p.r));
+  const v = sh.getLastRow() > 1 ? sh.getRange(2, 1, sh.getLastRow() - 1, 4).getValues() : [];
+  const rows = v.map((x, i) => ({ r: i + 2, ts: new Date(x[0]).getTime(), t: x[1], v: x[2], st: x[3] })).reverse();
+  return ContentService.createTextOutput(JSON.stringify({ rows })).setMimeType(ContentService.MimeType.JSON);
+}`;
+  function inboxHtml() {
+    const t = inboxUrl();
+    return (
+      '<div style="font-size:13.5px;color:var(--ink2);line-height:1.65">רעיונות שמשתמשים שולחים מהעוזר 🤖 נשמרים בגיליון גוגל שלך ומגיעים אליך גם במייל. רק מי שיש לו הסיסמה רואה אותם – והיא שמורה רק במכשיר הזה.</div>' +
+      (t
+        ? '<div class="row2" style="margin-top:8px"><button class="btn pri sm" id="ibLoad">📥 פתיחת התיבה</button><button class="btn sm" id="ibKeyB">🔑 סיסמה</button></div><div id="ibList" style="margin-top:8px"></div>'
+        : '<details style="margin-top:8px"><summary><b>הגדרה חד־פעמית (כ־5 דקות)</b></summary><ol style="line-height:1.8;font-size:13.5px;padding-inline-start:18px"><li>פתחו גיליון חדש ב־Google Sheets.</li><li>תפריט <b>הרחבות ← Apps Script</b>.</li><li>מחקו את מה שיש שם והדביקו את הקוד (כפתור "העתקת הקוד" למטה).</li><li>בשורה הראשונה החליפו את הסיסמה לסיסמה שלכם.</li><li><b>פריסה ← פריסה חדשה ← אפליקציית אינטרנט</b>. "הפעלה בתור": אני. "למי יש גישה": כל אחד. אשרו את ההרשאות.</li><li>העתיקו את כתובת אפליקציית האינטרנט והדביקו כאן למטה, יחד עם הסיסמה.</li></ol><button class="btn sm" id="ibCopy">📋 העתקת הקוד</button></details>') +
+      '<input id="ibUrl" type="url" placeholder="כתובת אפליקציית האינטרנט (https://script.google.com/...)" value="' +
+      o(t) +
+      '" style="width:100%;margin:8px 0 4px;direction:ltr"><input id="ibKey" type="password" placeholder="הסיסמה מהשורה הראשונה בקוד" value="' +
+      o(s.get("inboxKey", "")) +
+      '" style="width:100%;margin:4px 0;direction:ltr"><button class="btn sm" id="ibSave">💾 שמירה ופרסום הכתובת לכל המשתמשים</button>'
+    );
+  }
+  function inboxBind(t, e) {
+    const i = (e) => l(e, t),
+      c = i("#ibCopy");
+    c && (c.onclick = () => nt(INBOX_GS));
+    const a = i("#ibSave");
+    a &&
+      (a.onclick = async () => {
+        const t = (i("#ibUrl").value || "").trim(),
+          c = (i("#ibKey").value || "").trim();
+        if (t && !/^https:\/\/script\.google(usercontent)?\.com\//.test(t)) return void st("הכתובת צריכה להתחיל ב־https://script.google.com/");
+        (c && s.set("inboxKey", c), (a.disabled = !0), (a.textContent = "⏳ שומר…"));
+        try {
+          (await e((e) => ((e.inbox = t), e)), st("✅ נשמר. מעכשיו הרעיונות יגיעו אליך", 3e3), Ft.settings());
+        } catch (t) {
+          ((a.disabled = !1), (a.textContent = "💾 שמירה ופרסום הכתובת לכל המשתמשים"), st("❌ " + (t.message || t), 5e3));
+        }
+      });
+    const n = i("#ibKeyB");
+    n &&
+      (n.onclick = () => {
+        const t = prompt("הסיסמה של תיבת הרעיונות:", s.get("inboxKey", ""));
+        null != t && s.set("inboxKey", t.trim());
+      });
+    const r = i("#ibLoad"),
+      f = async (t, e) => {
+        const c = i("#ibList");
+        c.innerHTML = '<div class="sh-sub">טוען…</div>';
+        try {
+          const i = inboxUrl() + "?key=" + encodeURIComponent(s.get("inboxKey", "")) + (t ? "&a=" + t + "&r=" + e : "") + "&_=" + Date.now(),
+            l = await (await fetch(i)).json();
+          if (l.err) return void (c.innerHTML = '<div class="sh-sub">❌ הסיסמה לא נכונה. לחצו "🔑 סיסמה".</div>');
+          (s.set("ibSeen", Date.now()),
+            (c.innerHTML = l.rows.length
+              ? l.rows
+                  .map(
+                    (t) =>
+                      '<div class="ib-it' + ("טופל" === t.st ? " done" : "") + '"><small>' + new Date(t.ts).toLocaleString("he-IL") + (t.v ? " · גרסה " + o(t.v) : "") + " · " + o(t.st || "") + "</small><p>" + o(t.t) + '</p><div class="row2"><button class="btn sm" data-ibd="' + t.r + '">✔️ טופל</button><button class="btn sm" data-ibx="' + t.r + '">🗑 מחיקה</button></div></div>',
+                  )
+                  .join("")
+              : '<div class="sh-sub">התיבה ריקה.</div>'),
+            a("[data-ibd]", c).forEach((t) => (t.onclick = () => f("done", t.dataset.ibd))),
+            a("[data-ibx]", c).forEach((t) => (t.onclick = () => confirm("למחוק את הרעיון?") && f("del", t.dataset.ibx))));
+        } catch (t) {
+          c.innerHTML = '<div class="sh-sub">❌ לא הצלחתי להתחבר לתיבה. בדקו את החיבור ואת הכתובת.</div>';
+        }
+      };
+    r && (r.onclick = () => f());
+  }
+  // לעורך: בדיקה שקטה אם יש רעיונות חדשים
+  setTimeout(async () => {
+    try {
+      if (!s.get("ghTok", "") || !s.get("inboxKey", "") || !inboxUrl()) return;
+      const t = await (await fetch(inboxUrl() + "?key=" + encodeURIComponent(s.get("inboxKey", "")) + "&_=" + Date.now())).json(),
+        e = (t.rows || []).filter((t) => "חדש" === t.st && t.ts > (s.get("ibSeen", 0) || 0)).length;
+      e && nudge("ib" + Date.now(), "📥 <b>" + e + " רעיונות חדשים</b> בתיבת הרעיונות", [["לפתיחה", () => botSettings("ibCard")]]);
+    } catch (t) {}
+  }, 15e3);
   function goZman(t) {
     const e = /shma/i.test(t)
       ? ["קש וברכותיה", "קריאת שמע"]
@@ -11814,6 +12323,11 @@ function MAIN(t) {
         }),
           l && Yl(c.filter((t) => !("once" === t.type && t.done && Date.now() - t.at > 864e5))));
       })(e, i, c);
+    } catch (t) {}
+    try {
+      const t = halPlan(),
+        e = s.get("halLast", 0);
+      t.on && i >= t.time && e !== halDay() && (s.set("halLast", halDay()), NAT.on || ta({ title: "⚖️ ההלכות של היום", body: halLabel(0), kind: "hal" }));
     } catch (t) {}
     const o = Rl();
     t.on &&
@@ -18281,8 +18795,11 @@ function MAIN(t) {
     } catch (t) {}
   }, 4200);
   const rr = {
-    v: "2026-11-11b",
+    v: "2026-11-12",
     items: [
+      ["2026-11-12", "🤖", "העוזר של ברסלב PRO", 'שואלים כל שאלה על האפליקציה – "יש שיתוף מעוצב?", "איך מגדילים אותיות?" – והעוזר מסביר ולוקח אתכם ישר למקום. ואם אין עדיין פונקציה כזו – אפשר לשלוח אותה כרעיון לעורך. נמצא בכפתור הצף ✦, בכלים ובמדריך.'],
+      ["2026-11-12", "⚖️", "שולחן ערוך והלכה יומית", 'לשונית חדשה "שולחן ערוך": ארבעת החלקים, ובאר היטב כמפרש שנפתח בלחיצה (עם תצוגה נקייה). בראש הלשונית: "רוצה לקבל כל יום 2 הלכות לפי סדר השולחן ערוך?" – התראה יומית, בווידג\'ט ובראש המסך. ולקט "חשיבות לימוד ההלכה" מדברי רבנו ותלמידיו.'],
+      ["2026-11-12", "📖", "שניים מקרא לכל החומשים", "עליות לפי ימי השבוע וטעמים גם בשמות, ויקרא, במדבר ודברים."],
       ["2026-11-11", "✨", "ספר הזוהר הקדוש", 'בלשונית "זוהר הקדוש": הקדמת הזוהר, זוהר על חמשת החומשים, זוהר חדש וחיבורי הזוהר (אדרא זוטא, רעיא מהימנא, מדרש הנעלם ועוד). בראש כל דף בוחרים: ארמית ולשון הקודש, ארמית בלבד, או לשון הקודש בלבד – וגם בתיקוני הזוהר.'],
       ["2026-11-11", "📖", "תנ\"ך עם מפרשים", "בלשונית תנ\"ך: חומש מקראות גדולות, שניים מקרא ואחד תרגום עם רש\"י לכל חמשת החומשים, נביאים וכתובים. בכל פסוק לחצן \"מפרשים\", ויש גם תצוגה נקייה ותצוגה שבה הכול פתוח."],
       ["2026-11-11", "📚", "ספרים חדשים", "שיח שרפי קודש (6 חלקים), אב\"י הנחל, טובות זכרונות, רינת ציון, קונטרס הצירופים המורחב, ולשונית חדשה \"ספרי הרב מטשערין\"."],
@@ -22052,7 +22569,7 @@ function MAIN(t) {
   function cd() {
     const t = {};
     s.keys().forEach((e) => {
-      e !== SPFX + "ghTok" && e !== SPFX + "live" && (t[e] = localStorage.getItem(e));
+      e !== SPFX + "ghTok" && e !== SPFX + "live" && e !== SPFX + "inboxKey" && (t[e] = localStorage.getItem(e));
     });
     const i = new Blob([JSON.stringify({ app: e, ver: "1.0", date: new Date().toISOString(), data: t }, null, 1)], { type: "application/json" });
     NAT.saveFile(e + "-backup-" + Kt() + ".json", i, "application/json", "קובץ הגיבוי ירד למכשיר");
@@ -22445,11 +22962,13 @@ function MAIN(t) {
                 .join("<br>") +
               "</div>",
           )),
+        (r += n("⚖️ הלכה יומית", '<div style="font-size:13.5px;color:var(--ink2);line-height:1.6;margin-bottom:8px">הלכות לפי סדר השולחן ערוך, כל יום – עם התראה ובווידג\'ט.</div><button class="btn sm" type="button" onclick="window.__halSheet()">' + (halPlan().on ? "⚙️ הגדרות הלימוד היומי · " + halPlan().per + " סעיפים ב־" + o(halPlan().time) : "✅ להפעלה") + "</button>")),
         (r += '<div id="wdgCard">' + n("📱 הגדרות הווידג'ט", wdgSettingsHtml()) + "</div>"),
         (r += n(
           "💡 טיפים ותזכורות קופצות",
           '<div class="sw"><span>להציע לי תזכורות וטיפים לפי המדור שאני נמצא בו (למשל: "קראתם שניים מקרא?")</span><input type="checkbox" id="nudgeC" ' + (!1 !== s.get("nudgeOn", !0) ? "checked" : "") + "></div>",
         )),
+        Tf.on && s.get("ghTok", "") && (r += '<div id="ibCard">' + n("📥 תיבת הרעיונות (רק אצלך)", inboxHtml()) + "</div>"),
         (r += n(
           "📣 הודעות מהעורך",
           '<div class="sw"><span>לקבל מדי פעם הודעה קצרה מהעורך (חיזוק, ספר חדש, שיר חדש) – כהתראה</span><input type="checkbox" id="edMsgC" ' + (s.get("edMsg", !1) ? "checked" : "") + "></div>",
@@ -22584,6 +23103,17 @@ function MAIN(t) {
               const t = l("#wdgCard");
               t && wdgSettingsBind(t);
             } catch (t) {}
+            try {
+              const t = l("#ibCard");
+              t &&
+                inboxBind(t, async (t) => {
+                  const e = await Gd("contents/" + Rd),
+                    i = JSON.parse(Qd(e.content));
+                  (t(i), await Gd("contents/" + Rd, { method: "PUT", body: JSON.stringify({ message: "📥 כתובת תיבת הרעיונות", content: Vd(JSON.stringify(i)), sha: e.sha }) }));
+                  const c = s.get("live", {}) || {};
+                  ((c.inbox = i.inbox), s.set("live", c));
+                });
+            } catch (t) {}
             const g = l("#nudgeC");
             g &&
               (g.onchange = () => {
@@ -22649,6 +23179,7 @@ function MAIN(t) {
                           struct: s.get("struct", {}) || {},
                           ui: s.get("ui", null) || {},
                           msgs: (s.get("live", {}) || {}).msgs || [],
+                          inbox: (s.get("live", {}) || {}).inbox || void 0,
                         };
                         !Object.keys(t.struct).length && f.struct && (t.struct = f.struct);
                         const e = Object.keys(t.edits).length + Object.keys(t.editsN).length;
@@ -23853,7 +24384,7 @@ function MAIN(t) {
     (l("#toolShareApp").onclick = () => Lr()),
     (l("#helpBn").onclick = () => {
       Ut(
-        '<h3>❓ מדריך לברסלב PRO</h3><div class="sh-sub">🎬 בקרוב: סרטון הסבר מפורט על כל האפליקציה.</div><button class="btn" id="helpWn" style="width:100%;margin-bottom:10px">🆕 מה חדש בעדכון האחרון</button><div class="help-l">' +
+        '<h3>❓ מדריך לברסלב PRO</h3><button class="btn pri" id="helpBot" style="width:100%;margin:4px 0 8px">🤖 שאלו את העוזר – הוא מכיר כל פינה באפליקציה</button><div class="sh-sub">🎬 בקרוב: סרטון הסבר מפורט על כל האפליקציה.</div><button class="btn" id="helpWn" style="width:100%;margin-bottom:10px">🆕 מה חדש בעדכון האחרון</button><div class="help-l">' +
           Er.map((t) => '<details class="help-i"><summary><span>' + t[0] + "</span> " + t[1] + "</summary><p>" + t[2] + "</p></details>").join("") +
           '</div><div class="sh-sub" style="margin-top:10px">💡 ליד אפשרויות שדורשות הסבר יש סימן <span class="ib" style="pointer-events:none">!</span> – לחיצה עליו מציגה הסבר קצר.</div>' +
           vr(),
@@ -23944,7 +24475,7 @@ function MAIN(t) {
   !(function () {
     const t = NAT.P("LocalNotifications");
     if (!t) return;
-    const e = { pgRem: 1, dayRem: 1, rem: 1, tchRem: 1, zmAlert: 1, zmCity: 1, zmMode: 1, zmCl: 1, zmRem: 1, lvE: 1, lvL: 1, lvClk: 1, omNus: 1 };
+    const e = { halPlan: 1, pgRem: 1, dayRem: 1, rem: 1, tchRem: 1, zmAlert: 1, zmCity: 1, zmMode: 1, zmCl: 1, zmRem: 1, lvE: 1, lvL: 1, lvClk: 1, omNus: 1 };
     let i = null;
     async function c() {
       try {
@@ -24106,6 +24637,16 @@ function MAIN(t) {
               }
           });
         } catch (t) {}
+        try {
+          const t = halPlan();
+          if (t.on && halSeq().length) {
+            const [e, c] = t.time.split(":").map(Number);
+            for (let l = 0; l < 14; l++) {
+              const a = new Date();
+              (a.setDate(a.getDate() + l), a.setHours(e, c, 0, 0), a > new Date(Date.now() + 3e4) && i.push({ id: 3400 + l, title: "⚖️ ההלכות של היום", body: halLabel(l), schedule: { at: a, allowWhileIdle: !0 }, extra: { hal: 1 } }));
+            }
+          }
+        } catch (t) {}
         if (
           (i.forEach((t) => {
             ((t.actionTypeId = "REMX"),
@@ -24155,6 +24696,7 @@ function MAIN(t) {
         }
         if (e.nav) return void It(e.nav.v, e.nav.p);
         if (e.zk) return void goZman(e.zk);
+        if (e.hal) return void halOpen(0);
         if (e.ed) return void edMsgShow(e.ed);
         if (e.open) return void ("cal" === e.open ? It("calendar") : Ye(e.open));
         const i = e.go;
@@ -24198,6 +24740,10 @@ function MAIN(t) {
         const i = await fetch(t, { cache: "no-store" });
         if (!i.ok) return;
         e = await i.json();
+      }
+      if (e && "string" == typeof e.inbox && e.inbox !== ((s.get("live", {}) || {}).inbox || "")) {
+        const t = s.get("live", {}) || {};
+        ((t.inbox = e.inbox), s.set("live", t), setTimeout(ideaFlush, 1500));
       }
       if (e && Array.isArray(e.msgs) && e.msgs.length) {
         const t = s.get("live", {}) || {};
@@ -24288,7 +24834,7 @@ function MAIN(t) {
           l = 0 === t ? 0 : Math.round(Yd(ms(t - 1).v.tzeit)),
           a = [ws(c), Ls(c), (Ms(t) || {}).n, Ss(t) ? "נר " + Ss(t) + " של חנוכה" : ""].filter(Boolean).join(" · "),
           o = Kd(t);
-        e.push({ from: l, heb: is(new Date(i.y, i.m - 1, i.d, 12)), par: Ts(t).n || "", hil: _o(c).slice(0, 6).map(Xo), aly: o ? o.lbl : "", ev: a });
+        e.push({ from: l, heb: is(new Date(i.y, i.m - 1, i.d, 12)), par: Ts(t).n || "", hil: _o(c).slice(0, 6).map(Xo), aly: o ? o.lbl : "", ev: a, hal: halPlan().on ? halLabel(t) : "" });
       } catch (t) {}
     for (let e = 0; e < 2; e++)
       try {
@@ -24328,6 +24874,14 @@ function MAIN(t) {
           const [a, o] = e.time.split(":").map(Number);
           (l.setHours(a, o, 0, 0), l > t && c.push({ t: +l, n: "תזכורת לימוד יומית" }));
         }
+      const i = halPlan();
+      if (i.on)
+        for (let e = 0; e < 2; e++) {
+          const l = new Date();
+          l.setDate(l.getDate() + e);
+          const [a, o] = i.time.split(":").map(Number);
+          (l.setHours(a, o, 0, 0), l > t && c.push({ t: +l, n: "⚖️ " + halLabel(e) }));
+        }
     } catch (t) {}
     c.sort((t, e) => t.t - e.t);
     let l = "";
@@ -24348,7 +24902,7 @@ function MAIN(t) {
     } catch (t) {}
     return { v: 2, ts: t, days: e, zm: i.slice(0, 30), rem: c.slice(0, 12), cont: l, dir: a, cfg: wdgCfg(), quotes: q, yt: ht() };
   }
-  const WDG_DEF = { yt: !0, quote: !0, quoteMed: !1, aly: !0, cont: !0, dir: !0, row1: !0, row2: !0, tHil: !0, tRem: !0, tAly: !0, tEv: !0, tZm: !0, qmin: 10, qv: null };
+  const WDG_DEF = { tHal: !0, yt: !0, quote: !0, quoteMed: !1, aly: !0, cont: !0, dir: !0, row1: !0, row2: !0, tHil: !0, tRem: !0, tAly: !0, tEv: !0, tZm: !0, qmin: 10, qv: null };
   function wdgCfg() {
     return Object.assign({}, WDG_DEF, s.get("wdgCfg", {}) || {});
   }
@@ -24403,6 +24957,7 @@ function MAIN(t) {
       e("tRem", "התזכורות שלי (כולל תזכורות אישיות)") +
       e("tAly", "חומש היום") +
       e("tEv", "אירועי היום (ראש חודש, חנוכה וכו׳)") +
+      e("tHal", "ההלכות של היום (אם הפעלתם הלכה יומית)") +
       e("tZm", "זמני היום הבאים")
     );
   }

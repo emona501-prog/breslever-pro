@@ -16,3 +16,6 @@ for _x in _o.listdir(WWW+'data/zh'):
 _s.copy('/home/claude/content/out3/'+_f,WWW+'data/'+_f)
 c['books'][60]['zh']=_f
 c['books'][60]['credit']='התרגום ללשון הקודש: "הזוהר המתורגם" מתוך תוכנת "תורת אמת", רישיון CC BY-NC-SA 2.5 – לשימוש לא מסחרי בלבד.'
+# שולחן ערוך
+if not any(t['id']=='sa' for t in c['libTabs']):
+    k=[t['id'] for t in c['libTabs']].index('zohar'); c['libTabs'].insert(k+1,{"id":"sa","t":"שולחן ערוך"})
