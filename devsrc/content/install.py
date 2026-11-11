@@ -13,6 +13,11 @@ def setvol(vi,cfg,fn,src):
     for f in os.listdir(WWW+'data'):
         if re.search(r'_V%d\.'%vi,f) and f!=fn: os.remove(WWW+'data/'+f)
     shutil.copy(src+'/'+fn,WWW+'data/'+fn)
+    if isinstance(cfg.get('zh'),str):
+        os.makedirs(WWW+'data/zh',exist_ok=True)
+        for f in os.listdir(WWW+'data/zh'):
+            if f.startswith('V%d.'%vi): os.remove(WWW+'data/zh/'+f)
+        shutil.copy(src+'/'+cfg['zh'],WWW+'data/'+cfg['zh'])
     if isinstance(cfg.get('mg'),str):
         os.makedirs(WWW+'data/mg',exist_ok=True)
         for f in os.listdir(WWW+'data/mg'):

@@ -5920,8 +5920,84 @@ function MAIN(t) {
     },
     !0,
   );
+  // זוהר: ארמית / לשון הקודש / משולב. התרגום בקובץ נפרד שנטען לפי הצורך.
+  function zhMode() {
+    const t = s.get("zhMode", "both");
+    return ["both", "ar", "he"].includes(t) ? t : "both";
+  }
+  const ZH = { c: {}, p: {} };
+  function zhLoad(t) {
+    const e = $t[t];
+    return e && "string" == typeof e.zh
+      ? ZH.c[t]
+        ? Promise.resolve(ZH.c[t])
+        : ZH.p[t] ||
+          (ZH.p[t] = fetch("data/" + e.zh)
+            .then((t) => {
+              if (!t.ok) throw new Error("zh");
+              return t.json();
+            })
+            .then((e) => ((ZH.c[t] = e), e))
+            .catch((e) => {
+              throw (delete ZH.p[t], e);
+            }))
+      : Promise.reject(new Error("nozh"));
+  }
+  function zhApply() {
+    const t = document.getElementById("reader");
+    if (!t) return;
+    const e = zhMode();
+    (t.classList.toggle("zh-ar", "ar" === e), t.classList.toggle("zh-he", "he" === e));
+    a("[data-zhm]", t).forEach((t) => t.classList.toggle("on", t.dataset.zhm === e));
+    if ("ar" === e) return;
+    a(".item[data-id]", t).forEach((t) => {
+      if (t.dataset.zh) return;
+      const e = t.dataset.id,
+        i = /^v(\d+)g/.exec(e || "");
+      if (!i || "string" != typeof ($t[+i[1]] || {}).zh) return;
+      t.dataset.zh = "1";
+      zhLoad(+i[1])
+        .then((i) => {
+          const c = i.he[e.slice(e.indexOf("g") + 1)],
+            a = l(".txt", t);
+          if (!c || !a) return void t.classList.add("zh-nohe");
+          const o = document.createElement("div");
+          ((o.className = "zh-heb"), (o.innerHTML = c), a.appendChild(o));
+        })
+        .catch(() => {
+          (delete t.dataset.zh, t.classList.add("zh-nohe"));
+        });
+    });
+  }
+  try {
+    new MutationObserver(() => setTimeout(zhApply, 40)).observe(document.getElementById("reader"), { childList: !0 });
+  } catch (t) {}
+  document.addEventListener(
+    "click",
+    (t) => {
+      const e = t.target.closest && t.target.closest("[data-zhm]");
+      e && (t.preventDefault(), t.stopPropagation(), s.set("zhMode", e.dataset.zhm), zhApply());
+    },
+    !0,
+  );
   function pi(t) {
     const e = $t[t];
+    if (e && "string" == typeof e.zh) {
+      const t = zhMode(),
+        i = (e, i) => '<button type="button" data-zhm="' + e + '"' + (t === e ? ' class="on"' : "") + ">" + i + "</button>";
+      return (
+        '<div class="tn-bar">' +
+        i("both", "📖 ארמית ולשון הקודש") +
+        i("ar", "ארמית בלבד") +
+        i("he", "לשון הקודש בלבד") +
+        '</div><div class="tn-hint">' +
+        hi(
+          "<b>ארמית ולשון הקודש</b> – כל קטע בלשון הזוהר, ומתחתיו התרגום ללשון הקודש.<br><b>ארמית בלבד</b> – לשון הזוהר בלבד.<br><b>לשון הקודש בלבד</b> – רק התרגום (קטע שאין לו תרגום מוצג בארמית)." +
+            (e.credit ? "<br><small>" + o(e.credit) + "</small>" : ""),
+        ) +
+        "</div>"
+      );
+    }
     if (e && e.mg) {
       const t = mgMode(),
         i = (e, i) => '<button type="button" data-mgm="' + e + '"' + (t === e ? ' class="on"' : "") + ">" + i + "</button>";
@@ -18205,8 +18281,9 @@ function MAIN(t) {
     } catch (t) {}
   }, 4200);
   const rr = {
-    v: "2026-11-11",
+    v: "2026-11-11b",
     items: [
+      ["2026-11-11", "✨", "ספר הזוהר הקדוש", 'בלשונית "זוהר הקדוש": הקדמת הזוהר, זוהר על חמשת החומשים, זוהר חדש וחיבורי הזוהר (אדרא זוטא, רעיא מהימנא, מדרש הנעלם ועוד). בראש כל דף בוחרים: ארמית ולשון הקודש, ארמית בלבד, או לשון הקודש בלבד – וגם בתיקוני הזוהר.'],
       ["2026-11-11", "📖", "תנ\"ך עם מפרשים", "בלשונית תנ\"ך: חומש מקראות גדולות, שניים מקרא ואחד תרגום עם רש\"י לכל חמשת החומשים, נביאים וכתובים. בכל פסוק לחצן \"מפרשים\", ויש גם תצוגה נקייה ותצוגה שבה הכול פתוח."],
       ["2026-11-11", "📚", "ספרים חדשים", "שיח שרפי קודש (6 חלקים), אב\"י הנחל, טובות זכרונות, רינת ציון, קונטרס הצירופים המורחב, ולשונית חדשה \"ספרי הרב מטשערין\"."],
       ["2026-11-11", "🔎", "חיפוש מהיר של ספר או כותרת", "בראש הספרייה: כותבים \"הלל\" או שם של ספר – ומגיעים ישר למקום."],
@@ -20764,7 +20841,8 @@ function MAIN(t) {
               (this.q.push({ id: t.dataset.id, t: e, off: c, pre: l.length, tot: a.length, wo: bf(a.slice(0, c)), pw: s }), (o = c + e.length));
             });
             // כל מה שפתוח על המסך נקרא גם הוא: מקרא שני ותרגום, רש"י פתוח, מפרשים פתוחים
-            t.querySelectorAll(".smt2,.smt3,.rs-box.open,.mg-p.open").forEach((e) => {
+            t.querySelectorAll(".smt2,.smt3,.rs-box.open,.mg-p.open,.zh-heb").forEach((e) => {
+              if (!e.offsetParent) return;
               const i = rf((e.textContent || "").replace(/[\u0591-\u05af]/g, "").replace(/\s+/g, " ").trim());
               i && ttsChunk(i).forEach((e) => this.q.push({ id: t.dataset.id, t: e, off: 0, pre: 0, tot: e.length, wo: 1e6, pw: 0 }));
             });
