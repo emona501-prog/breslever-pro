@@ -291,12 +291,20 @@ function botQAMake(E) {
     { m: [["חינוך", "חנוך", "לחנך", "גידול", "לגדל"], ["ילדים", "הילדים", "בנים", "הבנים", "ילד", "נער", "נערים", "קטנים", "תינוקות"]], p: "גדול בנים|לגדל בניו|לגדל בנים|לגדל את בניו|לחנך|חנוך הבנים|חנוך בניו|חנוך נערים|חנוך הנער|מלמדי תינוקות|מלמד תינוקות|חנוך הילדים|חינוך הילדים|חינוך ילדים|חנוך ילדים", l: "חינוך ילדים" },
     { m: [["שלום בית", "שלום הבית"]], p: "שלום בית|שלום הבית|שלום ביתו|שלום בביתו|שלום בין איש לאשתו", l: "שלום בית" },
     { m: [["שמירת עיניים", "שמירת העיניים", "שמירת עינים", "שמירת העינים"]], p: "שמירת עינים|שמירת העינים|שמירת עיניו|לשמור עיניו|לשמר עיניו|ראית עינים|הסתכלות", l: "שמירת עיניים" },
-  ].map((c) => Object.assign(c, { mS: c.m.map((g) => g.map((t) => skl(t).join(" "))) }));
+    // "מה המעלה הגדולה ביותר" – בספרים זה כתוב "גדולה מן הכל", "גדול מכל", "למעלה מן הכל"
+    {
+      m: [["הגדולה ביותר", "הגדול ביותר", "הכי גדולה", "הכי גדול", "הכי חשובה", "הכי חשוב", "החשובה ביותר", "החשוב ביותר", "הגבוהה ביותר", "הגבוה ביותר", "הכי גבוהה", "הכי גבוה", "מעל הכל", "מן הכל", "גדולה מכל", "גדול מכל", "העליונה ביותר"]],
+      p: "מעלה עליונה וגדולה מן הכל|גדולה מן הכל|גדול מן הכל|גבוה מן הכל|גבוהה מן הכל|למעלה מן הכל|גדול מכל|גדולה מכל|גדולה מכלם|גדול מכלם|עולה על כלם|גדולה מאד מכל",
+      l: "גדולה מן הכל / גדול מכל / למעלה מן הכל",
+      x: 1,
+      drop: "גדולה גדול ביותר הכי חשובה חשוב גבוהה גבוה מעלה מעלת מעלות עליונה הכל מכל מן מעל דבר הדבר",
+    },
+  ].map((c) => Object.assign(c, { mS: c.m.map((g) => g.map((t) => skl(t).join(" "))), dropS: new Set(skl(c.drop || "")) }));
   function concRe(qs) {
     const c = CONC.find((c) => c.mS.every((g) => g.some((t) => hasAlt(qs, t))));
     if (!c) return null;
     const a = c.p.split("|").map((t) => norm(t));
-    return { l: c.l, re: new RegExp("(?:^|[^א-ת])((?:" + a.map((t) => t.split(" ").map((w) => E.cc + w.split("").map(lt).join("")).join("[^א-ת]{1,3}")).join("|") + "))", "g") };
+    return { l: c.l, x: c.x, dropS: c.dropS, re: new RegExp("(?:^|[^א-ת])((?:" + a.map((t) => t.split(" ").map((w) => E.cc + w.split("").map(lt).join("")).join("[^א-ת]{1,3}")).join("|") + "))", "g") };
   }
   function synRe(g) {
     if (g.length !== 1) return null;
@@ -306,8 +314,11 @@ function botQAMake(E) {
   }
   function search(P, syn, cn) {
     const idx = inScope(P.scope);
-    const G = cn ? [[cn.l]] : groupTerms(P.terms, idx);
-    const R = cn ? [cn.re] : G.map((g) => (syn && synRe(g)) || termRe(g, 1));
+    // מושג "עוטף" (x): שאר המילים בשאלה נשארות כתנאי נוסף
+    const rest = cn && cn.x ? P.terms.filter((t) => !cn.dropS.has(sk(t)) && !cn.dropS.has(sk(t.replace(/^[הו]/, "")))) : [];
+    const G0 = rest.length ? groupTerms(rest, idx) : [];
+    const G = cn ? G0.concat([[cn.l]]) : groupTerms(P.terms, idx);
+    const R = cn ? G0.map((g) => termRe(g, 1)).concat([cn.re]) : G.map((g) => (syn && synRe(g)) || termRe(g, 1));
     const nT = G.length;
     const ch = new Map();
     let total = 0,
