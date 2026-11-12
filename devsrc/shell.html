@@ -92,15 +92,14 @@ body.clean #tabbar,body.clean .topbar,body.clean #fab{display:none!important}
 #rCrumb button{flex:0 0 auto;width:34px;height:28px;border:1px solid var(--line,#e2d6bb);border-radius:999px;background:var(--card,#fffaf0);color:var(--accent,#8a6a2a);font:800 18px/1 system-ui;cursor:pointer;padding:0 0 2px}
 #rCrumb button[disabled]{opacity:.25}
 body.clean #rCrumb{display:none}
-#readerView{perspective:1600px}
 #reader.flipA{animation:flA .33s ease-in forwards;transform-origin:right center}
 #reader.flipB{animation:flB .36s ease-out;transform-origin:left center}
 #reader.flipC{animation:flC .33s ease-in forwards;transform-origin:left center}
 #reader.flipD{animation:flD .36s ease-out;transform-origin:right center}
-@keyframes flA{to{transform:rotateY(-88deg);opacity:.25;box-shadow:-30px 0 40px rgba(0,0,0,.25)}}
-@keyframes flB{from{transform:rotateY(88deg);opacity:.25}to{transform:none;opacity:1}}
-@keyframes flC{to{transform:rotateY(88deg);opacity:.25}}
-@keyframes flD{from{transform:rotateY(-88deg);opacity:.25}to{transform:none;opacity:1}}
+@keyframes flA{from{transform:perspective(1600px) rotateY(0)}to{transform:perspective(1600px) rotateY(-88deg);opacity:.25;box-shadow:-30px 0 40px rgba(0,0,0,.25)}}
+@keyframes flB{from{transform:perspective(1600px) rotateY(88deg);opacity:.25}to{transform:perspective(1600px) rotateY(0);opacity:1}}
+@keyframes flC{from{transform:perspective(1600px) rotateY(0)}to{transform:perspective(1600px) rotateY(88deg);opacity:.25}}
+@keyframes flD{from{transform:perspective(1600px) rotateY(-88deg);opacity:.25}to{transform:perspective(1600px) rotateY(0);opacity:1}}
 @media print{#rCrumb{display:none!important}}
 
 /* ===== landing ===== */
@@ -348,6 +347,17 @@ body.clean #nudgeBox{display:none}
 .bot-new{border-color:var(--accent,#b08a3a);background:var(--soft,rgba(176,138,58,.08))}
 .bot-more{text-align:center;font-size:13px;color:var(--muted);margin-top:6px}.bot-tip{font-size:13.5px;color:var(--muted);padding:4px}
 .ib-it{padding:10px 12px;border:1px solid var(--line);border-radius:12px;margin-bottom:6px}.ib-it.done{opacity:.55}.ib-it p{margin:4px 0;white-space:pre-wrap}.ib-it small{color:var(--muted)}
+.gl-empty{padding:14px;text-align:center;color:var(--muted);font-size:14px;line-height:1.7}
+.gl-prog{display:flex;align-items:center;gap:10px;margin:4px 2px 10px;font:700 13px var(--ui-font);color:var(--muted)}.gl-bar{flex:1;height:8px;border-radius:99px;background:var(--line)}.gl-bar i{display:block;height:100%;border-radius:99px;background:var(--ok,#3c8d5a);transition:width .3s}
+.gl-it{display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--line);border-radius:14px;background:var(--card);margin-bottom:7px}
+.gl-it.done{opacity:.6}.gl-it.done b{text-decoration:line-through}
+.gl-ck input{width:22px;height:22px;accent-color:var(--ok,#3c8d5a)}
+.gl-go{flex:1;display:flex;align-items:center;gap:10px;border:0;background:none;text-align:right;font:inherit;color:var(--ink);cursor:pointer;padding:2px}
+.gl-go .gl-ic{font-size:22px}.gl-go b{display:block;font:700 14.5px var(--ui-font)}.gl-go small{color:var(--accent,#8a6a2a);font-size:12px}
+.gl-types{display:grid;grid-template-columns:1fr 1fr;gap:8px}.gl-types button{border:1px solid var(--line);background:var(--card);border-radius:14px;padding:12px 8px;text-align:center;cursor:pointer;font:inherit;color:var(--ink)}.gl-types span{font-size:26px;display:block}.gl-types b{display:block;font-size:14px}.gl-types small{display:block;color:var(--muted);font-size:11.5px;margin-top:3px}
+.gl-row{display:flex;align-items:center;gap:6px;padding:7px 0;border-bottom:1px solid var(--line)}.gl-row span{flex:1;font-size:14px}
+.gl-bk{display:block;width:100%;text-align:right;border:0;border-bottom:1px solid var(--line);background:none;padding:11px 4px;font:inherit;color:var(--ink);cursor:pointer}
+.gl-page{padding:4px 12px}
 .rnd-hint{flex:1 0 100%;font-size:12.5px;color:var(--muted);padding:0 4px 6px;text-align:center}
 #rScope .pill{user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
 .hist .pill{margin:0 0 6px 6px}
@@ -1219,6 +1229,7 @@ body.clean #bmFab{display:none}
   <div class="topbar"><button class="ibtn" data-back><svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button><h1>הָאֵזוֹר שֶׁלִּי</h1>
     <button class="ibtn" data-go="settings" title="הגדרות"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/></svg></button></div>
   <div class="itabs" id="mTabs">
+    <button class="pill" data-mt="goals">🎯 יעדים</button>
     <button class="pill on" data-mt="bm">🔖 סימניות</button>
     <button class="pill" data-mt="notes">📝 הערות</button>
     <button class="pill" data-mt="basket">📚 החוברת שלי</button>
@@ -1270,6 +1281,7 @@ body.clean #bmFab{display:none}
     <button class="fi" data-f="wpromo" id="fabWid" style="display:none">📱<span>ווידג'ט למסך הבית</span></button>
     <button class="fi" data-f="settings">⚙️<span>הגדרות</span></button>
     <button class="fi" data-f="wa">💬<span>צור קשר בוואטסאפ</span></button>
+    <button class="fi" data-f="goals">🎯<span>היעדים שלי – סדר היום</span></button>
     <button class="fi" data-f="bot">🤖<span>שאלו את העוזר</span></button>
     <button class="fi" data-f="fhelp">❔<span>מה כל כפתור עושה?</span></button>
   </div>
