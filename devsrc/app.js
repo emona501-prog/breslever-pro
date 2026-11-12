@@ -11845,6 +11845,7 @@ function MAIN(t) {
     { id: "clean", ic: "🧘", t: "תצוגה נקייה וקריאה ברצף", a: "בכפתור הצף ✦: \"תצוגה נקייה\" מסתירה את כל הכפתורים, \"קריאה ברצף\" מציגה את הטקסט כמו בספר, ו\"גלילה אוטומטית\" גוללת לבד.", w: "נקייה נקי נקיה בלי כפתורים מסך מלא ברצף רציף גלילה אוטומטית לגלול" },
     { id: "update", ic: "📲", t: "עדכון גרסה", a: "האפליקציה בודקת עדכונים בכל פתיחה. אפשר גם בכפתור הצף ✦ ← \"בדיקת עדכון גרסה\".", w: "עדכון עדכונים לעדכן מעדכן גרסה גירסה חדשה ישנה להוריד הורדה להתקין התקנה אפליקציה" },
     { id: "goals", ic: "🎯", t: "היעדים שלי – סדר יום", a: "רושמים יעדים קבועים (תיקון הכללי, שניים מקרא, פרקי תהלים, קטעי זוהר, שולחן ערוך, ספר לבחירה או יעד אישי) – והאפליקציה מרכיבה סדר יום עם המקום המדויק של היום בכל יעד, תזכורת יומית, ווידג'ט וסימון ✓. נמצא ב\"האזור שלי\" ← יעדים ובכפתור הצף ✦.", w: "יעד יעדים מטרה מטרות סדר יום יומי קבוע קבועים חוק חוקים התחייבות משימות משימה תוכנית", go: () => goalsOpen() },
+    { id: "botfab", ic: "🔘", t: "כפתור צף של העוזר", a: "אפשר להציב את העוזר ככפתור עגול צף על המסך – תמיד בהישג יד. מפעילים בחלון העוזר או בהגדרות ← העוזר. גוררים אותו לכל מקום, ואחרי כמה שניות הוא נהיה כמעט שקוף כדי שלא יפריע.", w: "כפתור צף עיגול בועה עוזר בוט נגישות תמיד על המסך קיצור", go: () => (s.set("botFab", !0), botFloat(!0)) },
     { id: "whatsnew", ic: "🆕", t: "מה חדש באפליקציה", a: "כל החידושים של העדכונים האחרונים – ברשימה אחת.", w: "חדש חדשים חדשות חידוש חידושים מה חדש עדכון אחרון אחרונים שינויים שינוי נוסף הוספתם", go: () => dr(!1) },
     { id: "contact", ic: "💬", t: "יצירת קשר והצעות", a: "בכפתור הצף ✦ ← \"צור קשר בוואטסאפ\", או כאן – \"להציע את זה כרעיון לעורך\".", w: "קשר ליצור לפנות פנייה לדבר עורך מפתח טעות טעויות באג תקלה בעיה לדווח" },
   ];
@@ -12596,12 +12597,55 @@ function MAIN(t) {
     }
     return { html: x, acts };
   }
+  // 🔘 כפתור צף של העוזר – לבחירה. נגרר לכל מקום, ואחרי כמה שניות בלי שימוש נהיה כמעט שקוף
+  function botFloat(on) {
+    let t = document.getElementById("botFloat");
+    if (!on) return void (t && t.remove());
+    if (t) return;
+    ((t = document.createElement("button")), (t.id = "botFloat"), t.setAttribute("aria-label", "העוזר של ברסלב PRO"), (t.innerHTML = '<span class="bot-av"></span>'), document.body.appendChild(t));
+    const e = s.get("botFabPos", null),
+      i = (e, i) => {
+        const c = window.innerWidth - t.offsetWidth - 4,
+          l = window.innerHeight - t.offsetHeight - 4;
+        ((t.style.left = Math.max(4, Math.min(c, e)) + "px"), (t.style.top = Math.max(4, Math.min(l, i)) + "px"));
+      };
+    e ? i(e.x * window.innerWidth, e.y * window.innerHeight) : i(14, window.innerHeight - 220);
+    let c = null;
+    const l = () => {
+      (clearTimeout(c), t.classList.remove("idle"), (c = setTimeout(() => t.classList.add("idle"), 3500)));
+    };
+    l();
+    let a = null;
+    ((t.onpointerdown = (e) => {
+      (l(), (a = { x: e.clientX, y: e.clientY, l: t.offsetLeft, t: t.offsetTop, m: 0 }));
+      try {
+        t.setPointerCapture(e.pointerId);
+      } catch (e) {}
+    }),
+      (t.onpointermove = (e) => {
+        if (!a) return;
+        const c = e.clientX - a.x,
+          l = e.clientY - a.y;
+        (Math.abs(c) + Math.abs(l) > 8 && (a.m = 1), a.m && (i(a.l + c, a.t + l), t.classList.add("drag")));
+      }),
+      (t.onpointerup = () => {
+        if (!a) return;
+        const e = a.m;
+        ((a = null), t.classList.remove("drag"), l(), e ? s.set("botFabPos", { x: t.offsetLeft / window.innerWidth, y: t.offsetTop / window.innerHeight }) : botOpen());
+      }),
+      (t.onpointercancel = () => ((a = null), t.classList.remove("drag"))),
+      window.addEventListener("resize", () => i(t.offsetLeft, t.offsetTop)));
+  }
+  setTimeout(() => botFloat(!!s.get("botFab", !1)), 1500);
+  window.__botFloat = botFloat;
   let botLogNodes = [];
   function botOpen(t) {
     const e = Ut(
       '<h3 class="bot-h"><span class="bot-av"></span>העוזר של ברסלב PRO</h3><div class="sh-sub">שאלו על האפליקציה – או על הספרים עצמם: איפה רבנו מדבר על נושא, כמה תורות יש על משהו, מתי נאמרה תורה, ועוד. אפשר לכתוב בכתיב מלא או חסר.</div><div class="bot-row"><div class="bot-in"><input type="text" id="botQ" autocomplete="off" placeholder="למשל: איך מגדילים אותיות? · כמה תורות על שמחה?" enterkeyhint="send"><button id="botX" aria-label="ניקוי" hidden>✕</button></div><button class="btn pri" id="botGo">שאל</button></div><div class="bot-opt"><label><input type="checkbox" id="botThr"' +
         (s.get("botThr", !1) ? " checked" : "") +
-        '> 💬 שרשור שיחה (התשובות הקודמות נשארות)</label><button class="btn sm" id="botClr">🗑️ ניקוי השיחה</button></div><div id="botLog"></div><div class="bot-me" id="botMe" hidden></div><div id="botR" class="bot-res"></div>',
+        '> 💬 שרשור שיחה (התשובות הקודמות נשארות)</label><label><input type="checkbox" id="botFabC"' +
+        (s.get("botFab", !1) ? " checked" : "") +
+        '> 🔘 כפתור צף של העוזר על המסך</label><button class="btn sm" id="botClr">🗑️ ניקוי השיחה</button></div><div id="botLog"></div><div class="bot-me" id="botMe" hidden></div><div id="botR" class="bot-res"></div>',
     );
     const i = l("#botQ", e),
       c = l("#botR", e),
@@ -12754,6 +12798,7 @@ function MAIN(t) {
       (i.onkeydown = (t) => "Enter" === t.key && (t.preventDefault(), n())),
       (i.oninput = () => (XB.hidden = !i.value)),
       (XB.onclick = () => ((i.value = ""), (XB.hidden = !0), i.focus())),
+      (l("#botFabC", e).onchange = (t) => (s.set("botFab", !!t.target.checked), botFloat(!!t.target.checked), st(t.target.checked ? "🔘 הכפתור הצף של העוזר מופעל – אפשר לגרור אותו לכל מקום" : "הכפתור הצף כובה"))),
       (l("#botThr", e).onchange = (t) => (s.set("botThr", !!t.target.checked), t.target.checked || ((LG.innerHTML = ""), (botLogNodes = []), (ME.hidden = !0)), clrV())),
       (l("#botClr", e).onclick = () => ((LG.innerHTML = ""), (botLogNodes = []), (ME.hidden = !0), delete c.dataset.q, (c.innerHTML = ""), n(), clrV())),
       t && ((i.value = t), n()),
@@ -19912,8 +19957,9 @@ function doGet(e){
     } catch (t) {}
   }, 4200);
   const rr = {
-    v: "2026-11-12d",
+    v: "2026-11-12e",
     items: [
+      ["2026-11-12", "🔘", "העוזר ככפתור צף", 'למי שרוצה: העוזר כעיגול צף על המסך – תמיד בהישג יד. גוררים אותו לכל מקום, ואחרי כמה שניות הוא נהיה כמעט שקוף כדי שלא יפריע. מפעילים בחלון העוזר או בהגדרות ← העוזר.'],
       ["2026-11-12", "💬", "שיחה עם העוזר בשרשור", 'בחלון העוזר: "שרשור שיחה" – התשובות הקודמות נשארות על המסך, כמו בצ׳אט. כפתור ✕ לניקוי השאלה, וכפתור לניקוי כל השיחה.'],
       ["2026-11-12", "📚", "העוזר עונה גם על הספרים", 'שואלים את העוזר על תוכן הספרים: "תורה על פסח", "עצה להינצל מכעס", "כמה תורות על שמחה", "כמה פעמים מופיע רצון", "התורה הכי ארוכה בליקוטי מוהר״ן", "שם אמו של רבנו" – והוא מביא את המקומות עם קטע מהטקסט וכפתור לפתיחה. כתיב מלא או חסר – לא משנה.'],
       ["2026-11-12", "🎯", "היעדים שלי – סדר יום חכם", 'רושמים יעדים קבועים – תיקון הכללי, שניים מקרא, פרקי תהלים, קטעי זוהר, שולחן ערוך, ספר לבחירה או יעד אישי – והאפליקציה מרכיבה מהם סדר יום עם המקום המדויק של היום בכל יעד. סימון ✓, תזכורת יומית, ווידג\'ט, ו"יעדים" באזור שלי ובכפתור הצף ✦.'],
@@ -24090,6 +24136,10 @@ function doGet(e){
         )),
         Tf.on && s.get("ghTok", "") && (r += '<div id="ibCard">' + n("📥 תיבת הרעיונות (רק אצלך)", inboxHtml()) + "</div>"),
         (r += n(
+          "🤖 העוזר",
+          '<div class="sw"><span>כפתור צף של העוזר על המסך – תמיד בהישג יד. אפשר לגרור אותו לכל מקום, ואחרי כמה שניות הוא נהיה כמעט שקוף</span><input type="checkbox" id="botFabS" ' + (s.get("botFab", !1) ? "checked" : "") + "></div>",
+        )),
+        (r += n(
           "📣 הודעות מהעורך",
           '<div class="sw"><span>לקבל מדי פעם הודעה קצרה מהעורך (חיזוק, ספר חדש, שיר חדש) – כהתראה</span><input type="checkbox" id="edMsgC" ' + (s.get("edMsg", !1) ? "checked" : "") + "></div>",
         )),
@@ -24239,6 +24289,8 @@ function doGet(e){
               (g.onchange = () => {
                 (s.set("nudgeOn", g.checked), g.checked && s.set("nudge", {}));
               });
+            const bf = l("#botFabS");
+            bf && (bf.onchange = () => (s.set("botFab", bf.checked), botFloat(bf.checked)));
             const t = l("#edMsgC");
             t &&
               (t.onchange = () => {
