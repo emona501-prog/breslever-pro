@@ -258,10 +258,56 @@ function botQAMake(E) {
     while ((m = re.exec(t)) && p.length < 400) (p.push(m.index + m[0].length - m[1].length), m[0].length || re.lastIndex++);
     return p;
   }
-  function search(P) {
+  // מילים נרדפות בלשון הספרים (רק לחיפוש מקורות, לא לספירה)
+  const SYNX = {};
+  [
+    "חינוך|חנוך|לחנך|מחנך",
+    "ילדים|ילדיו|בנים|בניו|בניהם|קטנים|תינוקות|נערים",
+    "כעס|כועס|כעסן|רוגז|חמה",
+    "פרנסה|ממון|מזונות|עשירות|משא ומתן",
+    "עצבות|עצב|מרה שחורה|דאגה|דאגות",
+    "שמחה|שמח|לשמח|משמח|שמחת",
+    "תפילה|תפלה|להתפלל|מתפלל|תפלות",
+    "התבודדות|מתבודד|להתבודד|בינו לבין קונו|שיחה בינו",
+    "אשה|אשתו|נשים|שלום בית",
+    "חולה|חולי|רפואה|לרפאות|חולאת",
+    "בושה|בשת|בושת|ביישן",
+    "ענווה|ענוה|ענו|ענותנות|שפלות",
+    "גאווה|גאוה|גדלות|גסות",
+    "אמונה|להאמין|מאמין|אמונת",
+    "בטחון|לבטוח|בוטח",
+    "שינה|לישן|ישן|שנה בלילה",
+    "אכילה|לאכול|אוכל|מאכל|מאכלים",
+    "נסיעה|לנסוע|נוסע|נסיעות|בדרך",
+    "חתונה|חתן|כלה|נישואין|שידוך|שדוך",
+    "פחד|מורא|יראה|מפחד|לפחד",
+    "יסורים|ייסורים|צרות|צער",
+  ].forEach((l) => {
+    const a = l.split("|").map((t) => norm(t));
+    a.forEach((t) => (SYNX[skl(t).join(" ")] = a));
+  });
+  // מושגים שבספרים נאמרים בלשון אחרת לגמרי
+  const CONC = [
+    { m: [["חינוך", "חנוך", "לחנך", "גידול", "לגדל"], ["ילדים", "הילדים", "בנים", "הבנים", "ילד", "נער", "נערים", "קטנים", "תינוקות"]], p: "גדול בנים|לגדל בניו|לגדל בנים|לגדל את בניו|לחנך|חנוך הבנים|חנוך בניו|חנוך נערים|חנוך הנער|מלמדי תינוקות|מלמד תינוקות|חנוך הילדים|חינוך הילדים|חינוך ילדים|חנוך ילדים", l: "חינוך ילדים" },
+    { m: [["שלום בית", "שלום הבית"]], p: "שלום בית|שלום הבית|שלום ביתו|שלום בביתו|שלום בין איש לאשתו", l: "שלום בית" },
+    { m: [["שמירת עיניים", "שמירת העיניים", "שמירת עינים", "שמירת העינים"]], p: "שמירת עינים|שמירת העינים|שמירת עיניו|לשמור עיניו|לשמר עיניו|ראית עינים|הסתכלות", l: "שמירת עיניים" },
+  ].map((c) => Object.assign(c, { mS: c.m.map((g) => g.map((t) => skl(t).join(" "))) }));
+  function concRe(qs) {
+    const c = CONC.find((c) => c.mS.every((g) => g.some((t) => hasAlt(qs, t))));
+    if (!c) return null;
+    const a = c.p.split("|").map((t) => norm(t));
+    return { l: c.l, re: new RegExp("(?:^|[^א-ת])((?:" + a.map((t) => t.split(" ").map((w) => E.cc + w.split("").map(lt).join("")).join("[^א-ת]{1,3}")).join("|") + "))", "g") };
+  }
+  function synRe(g) {
+    if (g.length !== 1) return null;
+    const a = SYNX[sk(g[0])];
+    if (!a) return null;
+    return new RegExp("(?:^|[^א-ת])((?:" + a.map((t) => t.split(" ").map((w) => wordRe(w)).join("[^א-ת]{1,3}")).join("|") + "))", "g");
+  }
+  function search(P, syn, cn) {
     const idx = inScope(P.scope);
-    const G = groupTerms(P.terms, idx);
-    const R = G.map((g) => termRe(g, 1));
+    const G = cn ? [[cn.l]] : groupTerms(P.terms, idx);
+    const R = cn ? [cn.re] : G.map((g) => (syn && synRe(g)) || termRe(g, 1));
     const nT = G.length;
     const ch = new Map();
     let total = 0,
@@ -358,9 +404,13 @@ function botQAMake(E) {
     }
     if (!P.terms.length) return null;
     const tj = P.terms.map(sk).join(" ");
-    if (B.some((b) => b && b.title && skl(b.title).join(" ") === tj)) return null;
-    const S = search(P);
-    return { kind: isCountW ? "countW" : isCountU ? "countU" : "src", P, S };
+    if (P.raw.split(" ").length <= 2 && B.some((b) => b && b.title && skl(b.title).join(" ") === tj)) return null;
+    const kd = isCountW ? "countW" : isCountU ? "countU" : "src";
+    const cn = "src" === kd && concRe(P.qs);
+    let S = search(P, 0, cn);
+    // מעט תוצאות? מנסים שוב עם מילים נרדפות
+    "src" === kd && !cn && S.list.length < 3 && ((S = search(P, 1)), (S.syn = 1));
+    return { kind: kd, P, S };
   }
   return { ask, parse, where, snip, norm, bookT, ck, BRES };
 }

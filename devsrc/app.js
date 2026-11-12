@@ -11828,7 +11828,7 @@ function MAIN(t) {
     { id: "font", ic: "🅰", t: "גודל האותיות, גופן וניקוד", a: "בסרגל העליון של הספר: הכפתור א משנה את גודל האותיות. בהגדרות ← תצוגת הטקסט: גופן, גודל, ניקוד, מרווח שורות.", w: "גודל גדול גדולות גדולה קטן קטנות להגדיל מגדיל מגדילים הגדלה להקטין מקטין מקטינים הקטנה אות אותיות פונט גופן גופנים ניקוד מנוקד בלי ניקוד נקודות קריא קשה לקרוא רואה טוב", go: () => botSettings(() => botCard("תצוגת הטקסט")) },
     { id: "night", ic: "🌙", t: "מצב לילה וצבעים", a: "בהגדרות ← תצוגת הטקסט ← 🌙 לילה (כהה). יש גם ערכות צבע ורקעים.", w: "לילה כהה חושך חשוך שחור מסנוור עיניים בהיר צבעים צבע ערכה", go: () => botSettings(() => botCard("תצוגת הטקסט")) },
     { id: "bg", ic: "🖼️", t: "רקעים", a: "בהגדרות ← רקע – מסך הספרים, ובכפתור הצף ✦ ← \"רקע לדף הזה\" לכל דף בנפרד.", w: "רקע רקעים טפט תמונת נוף להחליף מחליפים לשנות", go: () => botSettings(() => botCard("רקע")) },
-    { id: "backup", ic: "💾", t: "גיבוי ושחזור", a: "בהגדרות ← גיבוי ושחזור: \"ייצא גיבוי\" שומר קובץ עם כל הסימניות, ההערות וההגדרות; בטלפון חדש – \"שחזר מגיבוי\". יש גם גיבוי אוטומטי.", w: "גיבוי גבוי לגבות מגבה שחזור לשחזר משחזר טלפון חדש מכשיר להעביר העברה נמחק נמחקו איבדתי הלך", go: () => botSettings(() => botCard("גיבוי")) },
+    { id: "backup", ic: "💾", t: "גיבוי ושחזור", a: "בהגדרות ← גיבוי ושחזור: \"ייצא גיבוי\" שומר קובץ עם כל הסימניות, ההערות וההגדרות; בטלפון חדש – \"שחזר מגיבוי\". יש גם גיבוי אוטומטי.", w: "גיבוי גבוי לגבות מגבה שחזור לשחזר משחזר טלפון מכשיר להעביר העברה נמחק נמחקו איבדתי הלך", go: () => botSettings(() => botCard("גיבוי")) },
     { id: "widget", ic: "📱", t: "ווידג'ט למסך הבית", a: "באנדרואיד: לחיצה ארוכה על מסך הבית ← ווידג'טים ← ברסלב PRO. בהגדרות ← הגדרות הווידג'ט בוחרים מה יופיע בו, דיבור מתחלף מהספרים שתבחרו ולוגו הערוץ. גודל – גוררים את פינות הווידג'ט.", w: "ווידגט וידגט ווידג וידג וידגט׳ יישומון מסך הבית מסךהבית", go: () => botSettings("wdgCard") },
     { id: "room", ic: "🚪", t: "החדר הפרטי", a: "הלשונית הראשונה בספרייה: מקבצים את מה שלומדים בקביעות. מוסיפים בכפתור הצף ✦ ← \"הוסף לחדר הפרטי\" ובוחרים נושא; אפשר ליצור נושאים (לשוניות) עם אייקון.", w: "חדר פרטי פרטית חדרי החדר נושא נושאים לשונית לשוניות מועדפים", go: () => (s.set("libTab", "room"), It("home")) },
     { id: "random", ic: "🎲", t: "פתיחה אקראית", a: "דיבור אקראי מהספרים. לחיצה ארוכה על שם ספר מוסיפה אותו ל\"ספרים שבחרתי\" – ואז מגרילים רק מהם.", w: "אקראי אקראית הגרלה להגריל מגריל קוביה קובייה מזל רנדומלי סתם", go: () => It("random") },
@@ -11845,6 +11845,7 @@ function MAIN(t) {
     { id: "clean", ic: "🧘", t: "תצוגה נקייה וקריאה ברצף", a: "בכפתור הצף ✦: \"תצוגה נקייה\" מסתירה את כל הכפתורים, \"קריאה ברצף\" מציגה את הטקסט כמו בספר, ו\"גלילה אוטומטית\" גוללת לבד.", w: "נקייה נקי נקיה בלי כפתורים מסך מלא ברצף רציף גלילה אוטומטית לגלול" },
     { id: "update", ic: "📲", t: "עדכון גרסה", a: "האפליקציה בודקת עדכונים בכל פתיחה. אפשר גם בכפתור הצף ✦ ← \"בדיקת עדכון גרסה\".", w: "עדכון עדכונים לעדכן מעדכן גרסה גירסה חדשה ישנה להוריד הורדה להתקין התקנה אפליקציה" },
     { id: "goals", ic: "🎯", t: "היעדים שלי – סדר יום", a: "רושמים יעדים קבועים (תיקון הכללי, שניים מקרא, פרקי תהלים, קטעי זוהר, שולחן ערוך, ספר לבחירה או יעד אישי) – והאפליקציה מרכיבה סדר יום עם המקום המדויק של היום בכל יעד, תזכורת יומית, ווידג'ט וסימון ✓. נמצא ב\"האזור שלי\" ← יעדים ובכפתור הצף ✦.", w: "יעד יעדים מטרה מטרות סדר יום יומי קבוע קבועים חוק חוקים התחייבות משימות משימה תוכנית", go: () => goalsOpen() },
+    { id: "whatsnew", ic: "🆕", t: "מה חדש באפליקציה", a: "כל החידושים של העדכונים האחרונים – ברשימה אחת.", w: "חדש חדשים חדשות חידוש חידושים מה חדש עדכון אחרון אחרונים שינויים שינוי נוסף הוספתם", go: () => dr(!1) },
     { id: "contact", ic: "💬", t: "יצירת קשר והצעות", a: "בכפתור הצף ✦ ← \"צור קשר בוואטסאפ\", או כאן – \"להציע את זה כרעיון לעורך\".", w: "קשר ליצור לפנות פנייה לדבר עורך מפתח טעות טעויות באג תקלה בעיה לדווח" },
   ];
   function botStem(t) {
@@ -12283,10 +12284,56 @@ function MAIN(t) {
       while ((m = re.exec(t)) && p.length < 400) (p.push(m.index + m[0].length - m[1].length), m[0].length || re.lastIndex++);
       return p;
     }
-    function search(P) {
+    // מילים נרדפות בלשון הספרים (רק לחיפוש מקורות, לא לספירה)
+    const SYNX = {};
+    [
+      "חינוך|חנוך|לחנך|מחנך",
+      "ילדים|ילדיו|בנים|בניו|בניהם|קטנים|תינוקות|נערים",
+      "כעס|כועס|כעסן|רוגז|חמה",
+      "פרנסה|ממון|מזונות|עשירות|משא ומתן",
+      "עצבות|עצב|מרה שחורה|דאגה|דאגות",
+      "שמחה|שמח|לשמח|משמח|שמחת",
+      "תפילה|תפלה|להתפלל|מתפלל|תפלות",
+      "התבודדות|מתבודד|להתבודד|בינו לבין קונו|שיחה בינו",
+      "אשה|אשתו|נשים|שלום בית",
+      "חולה|חולי|רפואה|לרפאות|חולאת",
+      "בושה|בשת|בושת|ביישן",
+      "ענווה|ענוה|ענו|ענותנות|שפלות",
+      "גאווה|גאוה|גדלות|גסות",
+      "אמונה|להאמין|מאמין|אמונת",
+      "בטחון|לבטוח|בוטח",
+      "שינה|לישן|ישן|שנה בלילה",
+      "אכילה|לאכול|אוכל|מאכל|מאכלים",
+      "נסיעה|לנסוע|נוסע|נסיעות|בדרך",
+      "חתונה|חתן|כלה|נישואין|שידוך|שדוך",
+      "פחד|מורא|יראה|מפחד|לפחד",
+      "יסורים|ייסורים|צרות|צער",
+    ].forEach((l) => {
+      const a = l.split("|").map((t) => norm(t));
+      a.forEach((t) => (SYNX[skl(t).join(" ")] = a));
+    });
+    // מושגים שבספרים נאמרים בלשון אחרת לגמרי
+    const CONC = [
+      { m: [["חינוך", "חנוך", "לחנך", "גידול", "לגדל"], ["ילדים", "הילדים", "בנים", "הבנים", "ילד", "נער", "נערים", "קטנים", "תינוקות"]], p: "גדול בנים|לגדל בניו|לגדל בנים|לגדל את בניו|לחנך|חנוך הבנים|חנוך בניו|חנוך נערים|חנוך הנער|מלמדי תינוקות|מלמד תינוקות|חנוך הילדים|חינוך הילדים|חינוך ילדים|חנוך ילדים", l: "חינוך ילדים" },
+      { m: [["שלום בית", "שלום הבית"]], p: "שלום בית|שלום הבית|שלום ביתו|שלום בביתו|שלום בין איש לאשתו", l: "שלום בית" },
+      { m: [["שמירת עיניים", "שמירת העיניים", "שמירת עינים", "שמירת העינים"]], p: "שמירת עינים|שמירת העינים|שמירת עיניו|לשמור עיניו|לשמר עיניו|ראית עינים|הסתכלות", l: "שמירת עיניים" },
+    ].map((c) => Object.assign(c, { mS: c.m.map((g) => g.map((t) => skl(t).join(" "))) }));
+    function concRe(qs) {
+      const c = CONC.find((c) => c.mS.every((g) => g.some((t) => hasAlt(qs, t))));
+      if (!c) return null;
+      const a = c.p.split("|").map((t) => norm(t));
+      return { l: c.l, re: new RegExp("(?:^|[^א-ת])((?:" + a.map((t) => t.split(" ").map((w) => E.cc + w.split("").map(lt).join("")).join("[^א-ת]{1,3}")).join("|") + "))", "g") };
+    }
+    function synRe(g) {
+      if (g.length !== 1) return null;
+      const a = SYNX[sk(g[0])];
+      if (!a) return null;
+      return new RegExp("(?:^|[^א-ת])((?:" + a.map((t) => t.split(" ").map((w) => wordRe(w)).join("[^א-ת]{1,3}")).join("|") + "))", "g");
+    }
+    function search(P, syn, cn) {
       const idx = inScope(P.scope);
-      const G = groupTerms(P.terms, idx);
-      const R = G.map((g) => termRe(g, 1));
+      const G = cn ? [[cn.l]] : groupTerms(P.terms, idx);
+      const R = cn ? [cn.re] : G.map((g) => (syn && synRe(g)) || termRe(g, 1));
       const nT = G.length;
       const ch = new Map();
       let total = 0,
@@ -12384,8 +12431,12 @@ function MAIN(t) {
       if (!P.terms.length) return null;
       const tj = P.terms.map(sk).join(" ");
       if (P.raw.split(" ").length <= 2 && B.some((b) => b && b.title && skl(b.title).join(" ") === tj)) return null;
-      const S = search(P);
-      return { kind: isCountW ? "countW" : isCountU ? "countU" : "src", P, S };
+      const kd = isCountW ? "countW" : isCountU ? "countU" : "src";
+      const cn = "src" === kd && concRe(P.qs);
+      let S = search(P, 0, cn);
+      // מעט תוצאות? מנסים שוב עם מילים נרדפות
+      "src" === kd && !cn && S.list.length < 3 && ((S = search(P, 1)), (S.syn = 1));
+      return { kind: kd, P, S };
     }
     return { ask, parse, where, snip, norm, bookT, ck, BRES };
   }
@@ -12535,6 +12586,7 @@ function MAIN(t) {
           "</b>" +
           sc(
             (S.partial ? "לא מצאתי מקום שיש בו את כל המילים – אלה ההתאמות הקרובות ביותר. " : "") +
+              (S.syn ? "חיפשתי גם במילים נרדפות. " : "") +
               (S.list.length > 5 ? q + " מופיע ב־" + nf(S.list.length) + " מקומות. אלה המתאימים ביותר:" : ""),
           ) +
           S.list.slice(0, 5).map(res).join("") +
@@ -12544,14 +12596,37 @@ function MAIN(t) {
     }
     return { html: x, acts };
   }
+  let botLogNodes = [];
   function botOpen(t) {
     const e = Ut(
-      '<h3 class="bot-h"><span class="bot-av"></span>העוזר של ברסלב PRO</h3><div class="sh-sub">שאלו על האפליקציה – או על הספרים עצמם: איפה רבנו מדבר על נושא, כמה תורות יש על משהו, מתי נאמרה תורה, ועוד. אפשר לכתוב בכתיב מלא או חסר.</div><div class="bot-row"><input type="search" id="botQ" placeholder="למשל: איך מגדילים אותיות? · כמה תורות על שמחה?" enterkeyhint="search"><button class="btn pri" id="botGo">שאל</button></div><div id="botR" class="bot-res"></div>',
+      '<h3 class="bot-h"><span class="bot-av"></span>העוזר של ברסלב PRO</h3><div class="sh-sub">שאלו על האפליקציה – או על הספרים עצמם: איפה רבנו מדבר על נושא, כמה תורות יש על משהו, מתי נאמרה תורה, ועוד. אפשר לכתוב בכתיב מלא או חסר.</div><div class="bot-row"><div class="bot-in"><input type="text" id="botQ" autocomplete="off" placeholder="למשל: איך מגדילים אותיות? · כמה תורות על שמחה?" enterkeyhint="send"><button id="botX" aria-label="ניקוי" hidden>✕</button></div><button class="btn pri" id="botGo">שאל</button></div><div class="bot-opt"><label><input type="checkbox" id="botThr"' +
+        (s.get("botThr", !1) ? " checked" : "") +
+        '> 💬 שרשור שיחה (התשובות הקודמות נשארות)</label><button class="btn sm" id="botClr">🗑️ ניקוי השיחה</button></div><div id="botLog"></div><div class="bot-me" id="botMe" hidden></div><div id="botR" class="bot-res"></div>',
     );
     const i = l("#botQ", e),
       c = l("#botR", e),
+      LG = l("#botLog", e),
+      ME = l("#botMe", e),
+      XB = l("#botX", e),
+      thr = () => !!s.get("botThr", !1),
+      clrV = () => {
+        (l("#botClr", e).style.display = thr() && (LG.children.length || c.dataset.q) ? "" : "none");
+      },
       n = () => {
         const t = (i.value || "").trim();
+        // 💬 שרשור: התשובה הקודמת עוברת להיסטוריה
+        if (thr() && t.length >= 2 && c.dataset.q) {
+          const t = document.createElement("div");
+          t.className = "bot-turn";
+          const e = document.createElement("div");
+          ((e.className = "bot-me"), (e.textContent = c.dataset.q), t.appendChild(e));
+          for (; c.firstChild; ) t.appendChild(c.firstChild);
+          (LG.appendChild(t), (botLogNodes = [...LG.children]));
+        }
+        t.length >= 2 && ((c.dataset.q = t), thr() ? ((ME.hidden = !1), (ME.textContent = t)) : (ME.hidden = !0));
+        (setTimeout(() => {
+          (clrV(), thr() && t.length >= 2 && ((i.value = ""), (XB.hidden = !0), ME.scrollIntoView({ block: "start", behavior: "smooth" })));
+        }, 30));
         if (t.length < 2) return void (c.innerHTML = '<div class="bot-tip">💡 על האפליקציה: "איך מקבלים הלכה יומית?", "איך משתפים כתמונה?"<br>📚 על הספרים: "תורה על פסח", "עצה להינצל מכעס", "כמה פעמים מופיע רצון", "שם אמו של רבנו"</div>');
         const T = botTalk(t),
           K = T.hits.find((t) => ["distress", "sad"].includes(t.k)),
@@ -12569,10 +12644,10 @@ function MAIN(t) {
           e = W.length && !R ? { r: [] } : botFind(W.length ? T.rest : t);
         // 📚 שאלה על תוכן הספרים
         let QV = null;
+        const QT = W.length ? T.rest : t;
         if (!(W.length && !R))
           try {
-            const QT = W.length ? T.rest : t,
-              r = botQAget().ask(QT);
+            const r = botQAget().ask(QT);
             if (r) {
               const k = "src" !== r.kind || BOT_SRC_STRONG.test(" " + botNorm(QT) + " ") || !e.r.length,
                 v = botQAView(r);
@@ -12581,6 +12656,16 @@ function MAIN(t) {
           } catch (t) {
             console.warn("botQA", t);
           }
+        // כשהשאלה על הספרים – מראים מהאפליקציה רק מה ששמו ממש מופיע בשאלה (למשל שם של ספר)
+        if (QV && QV.strong) {
+          const t = " " + botNorm(QT) + " ";
+          e.r = QV.only
+            ? []
+            : e.r.filter((e) => {
+                const i = botNorm(e.e.t);
+                return i.length > 3 && t.includes(" " + i + " ");
+              });
+        }
         const QB = () =>
           a("[data-qa]", c).forEach(
             (t) =>
@@ -12607,8 +12692,8 @@ function MAIN(t) {
         (e.r.length || QV
           ? ((c.innerHTML =
               S +
-              (QV && QV.strong ? QV.html + (e.r.length && !QV.only ? '<div class="bot-also">וגם באפליקציה:</div>' : "") : "") +
-              (QV && QV.only ? [] : e.r)
+              (QV && QV.strong ? QV.html + (e.r.length ? '<div class="bot-also">וגם באפליקציה:</div>' : "") : "") +
+              e.r
                 .map(
                   (t, e) =>
                     '<div class="bot-a"><b>' +
@@ -12663,7 +12748,22 @@ function MAIN(t) {
             e();
           })());
       };
-    ((l("#botGo", e).onclick = n), (i.onkeydown = (t) => "Enter" === t.key && n()), t && ((i.value = t), n()), setTimeout(() => { try { i.focus(); } catch (t) {} }, 250), n());
+    // שיחה קודמת (באותה הפעלה) חוזרת כשפותחים שוב
+    thr() && botLogNodes.length && botLogNodes.forEach((t) => LG.appendChild(t));
+    ((l("#botGo", e).onclick = n),
+      (i.onkeydown = (t) => "Enter" === t.key && (t.preventDefault(), n())),
+      (i.oninput = () => (XB.hidden = !i.value)),
+      (XB.onclick = () => ((i.value = ""), (XB.hidden = !0), i.focus())),
+      (l("#botThr", e).onchange = (t) => (s.set("botThr", !!t.target.checked), t.target.checked || ((LG.innerHTML = ""), (botLogNodes = []), (ME.hidden = !0)), clrV())),
+      (l("#botClr", e).onclick = () => ((LG.innerHTML = ""), (botLogNodes = []), (ME.hidden = !0), delete c.dataset.q, (c.innerHTML = ""), n(), clrV())),
+      t && ((i.value = t), n()),
+      setTimeout(() => {
+        try {
+          i.focus();
+        } catch (t) {}
+      }, 250),
+      t || n(),
+      clrV());
   }
   window.__botOpen = botOpen;
   window.__botQA = (t) => {
@@ -19812,8 +19912,9 @@ function doGet(e){
     } catch (t) {}
   }, 4200);
   const rr = {
-    v: "2026-11-12c",
+    v: "2026-11-12d",
     items: [
+      ["2026-11-12", "💬", "שיחה עם העוזר בשרשור", 'בחלון העוזר: "שרשור שיחה" – התשובות הקודמות נשארות על המסך, כמו בצ׳אט. כפתור ✕ לניקוי השאלה, וכפתור לניקוי כל השיחה.'],
       ["2026-11-12", "📚", "העוזר עונה גם על הספרים", 'שואלים את העוזר על תוכן הספרים: "תורה על פסח", "עצה להינצל מכעס", "כמה תורות על שמחה", "כמה פעמים מופיע רצון", "התורה הכי ארוכה בליקוטי מוהר״ן", "שם אמו של רבנו" – והוא מביא את המקומות עם קטע מהטקסט וכפתור לפתיחה. כתיב מלא או חסר – לא משנה.'],
       ["2026-11-12", "🎯", "היעדים שלי – סדר יום חכם", 'רושמים יעדים קבועים – תיקון הכללי, שניים מקרא, פרקי תהלים, קטעי זוהר, שולחן ערוך, ספר לבחירה או יעד אישי – והאפליקציה מרכיבה מהם סדר יום עם המקום המדויק של היום בכל יעד. סימון ✓, תזכורת יומית, ווידג\'ט, ו"יעדים" באזור שלי ובכפתור הצף ✦.'],
       ["2026-11-12", "🤖", "העוזר של ברסלב PRO", 'העוזר גם משוחח: עונה על "מה נשמע?", ברכות, תודה, מילת חיזוק כשקשה, התאריך והפרשה. ושואלים כל שאלה על האפליקציה – "יש שיתוף מעוצב?", "איך מגדילים אותיות?" – והעוזר מסביר ולוקח אתכם ישר למקום. ואם אין עדיין פונקציה כזו – אפשר לשלוח אותה כרעיון לעורך. נמצא בכפתור הצף ✦, בכלים ובמדריך.'],
