@@ -12740,7 +12740,8 @@ function MAIN(t) {
   }
   setTimeout(() => botFloat(!!s.get("botFab", !1)), 1500);
   window.__botFloat = botFloat;
-  let botLogNodes = [],
+  let botRemQ = null,
+    botLogNodes = [],
     botPend = null;
   // 🛠️ העוזר מבצע פעולות: חוברת לפי נושא
   // 🛠️ העוזר מבצע: פתח / תקריא (עם סימון) / תריץ את המסך / צור סטטוס / תזכיר לי
@@ -12828,7 +12829,18 @@ function MAIN(t) {
         .replace(/(^| )(תזכיר לי|תזכירי לי|תעשה לי תזכורת|תזכורת|להזכיר לי|אפשר|בבקשה|רוצה|לקבוע|תקבע|לי|על|ל)(?= |$)/g, " ")
         .replace(/\s+/g, " ")
         .trim();
-      const i = /חצות/.test(e) ? 27 : /תיקון הכללי|תקון הכללי/.test(e) ? 23 : /תהלים|תהילים/.test(e) ? 17 : -1;
+      const i = /חצות/.test(e) ? 27 : /תיקון הכללי|תקון הכללי/.test(e) ? 23 : /תהלים|תהילים/.test(e) ? 17 : -1,
+        lbl = (e || "תזכורת")
+          .replace(/(^| )(מחר|למחר|היום|הערב|בערב|בבוקר|בלילה|בצהריים|כל יום|כל בוקר|כל ערב|כל לילה|בעוד \S+( דקות| שעות| שעה| דקה)?|ב ?\d{1,2}( \d{2})?|בשעה ?\d{1,2}( \d{2})?|\d{1,2}( \d{2})?)(?= |$)/g, " ")
+          .replace(/\s+/g, " ")
+          .trim() || "תזכורת",
+        nav = { v: "home", p: i >= 0 ? { b: i } : {} },
+        w = botRemTime(String(t).replace(/[\u0591-\u05C7]/g, "").replace(/["'׳״`]/g, "").replace(/[^א-ת0-9:. ]/g, " ").replace(/\s+/g, " ").trim(), lbl);
+      if (w) {
+        const t = botRemMake(lbl, nav, w);
+        return { stay: 1, say: "✅ קבעתי לך תזכורת: <b>" + o(lbl) + "</b> – " + botRemDesc(w) + (w.z ? " (לפי זמני היום בעיר שלך)" : "") + ". תקבל התראה בזמן 🔔", undo: t.id };
+      }
+      return { stay: 1, ask: { lbl, nav }, say: "⏰ בשמחה! מתי להזכיר לך «" + o(lbl) + "»?" };
       return { say: "⏰ פותח לך תזכורת" + (e ? " – «" + o(e) + "»" : "") + ". בוחרים שעה וימים, וזה יקפוץ כהתראה.", run: () => Xl({ nav: { v: "home", p: i >= 0 ? { b: i } : {} }, lbl: e || "תזכורת", free: 1 }) };
     }
     if (!(R || C || ST || O)) return null;
@@ -13178,6 +13190,67 @@ function MAIN(t) {
       '</div><div class="bot-scope">או כתבו את שם העיר בשורה למטה.</div>'
     );
   }
+  // ⏰ העוזר קובע תזכורת בעצמו: מפענח שעה/יום מהבקשה ("מחר ב-8", "בעוד שעה", "כל יום ב-21:30", "בחצות")
+  function botRemTime(q, lbl) {
+    const n2 = (t) => String(t).padStart(2, "0"),
+      now = new Date();
+    let daily = /(^| )(כל יום|כל בוקר|כל ערב|כל לילה|יומי|יומית|קבוע|כל הימים)( |$)/.test(q),
+      day = /(^| )(מחר|למחר)( |$)/.test(q) ? 1 : 0,
+      h = null,
+      mi = 0;
+    const R = /בעוד (\d+|חצי|רבע|שעה|שעתיים|דקה) ?(דקות|דקה|שעות|שעה)?/.exec(q);
+    if (R && !daily) {
+      const t = "חצי" === R[1] ? 30 : "רבע" === R[1] ? 15 : "שעה" === R[1] ? 60 : "שעתיים" === R[1] ? 120 : "דקה" === R[1] ? 1 : +R[1] * (/שע/.test(R[2] || "") ? 60 : 1);
+      return { at: Date.now() + 6e4 * t };
+    }
+    const T = /(?:^| )(?:ב|בשעה|ב שעה|לשעה|עד)\s?(\d{1,2})(?:[:.](\d{2}))?(?= |$)/.exec(q) || /(?:^| )(\d{1,2})[:.](\d{2})(?= |$)/.exec(q);
+    T && ((h = +T[1]), (mi = +(T[2] || 0)));
+    // זמני היום
+    let zk = null;
+    /חצות/.test(q) && (zk = "chatzotLayla");
+    /קריאת שמע|קש( |$)/.test(q) && !/מיטה|המיטה/.test(q) && (zk = "shmaGra");
+    /שקיעה/.test(q) && (zk = "set");
+    /הדלקת נרות/.test(q) && (zk = "candle");
+    if (null === h && zk)
+      try {
+        let t = day;
+        const e = (t) => {
+          const e = ms(t);
+          return "candle" === zk ? e.v.set - yn(e.L) * ls.MIN : e.v[zk];
+        };
+        let i = e(t);
+        "shmaGra" === zk && (i -= 30 * 6e4);
+        i < Date.now() + 6e4 && !daily && ((t += 1), (i = e(t) - ("shmaGra" === zk ? 30 * 6e4 : 0)));
+        if (!daily) return { at: i, z: zk };
+        const c = new Date(i);
+        return { daily: 1, time: n2(c.getHours()) + ":" + n2(c.getMinutes()), z: zk };
+      } catch (t) {}
+    if (null === h) {
+      /(^| )(בבוקר|בוקר)( |$)/.test(q) ? (h = 8) : /(^| )(בצהריים|צהריים)( |$)/.test(q) ? (h = 13) : /(^| )(בערב|הערב|ערב)( |$)/.test(q) ? (h = 20) : /(^| )(בלילה|הלילה)( |$)/.test(q) && (h = 22);
+    } else /(בערב|הערב|בלילה|אחה צ|אחר הצהריים)/.test(q) && h < 12 && (h += 12);
+    if (null === h) return null;
+    if (daily) return { daily: 1, time: n2(h) + ":" + n2(mi) };
+    const d = new Date(now);
+    return (d.setDate(d.getDate() + day), d.setHours(h, mi, 0, 0), d <= now && !day && (d.getHours() < 12 && !/בבוקר/.test(q) && h + 12 < 24 && new Date(d.getTime() + 432e5) > now ? d.setTime(d.getTime() + 432e5) : d.setDate(d.getDate() + 1)), { at: d.getTime() });
+  }
+  function botRemMake(lbl, nav, w) {
+    const e = { id: Date.now().toString(36), lbl: lbl, nav: nav, note: "", type: w.daily ? "days" : "once" };
+    w.daily ? ((e.time = w.time), (e.days = [0, 1, 2, 3, 4, 5, 6])) : (e.at = w.at);
+    const i = Wl();
+    (i.push(e), Yl(i));
+    try {
+      "Notification" in window && "default" === Notification.permission && !NAT.on && Notification.requestPermission();
+    } catch (t) {}
+    return e;
+  }
+  function botRemDesc(w) {
+    if (w.daily) return "כל יום בשעה " + w.time;
+    const t = new Date(w.at),
+      e = new Date(),
+      i = String(t.getHours()).padStart(2, "0") + ":" + String(t.getMinutes()).padStart(2, "0"),
+      c = t.toDateString() === e.toDateString() ? "היום" : new Date(e.getTime() + 864e5).toDateString() === t.toDateString() ? "מחר" : t.getDate() + "." + (t.getMonth() + 1);
+    return c + " בשעה " + i;
+  }
   function botBookletAsk(t) {
     const e = " " + botNorm(t) + " ";
     if (!/ (צור|תצור|תיצור|תכינ|הכנ|תעשה|לעשות|להכינ|ליצור|תבנה|תסדר|תכנ|אפשר|רוצה|תוכל)/.test(e) || !/ (חוברת|קונטרס|חוברות|דפ לימוד|דפי לימוד) /.test(e)) return null;
@@ -13267,6 +13340,11 @@ function MAIN(t) {
           return ((botPend = null), (c.innerHTML = t.full), a("[data-qa]", c).forEach((e) => (e.onclick = () => (Wt(), setTimeout(t.acts[+e.dataset.qa], 230)))));
         }
         botPend = null;
+        if (botRemQ) {
+          const e = botRemTime(String(t).replace(/[\u0591-\u05C7]/g, "").replace(/["'׳״`]/g, "").replace(/[^א-ת0-9:. ]/g, " ").replace(/\s+/g, " ").trim(), botRemQ.lbl),
+            i = botRemQ;
+          if (((botRemQ = null), e)) return (botRemMake(i.lbl, i.nav, e), void (c.innerHTML = '<div class="bot-say">✅ קבעתי לך תזכורת: <b>' + o(i.lbl) + "</b> – " + botRemDesc(e) + ". תקבל התראה בזמן 🔔</div>"));
+        }
         // 🕯️ זמנים: תשובה בצ׳אט לפי העיר
         {
           const ZR = (q, forced) => {
@@ -13304,6 +13382,45 @@ function MAIN(t) {
         }
         // 🛠️ פקודות: פתח / תקריא / תריץ / סטטוס / תזכיר לי
         const CM = botCmd(t);
+        if (CM && CM.stay) {
+          const e = CM.ask
+            ? [
+                ["בעוד שעה", { at: Date.now() + 36e5 }],
+                ["הערב ב־20:00", botRemTime("הערב ב 20:00")],
+                ["מחר ב־8:00", botRemTime("מחר ב 8")],
+                ["כל יום ב־8:00", { daily: 1, time: "08:00" }],
+                ["כל ערב ב־21:00", { daily: 1, time: "21:00" }],
+              ]
+            : [];
+          return void (
+            (c.innerHTML =
+              '<div class="bot-say">' +
+              CM.say +
+              "</div>" +
+              (CM.ask ? '<div class="bot-chips">' + e.map((t, e) => '<button class="pill" data-rw="' + e + '">' + t[0] + "</button>").join("") + '</div><div class="bot-scope">או כתבו שעה, למשל: "מחר ב־7:30" · "כל יום ב־21:00"</div>' : "") +
+              '<div class="bot-srcs">' +
+              (CM.undo ? '<button class="btn sm" id="remUndo">↩️ בטל</button>' : "") +
+              '<button class="btn sm" id="remList">📋 כל התזכורות שלי</button></div>'),
+            a("[data-rw]", c).forEach(
+              (t) =>
+                (t.onclick = () => {
+                  const i = e[+t.dataset.rw][1];
+                  (botRemMake(CM.ask.lbl, CM.ask.nav, i), (c.innerHTML = '<div class="bot-say">✅ קבעתי לך תזכורת: <b>' + o(CM.ask.lbl) + "</b> – " + botRemDesc(i) + ". תקבל התראה בזמן 🔔</div>"));
+                }),
+            ),
+            CM.ask && (botRemQ = CM.ask),
+            l("#remUndo", c) && (l("#remUndo", c).onclick = () => (Yl(Wl().filter((t) => t.id !== CM.undo)), (c.innerHTML = '<div class="bot-say">↩️ ביטלתי את התזכורת.</div>'))),
+            l("#remList", c) &&
+              (l("#remList", c).onclick = () => (
+                Wt(),
+                It("settings"),
+                setTimeout(() => {
+                  const t = document.getElementById("prCard");
+                  t && t.scrollIntoView({ block: "start" });
+                }, 400)
+              ))
+          );
+        }
         if (CM) return ((c.innerHTML = '<div class="bot-say">' + CM.say + "</div>"), void setTimeout(() => (Wt(), setTimeout(CM.run, 250)), 1100));
         // 🛠️ פעולה: "צור לי חוברת על ..."
         const BK = botBookletAsk(t);
@@ -20638,8 +20755,9 @@ function doGet(e){
     } catch (t) {}
   }, 4200);
   const rr = {
-    v: "2026-11-13d",
+    v: "2026-11-13e",
     items: [
+      ["2026-11-13", "⏰", "העוזר קובע תזכורות בעצמו", 'כותבים "תזכיר לי לקרוא תהלים מחר ב־8", "תזכיר לי להתקשר בעוד שעה", "תזכיר לי ללמוד כל יום ב־21:30", "תזכיר לי תיקון חצות" – והתזכורת נקבעת מיד (חצות וקריאת שמע לפי זמני העיר שלך). בלי שעה? הוא שואל מתי, עם כפתורים מוכנים. אפשר לבטל בלחיצה.'],
       ["2026-11-13", "🕯️", "זמנים בצ׳אט עם העוזר", 'שואלים "מתי נכנסת שבת?", "מתי השקיעה היום?", "עד מתי קריאת שמע?", "מתי יוצאת השבת בחיפה?" – והעוזר עונה בצ׳אט עם השעה המדויקת לעיר שלך (בפעם הראשונה הוא שואל באיזו עיר), עם קישור "לחץ כאן" ללוח המלא.'],
       ["2026-11-13", "💪", "העוזר מחזק", 'כותבים לעוזר מה עובר עליכם – "תחזק אותי באמונה", "אני מיואש, קשה לי", "קשה לי עם הפרנסה", "אני כועס" – והוא עונה במילים חמות, ומביא דיבורים מרבנו בדיוק על זה (מליקוטי עצות ועוד), עם "עוד חיזוק", פתיחה במקום ושיתוף כסטטוס.'],
       ["2026-11-13", "🤖", "העוזר עושה בשבילך", 'כותבים לו מה לעשות: "פתח לי תהלים פרק צ ותריץ את המסך", "תקריא לי את התיקון הכללי עם סימון", "צור לי סטטוס מתורה קיב חלק ב", "תזכיר לי תיקון חצות". ומדי פעם הוא מציע רעיונות לפי היום – חנוכה, שבת, הילולות, חצות.'],
