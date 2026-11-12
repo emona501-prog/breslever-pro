@@ -138,18 +138,24 @@ public class BpWidget extends AppWidgetProvider {
             rv.setOnClickPendingIntent(R.id.w_zrow, act(ctx, "zm", 2));
 
             // סרגל מתחלף: הילולות, תזכורות, חומש היום, עוד זמנים
-            List<String> tick = new ArrayList<>();
-            if (day != null && cfg.optBoolean("tHil", true)) { JSONArray hil = day.optJSONArray("hil"); if (hil != null) for (int k = 0; k < hil.length(); k++) tick.add("🕯️ " + hil.getString(k)); }
+            // כל שורה בסרגל המתחלף פותחת את המקום שלה (יעדים ← היעדים, הלכה ← ההלכה היומית...)
+            List<String> tick = new ArrayList<>(); List<String> tAct = new ArrayList<>();
+            if (day != null && cfg.optBoolean("tHil", true)) { JSONArray hil = day.optJSONArray("hil"); if (hil != null) for (int k = 0; k < hil.length(); k++) { tick.add("🕯️ " + hil.getString(k)); tAct.add("cal"); } }
             JSONArray rem = d.optJSONArray("rem");
-            if (rem != null && cfg.optBoolean("tRem", true)) for (int k = 0; k < rem.length(); k++) { JSONObject r = rem.getJSONObject(k); long t = r.optLong("t", 0); if (t > now && t - now < 36L * 3600000L) tick.add("⏰ " + hm(t) + " · " + r.optString("n")); }
-            if (day != null && !day.optString("aly", "").isEmpty() && cfg.optBoolean("tAly", true) && !(size == 2 && cfg.optBoolean("aly", true))) tick.add("📖 " + day.optString("aly"));
-            if (day != null && !day.optString("ev", "").isEmpty() && cfg.optBoolean("tEv", true)) tick.add("✨ " + day.optString("ev"));
-            if (!d.optString("goals", "").isEmpty()) tick.add(0, "🎯 " + d.optString("goals"));
-            if (day != null && !day.optString("hal", "").isEmpty() && cfg.optBoolean("tHal", true)) tick.add("⚖️ " + day.optString("hal"));
-            if (cfg.optBoolean("tZm", true)) tick.addAll(moreZ);
-            if (tick.isEmpty()) tick.add("✦ יום טוב! לחצו לפתיחת האפליקציה");
+            if (rem != null && cfg.optBoolean("tRem", true)) for (int k = 0; k < rem.length(); k++) { JSONObject r = rem.getJSONObject(k); long t = r.optLong("t", 0); if (t > now && t - now < 36L * 3600000L) { tick.add("⏰ " + hm(t) + " · " + r.optString("n")); tAct.add("cal"); } }
+            if (day != null && !day.optString("aly", "").isEmpty() && cfg.optBoolean("tAly", true) && !(size == 2 && cfg.optBoolean("aly", true))) { tick.add("📖 " + day.optString("aly")); tAct.add("aly"); }
+            if (day != null && !day.optString("ev", "").isEmpty() && cfg.optBoolean("tEv", true)) { tick.add("✨ " + day.optString("ev")); tAct.add("cal"); }
+            if (!d.optString("goals", "").isEmpty()) { tick.add(0, "🎯 " + d.optString("goals")); tAct.add(0, "goals"); }
+            if (day != null && !day.optString("hal", "").isEmpty() && cfg.optBoolean("tHal", true)) { tick.add("⚖️ " + day.optString("hal")); tAct.add("hal"); }
+            if (cfg.optBoolean("tZm", true)) for (String z : moreZ) { tick.add(z); tAct.add("zm"); }
+            if (tick.isEmpty()) { tick.add("✦ יום טוב! לחצו לפתיחת האפליקציה"); tAct.add("cal"); }
             rv.removeAllViews(R.id.w_flip);
-            for (String t : tick) { RemoteViews it = new RemoteViews(ctx.getPackageName(), R.layout.widget_tick); it.setTextViewText(R.id.w_tick_t, t); rv.addView(R.id.w_flip, it); }
+            for (int k = 0; k < tick.size(); k++) {
+                RemoteViews it = new RemoteViews(ctx.getPackageName(), R.layout.widget_tick);
+                it.setTextViewText(R.id.w_tick_t, tick.get(k));
+                it.setOnClickPendingIntent(R.id.w_tick_t, act(ctx, tAct.get(k), 40 + k));
+                rv.addView(R.id.w_flip, it);
+            }
             rv.setOnClickPendingIntent(R.id.w_flip, act(ctx, "cal", 3));
 
             if (size > 0) {

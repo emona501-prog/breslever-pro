@@ -5486,12 +5486,24 @@ function MAIN(t) {
   function Ke(t) {
     return "it-" + t.replace(/\./g, "-");
   }
+  // שולחן ערוך: "הגה:" (הרמ"א) בצבע, והמשך הפסקה בכתב קטן יותר – מחבר אחר באותו סעיף
+  let xeSA = !1;
+  function remaFmt(e) {
+    const i = e.search(/(<b>)?ה[\u0591-\u05C7]*ג[\u0591-\u05C7]*ה[\u0591-\u05C7]*:(<\/b>)?/);
+    if (i < 0) return e;
+    return (
+      e.slice(0, i) +
+      '<span class="rema">' +
+      e.slice(i).replace(/(<b>)?(ה[\u0591-\u05C7]*ג[\u0591-\u05C7]*ה[\u0591-\u05C7]*:)(<\/b>)?/g, '<b class="hg">$2</b>') +
+      "</span>"
+    );
+  }
   function Xe(t) {
     let e = t[1];
     O.niqud || (e = m(e));
     const i = t[0];
     return "p" === i
-      ? "<p>" + e + "</p>"
+      ? "<p>" + (xeSA ? remaFmt(e) : e) + "</p>"
       : "h" === i
         ? '<div class="h">' + e + "</div>"
         : "H" === i
@@ -6149,12 +6161,18 @@ function MAIN(t) {
     let mgv = null;
     try {
       const e = y[t.id];
+      xeSA = !!(e && ($t[+String(e.s.g).slice(1)] || {}).sa);
+    } catch (t) {
+      xeSA = !1;
+    }
+    try {
+      const e = y[t.id];
       e && t.n && ($t[+String(e.s.g).slice(1)] || {}).mg && (mgv = mgMode());
     } catch (t) {}
     if (mgv) {
       i = i.replace('<div class="item', '<div class="item tnv mgv' + ("clean" === mgv ? " tnc" : ""));
       const e = l.filter((t) => "p" === t[0]),
-        c = e.map((t) => t[1]).join("clean" === mgv ? " " : "<br>");
+        c = e.map((t) => (xeSA ? remaFmt(t[1]) : t[1])).join("clean" === mgv ? " " : "<br>");
       return (
         (i +=
           ("clean" === mgv ? "" : '<button class="more" aria-label="אפשרויות לקטע"><i>⋮</i></button>') +
@@ -9748,7 +9766,7 @@ function MAIN(t) {
         ("all" === Qc || ("sel" === Qc ? rndSel().includes(+String(t.s.g).slice(1)) : "V" === Qc[0] ? t.s.g === Qc : t.s.id === Qc)) &&
         t.it.b.reduce((t, e) => t + e[1].length, 0) > 160,
     );
-    if (!t.length) return void ("sel" === Qc && st("עוד לא בחרתם ספרים – לחיצה ארוכה על שם ספר מוסיפה אותו לרשימה", 3500));
+    if (!t.length) return void ("sel" === Qc && st("עוד לא בחרתם ספרים – פתחו את \"מגרילים מתוך\" וסמנו ספרים", 3500));
     const e = l("#cube");
     (e.classList.remove("roll"), e.offsetWidth, e.classList.add("roll"));
     const i = t[Math.floor(Math.random() * t.length)];
@@ -9848,40 +9866,51 @@ function MAIN(t) {
     const t = s.get("rndVols", []);
     return Array.isArray(t) ? t : [];
   }
-  Ft.random = function () {
+  // 🎲 מאיפה להגריל: לשונית נפתחת – כל הספרים / ספרים לבחירה (סימון בלי להגריל ובלי לקפוץ)
+  let rndOpen = !1;
+  Ft.random = function (noRoll) {
+    noRoll = !0 === noRoll;
     const t = l("#rScope");
-    Qc && "V" === Qc[0] && ($t[+Qc.slice(1)] || {}).special && (Qc = "all");
-    const i = rndSel();
-    let e =
-      '<div class="rnd-hint">💡 לחיצה ארוכה על שם ספר מוסיפה אותו ל"ספרים שבחרתי" (או מסירה). כך מגרילים רק מהספרים שלכם.</div>' +
-      [
-        ["all", VOLS.length > 1 ? "כל הספרים" : "כל הספר"],
-        ["sel", "⭐ הספרים שבחרתי (" + i.length + ")"],
-      ]
-        .concat(VOLS.map((t, e) => ["V" + e, t]).filter((t, e) => !($t[e] || {}).special && !ce(e) && $t[e] && !$t[e].mg))
-        .map((t) => '<button class="pill' + (Qc === t[0] ? " on" : "") + '" data-r="' + t[0] + '">' + ("V" === t[0][0] && i.includes(+t[0].slice(1)) ? "⭐ " : "") + t[1] + "</button>")
-        .join("");
-    ((t.innerHTML = e),
-      a("#rScope .pill").forEach((t) => {
-        let e = 0,
-          i = !1;
-        const c = () => {
-          if ("V" !== t.dataset.r[0]) return;
-          i = !0;
-          const e = +t.dataset.r.slice(1);
-          let c = rndSel();
-          (c.includes(e) ? (c = c.filter((t) => t !== e)) : c.push(e), s.set("rndVols", c));
-          (st(c.includes(e) ? "⭐ נוסף לספרים שבחרתי" : "הוסר מהספרים שבחרתי", 1600), (Qc = c.length ? "sel" : "all"), Ft.random());
-        };
-        (["pointerdown"].forEach((l) => t.addEventListener(l, () => { ((i = !1), clearTimeout(e), (e = setTimeout(c, 550))); })),
-          ["pointerup", "pointerleave", "pointercancel"].forEach((i) => t.addEventListener(i, () => clearTimeout(e))),
-          t.addEventListener("contextmenu", (t) => t.preventDefault()),
+    "all" !== Qc && "sel" !== Qc && (Qc = rndSel().length ? "sel" : "all");
+    const i = rndSel(),
+      B = VOLS.map((t, e) => [e, t]).filter((t) => !($t[t[0]] || {}).special && !ce(t[0]) && $t[t[0]] && !$t[t[0]].mg),
+      cur = "sel" === Qc && i.length ? "⭐ ספרים לבחירה (" + i.length + ")" : "📚 כל הספרים";
+    ((t.innerHTML =
+      '<button type="button" class="rnd-dd' +
+      (rndOpen ? " open" : "") +
+      '" id="rndDd"><span>מגרילים מתוך: <b>' +
+      cur +
+      "</b></span><i>▾</i></button>" +
+      '<div class="rnd-pan" id="rndPan"' +
+      (rndOpen ? "" : " hidden") +
+      '><div class="rnd-mode"><label><input type="radio" name="rndm" value="all"' +
+      ("sel" !== Qc || !i.length ? " checked" : "") +
+      '> כל הספרים</label><label><input type="radio" name="rndm" value="sel"' +
+      ("sel" === Qc && i.length ? " checked" : "") +
+      '> ספרים לבחירה</label></div><div class="rnd-books' +
+      ("sel" === Qc && i.length ? "" : " dim") +
+      '">' +
+      B.map((t) => '<button type="button" class="pill' + (i.includes(t[0]) ? " on" : "") + '" data-rv="' + t[0] + '">' + (i.includes(t[0]) ? "✓ " : "") + o(m(String(t[1]))) + "</button>").join("") +
+      '</div><div class="rnd-act"><button type="button" class="btn sm" id="rndClr">🧹 ניקוי בחירה</button><button type="button" class="btn sm pri" id="rndOk">✓ סגור והגרל</button></div></div>'),
+      (l("#rndDd").onclick = () => ((rndOpen = !rndOpen), Ft.random(!0))),
+      a('input[name="rndm"]', t).forEach(
+        (t) =>
+          (t.onchange = () => {
+            ((Qc = t.value), "sel" !== Qc || rndSel().length || st("סמנו את הספרים שמהם להגריל", 2200), Ft.random(!0));
+          }),
+      ),
+      a("[data-rv]", t).forEach(
+        (t) =>
           (t.onclick = () => {
-            i || ((Qc = t.dataset.r), Ft.random());
-          }));
-      }),
+            const e = +t.dataset.rv;
+            let i = rndSel();
+            (i.includes(e) ? (i = i.filter((t) => t !== e)) : i.push(e), s.set("rndVols", i), (Qc = i.length ? "sel" : "all"), Ft.random(!0));
+          }),
+      ),
+      (l("#rndClr").onclick = () => (s.set("rndVols", []), (Qc = "all"), st("הבחירה נוקתה – מגרילים מכל הספרים", 1800), Ft.random(!0))),
+      (l("#rndOk").onclick = () => ((rndOpen = !1), Ft.random(!0), Uc())),
       (l("#rollBtn").onclick = Uc),
-      Uc());
+      noRoll || Uc());
   };
   const Wc = { q: "", max: 700, scope: "all", mode: "all", list: [], sel: new Set(), M: null },
     Yc = BOOK.birkat || { nusachim: [] },
@@ -11740,7 +11769,7 @@ function MAIN(t) {
       ["📜", "התיקון הכללי", "התיקון הכללי עם סימון 'אמרתי' והקראה.", "תיקון הכללי", () => It("tikkun")],
       ["🕯️", "לוח הילולות וזמני היום", "לוח שנה עברי, הילולות צדיקים, זמני היום והתראות לפני סוף זמן.", "לוח הילולות זמני היום תאריך עברי", () => It("calendar")],
       ["🧭", "מצפן – כיוון התפילה", "מצפן שמראה את הכיוון לירושלים ולהר הבית.", "מצפן כיוון התפילה", () => It("dir")],
-      ["🎲", "פתיחה אקראית", "דיבור אקראי מהספרים. לחיצה ארוכה על שם ספר מוסיפה אותו לרשימת הספרים שמהם מגרילים.", "פתיחה אקראית הגרלה קוביה דיבור", () => It("random")],
+      ["🎲", "פתיחה אקראית", "דיבור אקראי מהספרים. מתחת לקובייה: \"מגרילים מתוך\" – כל הספרים או ספרים לבחירה (מסמנים את הספרים, ויש ניקוי בחירה).", "פתיחה אקראית הגרלה קוביה דיבור", () => It("random")],
       ["💎", "דיבורים נבחרים", "לקט דיבורים נבחרים לפי נושאים.", "דיבורים נבחרים", () => It("pearls")],
       ["📅", "סדר היום שלי", "סדר לימוד יומי אישי.", "סדר היום", () => It("day")],
       ["📖", "תוכנית לימוד", "תוכנית לסיום ספר עד תאריך שתבחרו.", "תוכנית לימוד סיום", () => It("plan")],
@@ -11831,7 +11860,7 @@ function MAIN(t) {
     { id: "backup", ic: "💾", t: "גיבוי ושחזור", a: "בהגדרות ← גיבוי ושחזור: \"ייצא גיבוי\" שומר קובץ עם כל הסימניות, ההערות וההגדרות; בטלפון חדש – \"שחזר מגיבוי\". יש גם גיבוי אוטומטי.", w: "גיבוי גבוי לגבות מגבה שחזור לשחזר משחזר טלפון מכשיר להעביר העברה נמחק נמחקו איבדתי הלך", go: () => botSettings(() => botCard("גיבוי")) },
     { id: "widget", ic: "📱", t: "ווידג'ט למסך הבית", a: "באנדרואיד: לחיצה ארוכה על מסך הבית ← ווידג'טים ← ברסלב PRO. בהגדרות ← הגדרות הווידג'ט בוחרים מה יופיע בו, דיבור מתחלף מהספרים שתבחרו ולוגו הערוץ. גודל – גוררים את פינות הווידג'ט.", w: "ווידגט וידגט ווידג וידג וידגט׳ יישומון מסך הבית מסךהבית", go: () => botSettings("wdgCard") },
     { id: "room", ic: "🚪", t: "החדר הפרטי", a: "הלשונית הראשונה בספרייה: מקבצים את מה שלומדים בקביעות. מוסיפים בכפתור הצף ✦ ← \"הוסף לחדר הפרטי\" ובוחרים נושא; אפשר ליצור נושאים (לשוניות) עם אייקון.", w: "חדר פרטי פרטית חדרי החדר נושא נושאים לשונית לשוניות מועדפים", go: () => (s.set("libTab", "room"), It("home")) },
-    { id: "random", ic: "🎲", t: "פתיחה אקראית", a: "דיבור אקראי מהספרים. לחיצה ארוכה על שם ספר מוסיפה אותו ל\"ספרים שבחרתי\" – ואז מגרילים רק מהם.", w: "אקראי אקראית הגרלה להגריל מגריל קוביה קובייה מזל רנדומלי סתם", go: () => It("random") },
+    { id: "random", ic: "🎲", t: "פתיחה אקראית", a: "דיבור אקראי מהספרים. מתחת לקובייה פותחים את \"מגרילים מתוך\": כל הספרים, או ספרים לבחירה – מסמנים את הספרים שרוצים, ו\"ניקוי בחירה\" מחזיר לכל הספרים.", w: "אקראי אקראית הגרלה להגריל מגריל קוביה קובייה מזל רנדומלי סתם", go: () => It("random") },
     { id: "compass", ic: "🧭", t: "מצפן – כיוון התפילה", a: "מצפן שמראה לאן להתפלל – לירושלים ולהר הבית.", w: "מצפן כיוון כיוונים להתפלל ירושלים מזרח הר הבית כותל צפון", go: () => It("dir") },
     { id: "tikkun", ic: "📜", t: "התיקון הכללי", a: "בסרגל התחתון ← \"תיקון הכללי\": עשרת המזמורים עם סימון \"אמרתי\", הקראה ותפילה שלאחריו.", w: "תיקון הכללי כללי עשרה מזמורים עשרת", go: () => It("tikkun") },
     { id: "tehillim", ic: "📖", t: "תהלים", a: "בספרייה – תהלים עם אפשרויות קריאה, ובלשונית תנ\"ך ← כתובים – תהלים עם רש\"י, מצודות ומלבי\"ם.", w: "תהלים תהילים מזמור מזמורים פרקי תהלים לומר תהלים", go: () => sfOpen() },
@@ -12089,12 +12118,13 @@ function MAIN(t) {
       ["עצה|עצות|העצה|העצות|עצת", [11, 41, 45], "ליקוטי עצות", "עצות"],
       ["תפילה|תפילות|התפילה|בתפילה|תפלה|תפלות", [12, 46], "ליקוטי תפילות", "תפילות"],
       ["מכתב|מכתבים|המכתב|המכתבים", [47], "עלים לתרופה", "מכתבים"],
+      ["סימן|סימנים|הסימנים|סעיף|סעיפים|הסעיפים", vols((b) => b.cat === "sa" && b.title.indexOf("חשיבות") < 0), "שולחן ערוך", "סימנים"],
     ].map(([w, v, lbl, pl]) => ({ w: new Set(w.split("|").map((t) => sk(norm(t)))), vols: v, lbl, pl }));
     ALIAS.sort((a, b) => b.w.length - a.w.length);
 
     const STOP = new Set(
       (
-        "איפה היכן באיזה באיזו איזה איזו איזהו מה מי מהו מהי מהם יש האם הם על של שלו את עם כמה פעמים פעם מופיע מופיעה מופיעים מופיעות מוזכר מוזכרת מוזכרים נזכר נזכרת נאמר נאמרה נאמרו אמר אומר אמרו כתוב כתובה כתובים כותב מדבר מדברת מדברים מדובר מביא מובא מובאת הכי ביותר בה בו לי לנו אני רוצה תגיד תראה תמצא תביא מקור מקורות המקור ענין עניין העניין הענין נושא בנושא בעניין לגבי אודות מעלת מעלה מעלות גודל חשיבות ספר בספר הספר הספרים ספרי שם כל או גם אם כי זה זו הזה הזאת זאת שבו שבה ידי על בא באה שהוא שהיא הוא היא רבנו רבינו רבי מוהרן הקדוש הקדושה בבקשה אפשר צריך למצוא לחפש חפש מחפש מצא דבר דברים בעניין יותר פחות ארוכה ארוך קצרה קצר הארוכה הארוך הקצרה הקצר ארוכות להינצל להנצל להימלט ניצול נגד לבטל לשבר להתגבר איך מה לעשות כשיש כשאני תרופה סגולה"
+        "המילה מילה המלה מלה המילים מילים הביטוי ביטוי המושג מושג השם איפה היכן באיזה באיזו איזה איזו איזהו מה מי מהו מהי מהם יש האם הם על של שלו את עם כמה פעמים פעם מופיע מופיעה מופיעים מופיעות מוזכר מוזכרת מוזכרים נזכר נזכרת נאמר נאמרה נאמרו אמר אומר אמרו כתוב כתובה כתובים כותב מדבר מדברת מדברים מדובר מביא מובא מובאת הכי ביותר בה בו לי לנו אני רוצה תגיד תראה תמצא תביא מקור מקורות המקור ענין עניין העניין הענין נושא בנושא בעניין לגבי אודות מעלת מעלה מעלות גודל חשיבות ספר בספר הספר הספרים ספרי שם כל או גם אם כי זה זו הזה הזאת זאת שבו שבה ידי על בא באה שהוא שהיא הוא היא רבנו רבינו רבי מוהרן הקדוש הקדושה בבקשה אפשר צריך למצוא לחפש חפש מחפש מצא דבר דברים בעניין יותר פחות ארוכה ארוך קצרה קצר הארוכה הארוך הקצרה הקצר ארוכות להינצל להנצל להימלט ניצול נגד לבטל לשבר להתגבר איך מה לעשות כשיש כשאני תרופה סגולה"
       )
         .split(" ")
         .map((t) => sk(norm(t))),
@@ -12196,6 +12226,12 @@ function MAIN(t) {
       return (SCC.size > 12 && SCC.clear(), SCC.set(key, r), r);
     }
     const BW = { 0: 300, 8: 160, 9: 140, 2: 140, 4: 100, 11: 100, 10: 80, 3: 60 };
+    const partOk = (P) => (P.part ? (i) => (1 === P.part ? /חלק א|חלק ראשון/ : /חלק ב|חלק שני|תנינא/).test(E.SEC(i) || "") : null);
+    function scopeIdx(P) {
+      const f = partOk(P),
+        a = inScope(P.scope);
+      return f ? a.filter(f) : a;
+    }
     const ck = (i) => E.ID(i).replace(/\.\d+$/, "");
     const bookT = (i) => (B[E.V(i)] || {}).title || "";
 
@@ -12205,6 +12241,15 @@ function MAIN(t) {
       let w = raw.split(" ").filter(Boolean);
       let s = w.map(sk);
       const qs = s.join(" ");
+      // חלק א׳ / חלק ב׳ (תנינא)
+      let part = 0;
+      const P1 = new Set(["א", "ראשנ", "הראשנ", "קמא"]),
+        P2 = new Set(["ב", "שני", "השני", "שנ", "השנ", "תננא"]);
+      for (let i = 0; i < s.length; i++) {
+        if (/^[בוש]?(ה)?חלק$/.test(s[i]) && i + 1 < s.length && (P1.has(s[i + 1]) || P2.has(s[i + 1]))) {
+          ((part = P1.has(s[i + 1]) ? 1 : 2), w.splice(i, 2), s.splice(i, 2), i--);
+        } else if (/^[בו]?תננא$/.test(s[i])) ((part = 2), w.splice(i, 1), s.splice(i, 1), i--);
+      }
       let book = null,
         auth = null,
         unit = null;
@@ -12242,7 +12287,7 @@ function MAIN(t) {
       let terms = [];
       for (let i = 0; i < keep.length; i++) {
         // "רבנו" נשאר רק בביטוי "לשון רבנו"
-        if (STOP.has(keepS[i]) && !(i > 0 && keepS[i - 1] === "לשנ" && /^רב/.test(keepS[i]))) continue;
+        if (STOP.has(keepS[i]) || keepS[i] === "של" && !(i > 0 && keepS[i - 1] === "לשנ" && /^רב/.test(keepS[i]))) continue;
         if (keep[i].length < 2) continue;
         terms.push(keep[i]);
       }
@@ -12254,7 +12299,7 @@ function MAIN(t) {
         x.length ? ((scope = x), (lbl = unit.lbl)) : ((scope = auth.vols), (lbl = auth.lbl));
       } else if (auth) ((scope = auth.vols), (lbl = auth.lbl));
       else if (unit) ((scope = unit.vols), (lbl = unit.lbl));
-      return { raw, qs, terms, scope: scope || BRES, lbl: lbl || "ספרי ברסלב", explicit: !!(book || auth || unit), unit, book, auth };
+      return { raw, qs, terms, part, scope: scope || BRES, lbl: lbl || "ספרי ברסלב", explicit: !!(book || auth || unit), unit, book, auth };
     }
     // בונה מונחים: ביטוי שלם אם קיים בטקסט, אחרת חלקים
     function groupTerms(words, idx) {
@@ -12340,7 +12385,7 @@ function MAIN(t) {
       return new RegExp("(?:^|[^א-ת])((?:" + a.map((t) => t.split(" ").map((w) => wordRe(w)).join("[^א-ת]{1,3}")).join("|") + "))", "g");
     }
     function search(P, syn, cn) {
-      const idx = inScope(P.scope);
+      const idx = scopeIdx(P);
       // מושג "עוטף" (x): שאר המילים בשאלה נשארות כתנאי נוסף
       const rest = cn && cn.x ? P.terms.filter((t) => !cn.dropS.has(sk(t)) && !cn.dropS.has(sk(t.replace(/^[הו]/, "")))) : [];
       const G0 = rest.length ? groupTerms(rest, idx) : [];
@@ -12417,7 +12462,7 @@ function MAIN(t) {
       return [bookT(i), E.SEC(i), E.CH(i)].filter(Boolean).join(" · ");
     }
     function longest(P, short) {
-      const idx = inScope(P.scope);
+      const idx = scopeIdx(P);
       const L = new Map();
       for (const i of idx) {
         const k = ck(i),
@@ -12439,6 +12484,20 @@ function MAIN(t) {
       if (lg) {
         const short = /קצר/.test(lg[0]);
         return { kind: "long", short, P, list: longest(P, short) };
+      }
+      // "כמה תורות יש בחלק ב׳ של ליקוטי מוהר״ן" – ספירת היחידות עצמן
+      if (isCountU && !P.terms.length) {
+        const idx = scopeIdx(P),
+          C = new Map();
+        for (const i of idx) C.has(ck(i)) || C.set(ck(i), i);
+        const L = [...C.values()],
+          byV = new Set(L.map((i) => E.V(i))).size > 1,
+          G = new Map();
+        L.forEach((i) => {
+          const k = byV ? bookT(i) : E.SEC(i) || "";
+          G.set(k, (G.get(k) || 0) + 1);
+        });
+        return { kind: "struct", P, n: L.length, first: L[0], last: L[L.length - 1], groups: G.size > 1 && G.size <= 8 ? [...G.entries()] : null };
       }
       if (!P.terms.length) return null;
       const tj = P.terms.map(sk).join(" ");
@@ -12507,8 +12566,35 @@ function MAIN(t) {
       nf = (t) => Number(t).toLocaleString("he-IL"),
       q = "«" + o(terms.join(" ")) + "»",
       sc = (t) => '<div class="bot-scope">' + t + "</div>";
-    let x = "";
-    if ("fact" === r.kind) {
+    let x = "",
+      brief = "";
+    const more = '<div class="bot-srcs"><button class="btn sm" data-more="1">📚 תרצה לראות מקורות? כן, תראה</button></div>';
+    if ("struct" === r.kind) {
+      const pl = P.unit ? P.unit.pl : "פרקים",
+        pt = P.part ? (1 === P.part ? " בחלק א׳" : " בחלק ב׳") : "";
+      x =
+        '<div class="bot-a bot-qa"><b>🔢 ' +
+        o(pl) +
+        pt +
+        " ב" +
+        o(P.lbl) +
+        "</b><p>יש <b>" +
+        nf(r.n) +
+        " " +
+        o(pl) +
+        "</b>" +
+        pt +
+        " ב" +
+        o(P.lbl) +
+        ".</p>" +
+        (r.groups ? '<div class="bot-tbl">' + r.groups.map((t) => "<div><span>" + o(t[0]) + "</span><b>" + nf(t[1]) + "</b></div>").join("") + "</div>" : "") +
+        '<div class="bot-srcs">' +
+        btn("👈 לפתוח את הראשונה", open(h[r.first].id), 1) +
+        btn("לאחרונה", open(h[r.last].id)) +
+        "</div>" +
+        sc("לפי הספרים שבאפליקציה.") +
+        "</div>";
+    } else if ("fact" === r.kind) {
       const f = r.f;
       x =
         '<div class="bot-a bot-qa"><b>📜 תשובה מתוך הספרים</b><p>' +
@@ -12552,6 +12638,7 @@ function MAIN(t) {
           bk.set(e, (bk.get(e) || 0) + t.cnt);
         });
         const B = [...bk.entries()].sort((t, e) => e[1] - t[1]);
+        brief = '<div class="bot-a bot-qa"><b>🔢 ' + q + "</b><p>מופיע <b>" + nf(S.total) + " פעמים</b> ב" + o(P.lbl) + ".</p>" + more + "</div>";
         x =
           '<div class="bot-a bot-qa"><b>🔢 ' +
           q +
@@ -12574,6 +12661,7 @@ function MAIN(t) {
           full() +
           "</div></div>";
       } else if ("countU" === r.kind) {
+        brief = '<div class="bot-a bot-qa"><b>🔢 ' + q + " ב" + o(P.lbl) + "</b><p>מופיע ב־<b>" + nf(S.list.length) + " " + o(P.unit.pl) + "</b>" + (P.part ? (1 === P.part ? " (חלק א׳)" : " (חלק ב׳)") : "") + ".</p>" + more + "</div>";
         x =
           '<div class="bot-a bot-qa"><b>🔢 ' +
           q +
@@ -12606,7 +12694,7 @@ function MAIN(t) {
           full() +
           "</div></div>";
     }
-    return { html: x, acts };
+    return brief ? { html: brief, full: x, acts } : { html: x, acts };
   }
   // 🔘 כפתור צף של העוזר – לבחירה. נגרר לכל מקום, ואחרי כמה שניות בלי שימוש נהיה כמעט שקוף
   function botFloat(on) {
@@ -12642,21 +12730,72 @@ function MAIN(t) {
       (t.onpointerup = () => {
         if (!a) return;
         const e = a.m;
-        ((a = null), t.classList.remove("drag"), l(), e ? s.set("botFabPos", { x: t.offsetLeft / window.innerWidth, y: t.offsetTop / window.innerHeight }) : botOpen());
+        ((a = null), t.classList.remove("drag"), l(), e && ((t._drg = Date.now()), s.set("botFabPos", { x: t.offsetLeft / window.innerWidth, y: t.offsetTop / window.innerHeight })));
       }),
       (t.onpointercancel = () => ((a = null), t.classList.remove("drag"))),
+      (t.onclick = () => {
+        (l(), Date.now() - (t._drg || 0) > 400 && botOpen());
+      }),
       window.addEventListener("resize", () => i(t.offsetLeft, t.offsetTop)));
   }
   setTimeout(() => botFloat(!!s.get("botFab", !1)), 1500);
   window.__botFloat = botFloat;
-  let botLogNodes = [];
+  let botLogNodes = [],
+    botPend = null;
+  // 🛠️ העוזר מבצע פעולות: חוברת לפי נושא
+  function botBookletAsk(t) {
+    const e = " " + botNorm(t) + " ";
+    if (!/ (צור|תצור|תיצור|תכינ|הכנ|תעשה|לעשות|להכינ|ליצור|תבנה|תסדר|תכנ|אפשר|רוצה|תוכל)/.test(e) || !/ (חוברת|קונטרס|חוברות|דפ לימוד|דפי לימוד) /.test(e)) return null;
+    const i = new Set("צור תצור תיצור תכינ הכנ תעשה לעשות להכינ ליצור תבנה תסדר תכנ אפשר רוצה תוכל אני לי לנו חוברת חוברות קונטרס דפ דפי לימוד על בעניינ בענינ בנושא נושא עניינ ענינ של את אחת בבקשה מעלת מעלה גודל חשיבות להדפסה להדפיס קצרה קטנה ממקורות מקורות".split(" ")),
+      c = botNorm(t)
+        .split(" ")
+        .filter((t) => t && !i.has(t))
+        .map((t) => (t.length > 3 && /^ה/.test(t) ? t.slice(1) : t));
+    return { topic: c.join(" ").replace(/מ$/, "ם").replace(/נ$/, "ן").replace(/כ$/, "ך").replace(/פ$/, "ף").replace(/צ$/, "ץ") };
+  }
+  function botBooklet(t) {
+    try {
+      ((Wc.q = t), (Wc.mode = bc(t).length ? "topic" : "all"), (Wc.scope = "all"), (Wc.max = 1100), It("pearls"));
+    } catch (e) {
+      return void st("לא הצלחתי להכין את החוברת");
+    }
+    setTimeout(() => {
+      try {
+        const e = l("#prq");
+        if (!e) return void st("לא הצלחתי להכין את החוברת");
+        ((e.value = t), $c());
+        if (!Wc.list.length) return void st("לא מצאתי דיבורים על «" + t + "» – נסו מילה אחרת", 3500);
+        // בחירה מגוונת: עד 40 דיבורים, לסירוגין מכל הספרים (לפי סדר הספרים)
+        const i = new Map();
+        Wc.list.forEach((t, e) => {
+          const c = String((y[t.id] || { s: {} }).s.g);
+          (i.has(c) || i.set(c, []), i.get(c).push(e));
+        });
+        const c = [...i.values()];
+        Wc.sel.clear();
+        for (let t = 0; Wc.sel.size < 40 && c.some((e) => e.length > t); t++) c.forEach((e) => Wc.sel.size < 40 && e[t] !== void 0 && Wc.sel.add(e[t]));
+        tl();
+        const a = Wc.list.filter((t, e) => Wc.sel.has(e));
+        (st("📒 החוברת מוכנה: " + a.length + " דיבורים. אפשר לשנות את הבחירה ברשימה", 4e3),
+          oo({
+            type: "custom",
+            title: "חוברת: " + t,
+            items: a.map((t, e) => ({ id: "pr" + e, n: "", b: [["h", k(e + 1) + ". " + o(M(y[t.id]))], ["p", t.html]] })),
+          }));
+      } catch (e) {
+        (console.warn(e), st("לא הצלחתי להכין את החוברת"));
+      }
+    }, 450);
+  }
   function botOpen(t) {
     const e = Ut(
-      '<h3 class="bot-h"><span class="bot-av"></span>העוזר של ברסלב PRO</h3><div class="sh-sub">שאלו על האפליקציה – או על הספרים עצמם: איפה רבנו מדבר על נושא, כמה תורות יש על משהו, מתי נאמרה תורה, ועוד. אפשר לכתוב בכתיב מלא או חסר.</div><div class="bot-row"><div class="bot-in"><input type="text" id="botQ" autocomplete="off" placeholder="למשל: איך מגדילים אותיות? · כמה תורות על שמחה?" enterkeyhint="send"><button id="botX" aria-label="ניקוי" hidden>✕</button></div><button class="btn pri" id="botGo">שאל</button></div><div class="bot-opt"><label><input type="checkbox" id="botThr"' +
+      '<h3 class="bot-h"><span class="bot-av"></span>העוזר של ברסלב PRO</h3><div class="sh-sub">שאלו על האפליקציה – או על הספרים עצמם: איפה רבנו מדבר על נושא, כמה תורות יש על משהו, מתי נאמרה תורה. אפשר גם לבקש: "צור לי חוברת על שמחה".</div><div class="bot-wrap' +
+        (s.get("botThr", !1) ? " thr" : "") +
+        '" id="botWrap"><div class="bot-opt"><label><input type="checkbox" id="botThr"' +
         (s.get("botThr", !1) ? " checked" : "") +
         '> 💬 שרשור שיחה (התשובות הקודמות נשארות)</label><label><input type="checkbox" id="botFabC"' +
         (s.get("botFab", !1) ? " checked" : "") +
-        '> 🔘 כפתור צף של העוזר על המסך</label><button class="btn sm" id="botClr">🗑️ ניקוי השיחה</button></div><div id="botLog"></div><div class="bot-me" id="botMe" hidden></div><div id="botR" class="bot-res"></div>',
+        '> 🔘 כפתור צף של העוזר על המסך</label><button class="btn sm" id="botClr">🗑️ ניקוי השיחה</button></div><div id="botLog"></div><div class="bot-me" id="botMe" hidden></div><div id="botR" class="bot-res"></div><div class="bot-row"><div class="bot-in"><input type="text" id="botQ" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="למשל: איך מגדילים אותיות? · כמה תורות על שמחה?" enterkeyhint="send"><button id="botX" aria-label="ניקוי" hidden>✕</button></div><button class="btn pri" id="botGo">שאל</button></div></div>',
     );
     const i = l("#botQ", e),
       c = l("#botR", e),
@@ -12683,6 +12822,28 @@ function MAIN(t) {
           (clrV(), thr() && t.length >= 2 && ((i.value = ""), (XB.hidden = !0), ME.scrollIntoView({ block: "start", behavior: "smooth" })));
         }, 30));
         if (t.length < 2) return void (c.innerHTML = '<div class="bot-tip">💡 על האפליקציה: "איך מקבלים הלכה יומית?", "איך משתפים כתמונה?"<br>📚 על הספרים: "תורה על פסח", "עצה להינצל מכעס", "כמה פעמים מופיע רצון", "שם אמו של רבנו"</div>');
+        // "כן" – אחרי "תרצה לראות מקורות?"
+        if (botPend && /^(כנ|כנ בבקשה|כנ תודה|כנ תראה|כנ תביא|בטח|אשמח|תראה|תביא|מקורות|תראה מקורות|תביא מקורות|יאללה|בשמחה|כמובנ)$/.test(botNorm(t).trim())) {
+          const t = botPend;
+          return ((botPend = null), (c.innerHTML = t.full), a("[data-qa]", c).forEach((e) => (e.onclick = () => (Wt(), setTimeout(t.acts[+e.dataset.qa], 230)))));
+        }
+        botPend = null;
+        // 🛠️ פעולה: "צור לי חוברת על ..."
+        const BK = botBookletAsk(t);
+        if (BK) {
+          if (!BK.topic) return void (c.innerHTML = '<div class="bot-say">📒 בשמחה! על איזה נושא להכין את החוברת? למשל: "צור לי חוברת על שמחה".</div>');
+          return (
+            (c.innerHTML =
+              '<div class="bot-a bot-qa"><b>📒 מכין לך חוברת על «' +
+              o(BK.topic) +
+              '»</b><p>אוסף דיבורים קצרים בלשון הספרים, ובוחר את המתאימים ביותר מכל הספרים. בעוד רגע תיפתח החוברת מוכנה להדפסה (A5, A4 או קונטרס לקיפול).</p><div class="bot-srcs"><button class="btn sm pri" id="bkGoNow">📒 לפתוח עכשיו</button></div></div>'),
+            void (function () {
+              let e = 0;
+              const i = () => e || ((e = 1), Wt(), setTimeout(() => botBooklet(BK.topic), 260));
+              ((l("#bkGoNow", c).onclick = i), setTimeout(i, 1600));
+            })()
+          );
+        }
         const T = botTalk(t),
           K = T.hits.find((t) => ["distress", "sad"].includes(t.k)),
           W = T.hits.length ? (K ? [K] : T.hits.slice(0, 2)) : [],
@@ -12697,10 +12858,12 @@ function MAIN(t) {
           G = W.flatMap((t) => t.go || []),
           R = W.some((t) => ["distress", "sad", "date", "parsha", "time", "rude", "who", "help"].includes(t.k)) ? 0 : T.rest && T.rest.split(" ").filter((t) => t && !botStopN.has(t) && !["היומ", "עכשיו", "השבוע", "לכמ", "לכולמ"].includes(t)).length,
           e = W.length && !R ? { r: [] } : botFind(W.length ? T.rest : t);
+        // שיחת חולין ("איך אתה מרגיש") – רק תשובה, בלי מקורות ותוצאות לא קשורות
+        W.length && e.r.length && !BOT_SRC_STRONG.test(" " + botNorm(T.rest || "") + " ") && (e.r = e.r.filter((t) => t.sc >= 2.5));
         // 📚 שאלה על תוכן הספרים
         let QV = null;
         const QT = W.length ? T.rest : t;
-        if (!(W.length && !R))
+        if (!(W.length && !R) && (!W.length || BOT_SRC_STRONG.test(" " + botNorm(QT) + " ")))
           try {
             const r = botQAget().ask(QT);
             if (r) {
@@ -12721,14 +12884,23 @@ function MAIN(t) {
                 return i.length > 3 && t.includes(" " + i + " ");
               });
         }
-        const QB = () =>
+        const QB = () => (
           a("[data-qa]", c).forEach(
             (t) =>
               (t.onclick = () => {
                 const e = QV.acts[+t.dataset.qa];
                 (Wt(), setTimeout(e, 230));
               }),
-          );
+          ),
+          a("[data-more]", c).forEach(
+            (t) =>
+              (t.onclick = () => {
+                const e = t.closest(".bot-qa");
+                e && ((e.outerHTML = QV.full), (botPend = null), QB());
+              }),
+          )
+        );
+        QV && QV.full && (botPend = QV);
         if (W.length && !e.r.length && !QV) {
           c.innerHTML = S + (W.some((t) => t.idea) ? '<div class="bot-more"><button class="btn sm" id="botIdea">💬 לשלוח הודעה לעורך</button></div>' : "");
           a("[data-tg]", c).forEach((t) => (t.onclick = () => (Wt(), setTimeout(G[+t.dataset.tg][1], 220))));
@@ -12810,7 +12982,7 @@ function MAIN(t) {
       (i.oninput = () => (XB.hidden = !i.value)),
       (XB.onclick = () => ((i.value = ""), (XB.hidden = !0), i.focus())),
       (l("#botFabC", e).onchange = (t) => (s.set("botFab", !!t.target.checked), botFloat(!!t.target.checked), st(t.target.checked ? "🔘 הכפתור הצף של העוזר מופעל – אפשר לגרור אותו לכל מקום" : "הכפתור הצף כובה"))),
-      (l("#botThr", e).onchange = (t) => (s.set("botThr", !!t.target.checked), t.target.checked || ((LG.innerHTML = ""), (botLogNodes = []), (ME.hidden = !0)), clrV())),
+      (l("#botThr", e).onchange = (t) => (s.set("botThr", !!t.target.checked), l("#botWrap", e).classList.toggle("thr", !!t.target.checked), t.target.checked || ((LG.innerHTML = ""), (botLogNodes = []), (ME.hidden = !0)), clrV())),
       (l("#botClr", e).onclick = () => ((LG.innerHTML = ""), (botLogNodes = []), (ME.hidden = !0), delete c.dataset.q, (c.innerHTML = ""), n(), clrV())),
       t && ((i.value = t), n()),
       setTimeout(() => {
@@ -19968,8 +20140,11 @@ function doGet(e){
     } catch (t) {}
   }, 4200);
   const rr = {
-    v: "2026-11-12e",
+    v: "2026-11-13",
     items: [
+      ["2026-11-13", "📒", "העוזר מכין חוברות", 'כותבים לעוזר "צור לי חוברת על שמחה" – והוא אוסף דיבורים מכל הספרים ופותח חוברת מוכנה להדפסה. בשרשור – שורת הכתיבה למטה כמו בווטסאפ; בשאלת ספירה הוא עונה קצר ושואל "תרצה לראות מקורות?". ונראה מעכשיו אחרת 🙂'],
+      ["2026-11-13", "🎲", "בחירת ספרים לפתיחה האקראית", 'מתחת לקובייה: "מגרילים מתוך" – כל הספרים או ספרים לבחירה, עם ניקוי בחירה. בלי קפיצות ובלי הגרלה בכל סימון.'],
+      ["2026-11-13", "⚖️", "הגה של הרמ״א", "בשולחן ערוך – \"הגה\" בצבע, ודברי הרמ״א בכתב קטן יותר, כמו בדפוס."],
       ["2026-11-12", "🔘", "העוזר ככפתור צף", 'למי שרוצה: העוזר כעיגול צף על המסך – תמיד בהישג יד. גוררים אותו לכל מקום, ואחרי כמה שניות הוא נהיה כמעט שקוף כדי שלא יפריע. מפעילים בחלון העוזר או בהגדרות ← העוזר.'],
       ["2026-11-12", "💬", "שיחה עם העוזר בשרשור", 'בחלון העוזר: "שרשור שיחה" – התשובות הקודמות נשארות על המסך, כמו בצ׳אט. כפתור ✕ לניקוי השאלה, וכפתור לניקוי כל השיחה.'],
       ["2026-11-12", "📚", "העוזר עונה גם על הספרים", 'שואלים את העוזר על תוכן הספרים: "תורה על פסח", "עצה להינצל מכעס", "כמה תורות על שמחה", "כמה פעמים מופיע רצון", "התורה הכי ארוכה בליקוטי מוהר״ן", "שם אמו של רבנו" – והוא מביא את המקומות עם קטע מהטקסט וכפתור לפתיחה. כתיב מלא או חסר – לא משנה.'],
@@ -20374,6 +20549,41 @@ function doGet(e){
   }, 600);
   const Er = [
     [
+      "🤖",
+      "העוזר של ברסלב PRO",
+      'שואלים אותו כמו בצ׳אט – על האפליקציה ("איך מגדילים אותיות?") או על הספרים ("איפה רבנו מדבר על התבודדות", "תורה על פסח", "עצה להינצל מכעס", "כמה תורות יש בחלק ב׳", "כמה פעמים מופיע רצון", "שם אמו של רבנו"). בשאלת ספירה הוא עונה קצר ושואל "תרצה לראות מקורות?" – עונים "כן". כתיב מלא או חסר – לא משנה. אפשר גם לבקש פעולה: "צור לי חוברת על שמחה" – והוא מכין חוברת מוכנה להדפסה. נפתח מ־✦ ← העוזר, מסרגל הכלים, או מהכפתור הצף.',
+    ],
+    [
+      "🔘",
+      "הכפתור הצף של העוזר",
+      'מפעילים בחלון העוזר ("כפתור צף של העוזר על המסך") או בהגדרות ← העוזר. נגיעה קצרה אחת – פותחת את העוזר. גרירה – מזיזה אותו לכל מקום במסך, והוא נשאר שם. אחרי כמה שניות בלי שימוש הוא נהיה כמעט שקוף כדי שלא יפריע לקריאה, ובנגיעה חוזר להיות בולט.',
+    ],
+    [
+      "💬",
+      "שרשור שיחה עם העוזר",
+      'בחלון העוזר מסמנים "שרשור שיחה" – והשיחה נראית כמו בווטסאפ: השאלות והתשובות נשארות, ושורת הכתיבה למטה. "ניקוי השיחה" מתחיל מחדש.',
+    ],
+    [
+      "🎯",
+      "יעדים",
+      "בוחרים יעדים יומיים (תיקון הכללי, שניים מקרא, פרקי תהלים, מאמר זוהר ועוד) עם שעת תזכורת. מסמנים ✔ כשמסיימים. היעדים נמצאים ב\"האזור שלי\", ומופיעים גם בווידג׳ט – לחיצה עליהם בווידג׳ט פותחת את היעדים.",
+    ],
+    [
+      "⚖️",
+      "שולחן ערוך והלכה יומית",
+      'לשונית "שולחן ערוך" בספרייה – ארבעת החלקים. "באר היטב" נפתח בלחיצה מתחת לסעיף. דברי הרמ״א ("הגה") מודגשים בצבע ובכתב קטן יותר. אפשר לקבל כל יום כמה סעיפים לפי הסדר – בהתראה, בווידג׳ט ובראש המסך.',
+    ],
+    [
+      "✨",
+      "הזוהר הקדוש",
+      "כל הזוהר לפי פרשיות, בשלוש תצוגות: ארמית, עברית (תרגום), או שתיהן יחד.",
+    ],
+    [
+      "🎲",
+      "פתיחה אקראית",
+      'לוחצים על הקובייה ומקבלים דיבור אקראי. מתחת לקובייה – "מגרילים מתוך": כל הספרים, או ספרים לבחירה (מסמנים את הספרים שרוצים). "ניקוי בחירה" מחזיר לכל הספרים.',
+    ],
+    [
       "🚪",
       "החדר הפרטי",
       'אזור אישי שמקבצים לתוכו כל מה שרוצים מכל האפליקציה – ספרים שלמים, חלקים ופרקים (למשל פרק שירה, שיר השירים, ט״ו שיר המעלות, ברכת המזון, ליקוטי מוהר״ן). הוא הלשונית הראשונה בספרייה. מוסיפים מהכפתור הצף ✦ ← "🚪 הוסף לחדר הפרטי", או בכפתור "➕ לחדר הפרטי" בעמוד של כל ספר. כל פריט נפתח במקומו עם כל האפשרויות. בראש החדר יש לשוניות לפי נושאים ("הכל" + נושאים שיוצרים עם שם ואייקון), ובהוספה בוחרים לאיזה נושא. אפשר לסדר, להעביר בין נושאים, להוציא, ולבחור שהאפליקציה תיפתח ישר בחדר.',
@@ -20396,7 +20606,7 @@ function doGet(e){
     [
       "📜",
       'תנ"ך',
-      'בלשונית "תנ"ך" בספרייה – חמשה חומשי תורה (כרגע: בראשית). כל פרשה מחולקת לפרקים ופסוקים; פרק שמתחלק בין שתי פרשיות מופיע עם טווח הפסוקים. שני, שלישי… מסמנים את העליות, ו-(פ)/(ס) את הפרשיות הפתוחות והסתומות.',
+      'בלשונית "תנ"ך" בספרייה – תורה, נביאים וכתובים, עם מפרשים (מקראות גדולות) שנפתחים בלחיצה. כל פרשה מחולקת לפרקים ופסוקים; פרק שמתחלק בין שתי פרשיות מופיע עם טווח הפסוקים. שני, שלישי… מסמנים את העליות, ו-(פ)/(ס) את הפרשיות הפתוחות והסתומות.',
     ],
     [
       "📚",
@@ -26275,6 +26485,7 @@ function doGet(e){
         if ((void 0 !== Gt && Gt && Wt(!0), "random" === t)) It("random");
         else if ("cont" === t) tt.last && y[tt.last.id] ? Ye(tt.last.id) : It("home", {});
         else if ("goals" === t) goalsOpen();
+        else if ("hal" === t) halOpen();
         else if ("q:" === String(t).slice(0, 2)) {
           const e = String(t).slice(2);
           y[e] ? Ye(e) : It("random");

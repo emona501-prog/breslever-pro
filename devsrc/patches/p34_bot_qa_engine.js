@@ -65,12 +65,13 @@ function botQAMake(E) {
     ["עצה|עצות|העצה|העצות|עצת", [11, 41, 45], "ליקוטי עצות", "עצות"],
     ["תפילה|תפילות|התפילה|בתפילה|תפלה|תפלות", [12, 46], "ליקוטי תפילות", "תפילות"],
     ["מכתב|מכתבים|המכתב|המכתבים", [47], "עלים לתרופה", "מכתבים"],
+    ["סימן|סימנים|הסימנים|סעיף|סעיפים|הסעיפים", vols((b) => b.cat === "sa" && b.title.indexOf("חשיבות") < 0), "שולחן ערוך", "סימנים"],
   ].map(([w, v, lbl, pl]) => ({ w: new Set(w.split("|").map((t) => sk(norm(t)))), vols: v, lbl, pl }));
   ALIAS.sort((a, b) => b.w.length - a.w.length);
 
   const STOP = new Set(
     (
-      "איפה היכן באיזה באיזו איזה איזו איזהו מה מי מהו מהי מהם יש האם הם על של שלו את עם כמה פעמים פעם מופיע מופיעה מופיעים מופיעות מוזכר מוזכרת מוזכרים נזכר נזכרת נאמר נאמרה נאמרו אמר אומר אמרו כתוב כתובה כתובים כותב מדבר מדברת מדברים מדובר מביא מובא מובאת הכי ביותר בה בו לי לנו אני רוצה תגיד תראה תמצא תביא מקור מקורות המקור ענין עניין העניין הענין נושא בנושא בעניין לגבי אודות מעלת מעלה מעלות גודל חשיבות ספר בספר הספר הספרים ספרי שם כל או גם אם כי זה זו הזה הזאת זאת שבו שבה ידי על בא באה שהוא שהיא הוא היא רבנו רבינו רבי מוהרן הקדוש הקדושה בבקשה אפשר צריך למצוא לחפש חפש מחפש מצא דבר דברים בעניין יותר פחות ארוכה ארוך קצרה קצר הארוכה הארוך הקצרה הקצר ארוכות להינצל להנצל להימלט ניצול נגד לבטל לשבר להתגבר איך מה לעשות כשיש כשאני תרופה סגולה"
+      "המילה מילה המלה מלה המילים מילים הביטוי ביטוי המושג מושג השם איפה היכן באיזה באיזו איזה איזו איזהו מה מי מהו מהי מהם יש האם הם על של שלו את עם כמה פעמים פעם מופיע מופיעה מופיעים מופיעות מוזכר מוזכרת מוזכרים נזכר נזכרת נאמר נאמרה נאמרו אמר אומר אמרו כתוב כתובה כתובים כותב מדבר מדברת מדברים מדובר מביא מובא מובאת הכי ביותר בה בו לי לנו אני רוצה תגיד תראה תמצא תביא מקור מקורות המקור ענין עניין העניין הענין נושא בנושא בעניין לגבי אודות מעלת מעלה מעלות גודל חשיבות ספר בספר הספר הספרים ספרי שם כל או גם אם כי זה זו הזה הזאת זאת שבו שבה ידי על בא באה שהוא שהיא הוא היא רבנו רבינו רבי מוהרן הקדוש הקדושה בבקשה אפשר צריך למצוא לחפש חפש מחפש מצא דבר דברים בעניין יותר פחות ארוכה ארוך קצרה קצר הארוכה הארוך הקצרה הקצר ארוכות להינצל להנצל להימלט ניצול נגד לבטל לשבר להתגבר איך מה לעשות כשיש כשאני תרופה סגולה"
     )
       .split(" ")
       .map((t) => sk(norm(t))),
@@ -169,6 +170,12 @@ function botQAMake(E) {
     return r;
   }
   const BW = { 0: 300, 8: 160, 9: 140, 2: 140, 4: 100, 11: 100, 10: 80, 3: 60 };
+  const partOk = (P) => (P.part ? (i) => (1 === P.part ? /חלק א|חלק ראשון/ : /חלק ב|חלק שני|תנינא/).test(E.SEC(i) || "") : null);
+  function scopeIdx(P) {
+    const f = partOk(P),
+      a = inScope(P.scope);
+    return f ? a.filter(f) : a;
+  }
   const ck = (i) => E.ID(i).replace(/\.\d+$/, "");
   const bookT = (i) => (B[E.V(i)] || {}).title || "";
 
@@ -178,6 +185,15 @@ function botQAMake(E) {
     let w = raw.split(" ").filter(Boolean);
     let s = w.map(sk);
     const qs = s.join(" ");
+    // חלק א׳ / חלק ב׳ (תנינא)
+    let part = 0;
+    const P1 = new Set(["א", "ראשנ", "הראשנ", "קמא"]),
+      P2 = new Set(["ב", "שני", "השני", "שנ", "השנ", "תננא"]);
+    for (let i = 0; i < s.length; i++) {
+      if (/^[בוש]?(ה)?חלק$/.test(s[i]) && i + 1 < s.length && (P1.has(s[i + 1]) || P2.has(s[i + 1]))) {
+        ((part = P1.has(s[i + 1]) ? 1 : 2), w.splice(i, 2), s.splice(i, 2), i--);
+      } else if (/^[בו]?תננא$/.test(s[i])) ((part = 2), w.splice(i, 1), s.splice(i, 1), i--);
+    }
     let book = null,
       auth = null,
       unit = null;
@@ -215,7 +231,7 @@ function botQAMake(E) {
     let terms = [];
     for (let i = 0; i < keep.length; i++) {
       // "רבנו" נשאר רק בביטוי "לשון רבנו"
-      if (STOP.has(keepS[i]) && !(i > 0 && keepS[i - 1] === "לשנ" && /^רב/.test(keepS[i]))) continue;
+      if (STOP.has(keepS[i]) || keepS[i] === "של" && !(i > 0 && keepS[i - 1] === "לשנ" && /^רב/.test(keepS[i]))) continue;
       if (keep[i].length < 2) continue;
       terms.push(keep[i]);
     }
@@ -227,7 +243,7 @@ function botQAMake(E) {
       x.length ? ((scope = x), (lbl = unit.lbl)) : ((scope = auth.vols), (lbl = auth.lbl));
     } else if (auth) ((scope = auth.vols), (lbl = auth.lbl));
     else if (unit) ((scope = unit.vols), (lbl = unit.lbl));
-    return { raw, qs, terms, scope: scope || BRES, lbl: lbl || "ספרי ברסלב", explicit: !!(book || auth || unit), unit, book, auth };
+    return { raw, qs, terms, part, scope: scope || BRES, lbl: lbl || "ספרי ברסלב", explicit: !!(book || auth || unit), unit, book, auth };
   }
   // בונה מונחים: ביטוי שלם אם קיים בטקסט, אחרת חלקים
   function groupTerms(words, idx) {
@@ -313,7 +329,7 @@ function botQAMake(E) {
     return new RegExp("(?:^|[^א-ת])((?:" + a.map((t) => t.split(" ").map((w) => wordRe(w)).join("[^א-ת]{1,3}")).join("|") + "))", "g");
   }
   function search(P, syn, cn) {
-    const idx = inScope(P.scope);
+    const idx = scopeIdx(P);
     // מושג "עוטף" (x): שאר המילים בשאלה נשארות כתנאי נוסף
     const rest = cn && cn.x ? P.terms.filter((t) => !cn.dropS.has(sk(t)) && !cn.dropS.has(sk(t.replace(/^[הו]/, "")))) : [];
     const G0 = rest.length ? groupTerms(rest, idx) : [];
@@ -390,7 +406,7 @@ function botQAMake(E) {
     return [bookT(i), E.SEC(i), E.CH(i)].filter(Boolean).join(" · ");
   }
   function longest(P, short) {
-    const idx = inScope(P.scope);
+    const idx = scopeIdx(P);
     const L = new Map();
     for (const i of idx) {
       const k = ck(i),
@@ -412,6 +428,20 @@ function botQAMake(E) {
     if (lg) {
       const short = /קצר/.test(lg[0]);
       return { kind: "long", short, P, list: longest(P, short) };
+    }
+    // "כמה תורות יש בחלק ב׳ של ליקוטי מוהר״ן" – ספירת היחידות עצמן
+    if (isCountU && !P.terms.length) {
+      const idx = scopeIdx(P),
+        C = new Map();
+      for (const i of idx) C.has(ck(i)) || C.set(ck(i), i);
+      const L = [...C.values()],
+        byV = new Set(L.map((i) => E.V(i))).size > 1,
+        G = new Map();
+      L.forEach((i) => {
+        const k = byV ? bookT(i) : E.SEC(i) || "";
+        G.set(k, (G.get(k) || 0) + 1);
+      });
+      return { kind: "struct", P, n: L.length, first: L[0], last: L[L.length - 1], groups: G.size > 1 && G.size <= 8 ? [...G.entries()] : null };
     }
     if (!P.terms.length) return null;
     const tj = P.terms.map(sk).join(" ");
