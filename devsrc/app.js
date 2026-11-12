@@ -12832,7 +12832,29 @@ function MAIN(t) {
       return { say: "⏰ פותח לך תזכורת" + (e ? " – «" + o(e) + "»" : "") + ". בוחרים שעה וימים, וזה יקפוץ כהתראה.", run: () => Xl({ nav: { v: "home", p: i >= 0 ? { b: i } : {} }, lbl: e || "תזכורת", free: 1 }) };
     }
     if (!(R || C || ST || O)) return null;
-    const B = bcBook(q);
+    let B = bcBook(q);
+    ST && !O && !R && !C && / (על|בעניין|בענין|בנושא) /.test(" " + q + " ") && !/(^| )[במ]?(תורה|פרק|הלכה|סימן|שיחה|מעשה)( |$)/.test(q) && (B = null);
+    if (ST && !B) {
+      const e = q
+        .replace(/(^| )(צור|תצור|תיצור|תכין|הכן|תעשה|לי|סטטוס|סטורי|תמונה|לשיתוף|יפה|על|בעניין|בענין|בנושא|של|מעלת|מעלה|גודל|חשיבות|עם|דיבור|חיזוק|מרבנו|רבנו|אחד)(?= |$)/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+      return {
+        say: "🖼️ מכין לך סטטוס" + (e ? " על «" + o(e) + "»" : " עם דיבור חיזוק מרבנו") + " – עם דיבור קצר מהספרים…",
+        run: () => {
+          if (!e) return botStatus();
+          try {
+            const t = botQAget().ask("איפה רבנו מדבר על " + e),
+              i = t && t.S ? t.S.list.slice(0, 25) : [],
+              c = (t) => m(g((h[t].it.b || []).filter((t) => "p" === t[0]).map((t) => t[1]).join(" "))).length,
+              l = i.map((t) => t.bi).filter((t) => c(t) > 60 && c(t) < 700);
+            l.length ? kf(h[l[0]].id) : i.length ? kf(h[i[0].bi].id) : (st("לא מצאתי דיבור על «" + e + "» – הנה דיבור חיזוק", 3e3), botStatus());
+          } catch (t) {
+            botStatus();
+          }
+        },
+      };
+    }
     if (!B) {
       if ((R || C) && "reader" === Bt.v)
         return { say: R ? "🔊 מקריא לך מהמקום שבו אתה נמצא" + (H ? " – עם סמן עוקב" : "") : "⏬ מריץ את המסך", run: () => (R ? (H && s.set("ttsHl", !0), mf.fromItem(wi())) : ld.start()) };
@@ -13208,7 +13230,11 @@ function MAIN(t) {
         (s.get("botThr", !1) ? " checked" : "") +
         '> 💬 שרשור שיחה (התשובות הקודמות נשארות)</label><label><input type="checkbox" id="botFabC"' +
         (s.get("botFab", !1) ? " checked" : "") +
-        '> 🔘 כפתור צף של העוזר על המסך</label><button class="btn sm" id="botClr">🗑️ ניקוי השיחה</button></div><div id="botLog"></div><div class="bot-me" id="botMe" hidden></div><div id="botR" class="bot-res"></div><div class="bot-row"><div class="bot-in"><input type="text" id="botQ" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="למשל: איך מגדילים אותיות? · כמה תורות על שמחה?" enterkeyhint="send"><button id="botX" aria-label="ניקוי" hidden>✕</button></div><button class="btn pri" id="botGo">שאל</button></div></div>',
+        '> 🔘 כפתור צף של העוזר על המסך</label><button class="btn sm" id="botClr">🗑️ ניקוי השיחה</button></div><details class="bot-ex" id="botEx"><summary><span>💡 דוגמאות – מה אפשר לבקש ממני</span><i>▾</i></summary>' +
+        [["🛠️ פעולות", ["פתח לי תהלים פרק צ ותריץ את המסך", "תקריא לי את התיקון הכללי עם סימון", "פתח לי שמות הצדיקים ותקריא", "צור לי סטטוס על מעלת ההתבודדות", "צור לי חוברת על שמחה", "תזכיר לי תיקון חצות"]], ["📚 על הספרים", ["איפה רבנו מדבר על התבודדות", "כמה תורות יש בחלק ב׳", "כמה פעמים מופיע רצון", "שם אמו של רבנו", "עצה להינצל מכעס"]], ["💪 חיזוק", ["תחזק אותי באמונה", "אני מיואש, קשה לי", "תן לי חיזוק"]], ["🕯️ זמנים", ["מתי נכנסת שבת", "מתי השקיעה היום", "עד מתי קריאת שמע"]], ["⚙️ האפליקציה", ["איך מגדילים אותיות?", "איך משתפים כתמונה?", "מה חדש באפליקציה"]]]
+          .map((t) => '<div class="bx-g"><b>' + t[0] + '</b><div class="bx-l">' + t[1].map((t) => '<button type="button" class="bx-i" data-ch="' + o(t) + '">' + o(t) + "</button>").join("") + "</div></div>")
+          .join("") +
+        '</details><div id="botLog"></div><div class="bot-me" id="botMe" hidden></div><div id="botR" class="bot-res"></div><div class="bot-row"><div class="bot-in"><input type="text" id="botQ" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="למשל: איך מגדילים אותיות? · כמה תורות על שמחה?" enterkeyhint="send"><button id="botX" aria-label="ניקוי" hidden>✕</button></div><button class="btn pri" id="botGo">שאל</button></div></div>',
     );
     const i = l("#botQ", e),
       c = l("#botR", e),
@@ -13234,16 +13260,7 @@ function MAIN(t) {
         (setTimeout(() => {
           (clrV(), thr() && t.length >= 2 && ((i.value = ""), (XB.hidden = !0), ME.scrollIntoView({ block: "start", behavior: "smooth" })));
         }, 30));
-        if (t.length < 2)
-          return void (
-            (c.innerHTML =
-              '<div class="bot-tip">👋 שלום! אני העוזר שלך. אפשר לשאול אותי, וגם לבקש שאעשה דברים:</div><div class="bot-chips">' +
-              ["פתח לי תהלים פרק צ ותריץ את המסך", "תקריא לי את התיקון הכללי עם סימון", "צור לי סטטוס מתורה קיב חלק ב", "צור לי חוברת על שמחה", "תזכיר לי תיקון חצות", "איפה רבנו מדבר על התבודדות", "כמה תורות יש בחלק ב׳", "מתי נכנסת שבת", "איך מגדילים אותיות?"]
-                .map((t) => '<button class="pill" data-ch="' + o(t) + '">' + o(t) + "</button>")
-                .join("") +
-              "</div>"),
-            a("[data-ch]", c).forEach((t) => (t.onclick = () => ((i.value = t.dataset.ch), n())))
-          );
+        if (t.length < 2) return void (c.dataset.q || LG.children.length || (c.innerHTML = '<div class="bot-tip">👋 שלום! אני העוזר שלך – שאל אותי, או בקש שאעשה משהו בשבילך. רעיונות יש בלשונית "💡 דוגמאות" למעלה.</div>'));
         // "כן" – אחרי "תרצה לראות מקורות?"
         if (botPend && /^(כנ|כנ בבקשה|כנ תודה|כנ תראה|כנ תביא|בטח|אשמח|תראה|תביא|מקורות|תראה מקורות|תביא מקורות|יאללה|בשמחה|כמובנ)$/.test(botNorm(t).trim())) {
           const t = botPend;
@@ -13452,7 +13469,9 @@ function MAIN(t) {
     ((l("#botGo", e).onclick = n),
       (i.onkeydown = (t) => "Enter" === t.key && (t.preventDefault(), n())),
       (i.oninput = () => (XB.hidden = !i.value)),
-      (XB.onclick = () => ((i.value = ""), (XB.hidden = !0), i.focus())),
+      (XB.onpointerdown = (t) => (t.preventDefault(), (i.value = ""), (XB.hidden = !0), i.focus())),
+      (XB.onclick = (t) => t.preventDefault()),
+      a("#botEx [data-ch]", e).forEach((t) => (t.onclick = () => ((l("#botEx", e).open = !1), (i.value = t.dataset.ch.replace(/,/g, "")), n()))),
       (l("#botFabC", e).onchange = (t) => (s.set("botFab", !!t.target.checked), botFloat(!!t.target.checked), st(t.target.checked ? "🔘 הכפתור הצף של העוזר מופעל – אפשר לגרור אותו לכל מקום" : "הכפתור הצף כובה"))),
       (l("#botThr", e).onchange = (t) => (s.set("botThr", !!t.target.checked), l("#botWrap", e).classList.toggle("thr", !!t.target.checked), t.target.checked || ((LG.innerHTML = ""), (botLogNodes = []), (ME.hidden = !0)), clrV())),
       (l("#botClr", e).onclick = () => ((LG.innerHTML = ""), (botLogNodes = []), (ME.hidden = !0), delete c.dataset.q, (c.innerHTML = ""), n(), clrV())),
