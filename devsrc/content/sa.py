@@ -42,7 +42,7 @@ def parse(fid):
 if __name__=='__main__':
     import json
     R={}
-    for fid in ['6f18e94e','8b3829b6','b9217579','6ad736fc']:
+    for fid in ['863f7656','8b3829b6','b9217579','6ad736fc']:
         toc,secs=parse(fid); R[fid]=secs
         nch=sum(len(s['c']) for s in secs); nit=sum(len(c['i']) for s in secs for c in s['c']); nbh=sum(1 for s in secs for c in s['c'] for i in c['i'] if 'bh' in i)
         empty=[c['t'] for s in secs for c in s['c'] if not c['i']]

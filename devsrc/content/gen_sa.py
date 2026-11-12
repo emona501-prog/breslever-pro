@@ -8,7 +8,7 @@ W={"sections":"הלכות","section":"הלכות","chapters":"סימנים","cha
 def cfg(title,nq,tag,**kw):
     d={"title":title,"titleNiqud":nq,"author":"מָרָן רַבִּי יוֹסֵף קָארוֹ וְהָרְמָ\"א","tag":tag,"pre2":"שֻׁלְחָן עָרוּךְ","heroSize":38,"bg":"jerusalem","heroArt":"even","planWord":"סימנים","cat":"sa","words":W,"credit":CRED}; d.update(kw); return d
 vols=[]
-for fid,title,nq in [('6f18e94e','אורח חיים','אֹרַח חַיִּים'),('8b3829b6','יורה דעה','יוֹרֶה דֵעָה'),('b9217579','אבן העזר','אֶבֶן הָעֵזֶר'),('6ad736fc','חושן משפט','חֹשֶׁן מִשְׁפָּט')]:
+for fid,title,nq in [('863f7656','אורח חיים','אֹרַח חַיִּים'),('8b3829b6','יורה דעה','יוֹרֶה דֵעָה'),('b9217579','אבן העזר','אֶבֶן הָעֵזֶר'),('6ad736fc','חושן משפט','חֹשֶׁן מִשְׁפָּט')]:
     secs=R[fid]; hasbh=any('bh' in i for s in secs for c in s['c'] for i in c['i'])
     vols.append((cfg('שולחן ערוך · '+title,nq,'עִם בְּאֵר הֵיטֵב' if hasbh else 'שֻׁלְחָן עָרוּךְ',base=title,sa=1),secs,hasbh))
 # לקט
