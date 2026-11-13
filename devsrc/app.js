@@ -12808,12 +12808,20 @@ function MAIN(t) {
   function bcBook(q) {
     bcBooks ||
       ((bcBooks = $t.map((t, e) => (t && !t.hidden && t.title ? { v: e, sk: bcS(bcN(m(String(t.title)))) } : null)).filter((t) => t && t.sk)),
+      // שם קצר: החלק שלפני המקף ("ליקוטי פסוקים – לפי סדר התורות" ← "ליקוטי פסוקים")
+      $t.forEach((t, e) => {
+        if (!t || t.hidden || !t.title) return;
+        const i = m(String(t.title)).split(/ [–-] /)[0];
+        i !== m(String(t.title)) && i.length > 4 && bcBooks.push({ v: e, sk: bcS(bcN(i)) });
+      }),
       [
         ["ליקומ", 0],
         ["ליקוה", 4],
         ["תהלמ", 17],
         ["התקנ הכלל", 23],
         ["תקנ כלל", 23],
+        ["לקט פסקמ", 52],
+        ["לקט הפסקמ", 52],
       ].forEach((t) => bcBooks.push({ v: t[1], sk: t[0] })));
     const e = " " + bcS(q) + " ";
     let i = null;
@@ -12837,6 +12845,11 @@ function MAIN(t) {
     n.forEach((t, e) => {
       t.g === "V" + v && (!P || (1 === P ? /חלק א|ראשון/ : /חלק ב|שני|תנינא/).test(m(String(t.short || "")))) && S.push(e);
     });
+    // "ליקוטי פסוקים לפי סדר התורות" – החלקים שבסוף "תנ"ך ליקוטי מוהר"ן"
+    if (52 === v && /(סדר התורות|תורה|חלק)/.test(q)) {
+      const t = S.filter((t) => /^xtt/.test(n[t].id || ""));
+      t.length && (S.length = 0, S.push(...t));
+    }
     if (!S.length) return null;
     if (!num) return { si: S[0], ci: 0, first: !0 };
     for (const t of S)
