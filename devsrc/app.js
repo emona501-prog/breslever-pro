@@ -12362,7 +12362,7 @@ function MAIN(t) {
     const CONC = [
       { m: [["חינוך", "חנוך", "לחנך", "גידול", "לגדל"], ["ילדים", "הילדים", "בנים", "הבנים", "ילד", "נער", "נערים", "קטנים", "תינוקות"]], p: "גדול בנים|לגדל בניו|לגדל בנים|לגדל את בניו|לחנך|חנוך הבנים|חנוך בניו|חנוך נערים|חנוך הנער|מלמדי תינוקות|מלמד תינוקות|חנוך הילדים|חינוך הילדים|חינוך ילדים|חנוך ילדים", l: "חינוך ילדים" },
       { m: [["שלום בית", "שלום הבית"]], p: "שלום בית|שלום הבית|שלום ביתו|שלום בביתו|שלום בין איש לאשתו", l: "שלום בית" },
-      { m: [["שמירת עיניים", "שמירת העיניים", "שמירת עינים", "שמירת העינים"]], p: "שמירת עינים|שמירת העינים|שמירת עיניו|לשמור עיניו|לשמר עיניו|ראית עינים|הסתכלות", l: "שמירת עיניים" },
+      { m: [["שמירת עיניים", "שמירת העיניים", "שמירת עינים", "שמירת העינים"]], p: "שמירת עינים|שמירת העינים|שמירת עיניו|לשמור עיניו|לשמר עיניו|ראית עינים|שמירת העינים|עינים שלא|להסתכל", l: "שמירת עיניים" },
       // "מה המעלה הגדולה ביותר" – בספרים זה כתוב "גדולה מן הכל", "גדול מכל", "למעלה מן הכל"
       {
         m: [["הגדולה ביותר", "הגדול ביותר", "הכי גדולה", "הכי גדול", "הכי חשובה", "הכי חשוב", "החשובה ביותר", "החשוב ביותר", "הגבוהה ביותר", "הגבוה ביותר", "הכי גבוהה", "הכי גבוה", "מעל הכל", "מן הכל", "גדולה מכל", "גדול מכל", "העליונה ביותר"]],
@@ -12509,7 +12509,24 @@ function MAIN(t) {
       "src" === kd && !cn && S.list.length < 3 && ((S = search(P, 1)), (S.syn = 1));
       return { kind: kd, P, S };
     }
-    return { ask, parse, where, snip, norm, bookT, ck, BRES };
+    // 📚 חבילת לימוד: הדיבור המתאים ביותר על נושא מכל ספר (k = כמה לדלג, ל"עוד דיבורים")
+    function pack(term, vols, k) {
+      const raw = norm(term),
+        w = raw.split(" ").filter((t) => t.length > 1 && !STOP.has(sk(t))),
+        qs = w.map(sk).join(" "),
+        cn = concRe(qs),
+        out = [];
+      if (!w.length) return out;
+      for (const v of vols) {
+        const P = { raw, qs, terms: w, part: 0, scope: [v], lbl: bookT(0), unit: null };
+        let S = search(P, 0, cn);
+        S.list.length < 2 && !cn && (S = search(P, 1));
+        const c = S.list[k || 0] || null;
+        c && out.push({ v, c, R: S.R, G: S.G });
+      }
+      return out;
+    }
+    return { ask, parse, where, snip, norm, bookT, ck, BRES, pack };
   }
 
   let botQA = null;
@@ -13338,6 +13355,62 @@ function MAIN(t) {
       c = t.toDateString() === e.toDateString() ? "היום" : new Date(e.getTime() + 864e5).toDateString() === t.toDateString() ? "מחר" : t.getDate() + "." + (t.getMonth() + 1);
     return c + " בשעה " + i;
   }
+  // 🧭 העוזר מוביל: "מה ללמוד?" ← שואל איזה נושא חשוב לך ← דיבורים מכמה ספרים שונים
+  let botTopicQ = !1;
+  const BOT_TOPICS = [["🙏", "תפילה"], ["✨", "אמונה"], ["😊", "שמחה"], ["🌙", "התבודדות"], ["↩️", "תשובה"], ["🛡️", "בטחון"], ["💰", "פרנסה"], ["🏠", "שלום בית"], ["👁️", "שמירת עיניים"], ["🌱", "ענוה"], ["📖", "לימוד תורה"], ["🕯️", "שבת"]];
+  const BOT_GUIDE = /(מחפש ללמוד|רוצה ללמוד|מה ללמוד|מה אפשר ללמוד|מה כדאי ללמוד|מה אתה מציע|מה תציע|תציע לי|תמליצ|תמליץ|המלצה|לא יודע מה ללמוד|על מה ללמוד|משהו ללמוד|תנ לי משהו ללמוד|תן לי משהו ללמוד|ללמוד משהו|בא נלמד|בוא נלמד|נלמד משהו|שיעור קצר|לימוד קצר)/;
+  const BOT_PACKV = () => {
+    const t = (t) => $t.findIndex((e) => e && m(String(e.title || "")) === t);
+    return [0, 4, 11, 8, 47, t("השתפכות הנפש"), 12].filter((t) => t >= 0 && $t[t]);
+  };
+  function botTopicAsk() {
+    botTopicQ = !0;
+    return (
+      '<div class="bot-say">בשמחה, אח יקר! 😊 בוא נלמד ביחד.<br><b>איזה נושא הכי חשוב לך עכשיו?</b></div><div class="bot-chips">' +
+      BOT_TOPICS.map((t) => '<button class="pill" data-tp="' + o(t[1]) + '">' + t[0] + " " + o(t[1]) + "</button>").join("") +
+      '<button class="pill" data-tp="*">🎲 תפתיע אותי</button></div><div class="bot-scope">או כתבו נושא אחר בשורה למטה.</div>'
+    );
+  }
+  function botPackHtml(t, k) {
+    const e = botQAget(),
+      i = e.pack(t, BOT_PACKV(), k || 0),
+      acts = [];
+    if (!i.length) return null;
+    const c = (t) => (acts.push(t), acts.length - 1);
+    let x =
+      '<div class="bot-say">' +
+      (k ? "הנה עוד כמה דיבורים על <b>" + o(t) + "</b> 💎" : ["בשמחה! 🙏", "איזה נושא נפלא! ✨", "יופי, אחי! 😊"][Math.floor(3 * Math.random())] + " הנה כמה דיבורים נפלאים על <b>" + o(t) + "</b>, מכמה ספרים שונים:") +
+      "</div>";
+    i.forEach((t) => {
+      const i = e.snip(t.c.bi, t.c.H),
+        a = h[t.c.bi].id;
+      let l = o(i.text);
+      t.R.forEach((t) => {
+        try {
+          l = l.replace(new RegExp(t.source, "g"), (t, e) => t.slice(0, t.length - e.length) + "<mark>" + e + "</mark>");
+        } catch (t) {}
+      });
+      x +=
+        '<div class="bot-a bot-chz"><div class="bot-where">📖 ' +
+        o(e.where(t.c.bi)) +
+        '</div><p class="bot-snip">' +
+        (i.pre ? "…" : "") +
+        l +
+        (i.post ? "…" : "") +
+        '</p><div class="bot-srcs"><button class="btn sm" data-pk="' +
+        c(() => Ye(a)) +
+        '">👈 לפתוח במקום</button><button class="btn sm" data-pk="' +
+        c(() => kf(a)) +
+        '">🖼️ לסטטוס</button></div></div>';
+    });
+    x +=
+      '<div class="bot-srcs" style="margin-top:8px"><button class="btn sm pri" id="pkMore">💎 עוד דיבורים</button><button class="btn sm" data-pk="' +
+      c(() => botBooklet(t)) +
+      '">📒 חוברת על ' +
+      o(t) +
+      '</button><button class="btn sm" id="pkOther">🧭 נושא אחר</button></div>';
+    return { html: x, acts };
+  }
   function botBookletAsk(t) {
     const e = " " + botNorm(t) + " ";
     if (!/ (צור|תצור|תיצור|תכינ|הכנ|תעשה|לעשות|להכינ|ליצור|תבנה|תסדר|תכנ|אפשר|רוצה|תוכל)/.test(e) || !/ (חוברת|קונטרס|חוברות|דפ לימוד|דפי לימוד) /.test(e)) return null;
@@ -13391,7 +13464,7 @@ function MAIN(t) {
         '> 💬 שרשור שיחה (התשובות הקודמות נשארות)</label><label><input type="checkbox" id="botFabC"' +
         (s.get("botFab", !1) ? " checked" : "") +
         '> 🔘 כפתור צף של העוזר על המסך</label><button class="btn sm" id="botClr">🗑️ ניקוי השיחה</button></div><details class="bot-ex" id="botEx"><summary><span>💡 דוגמאות – מה אפשר לבקש ממני</span><i>▾</i></summary>' +
-        [["🛠️ פעולות", ["פתח לי תהלים פרק צ ותריץ את המסך", "תקריא לי את התיקון הכללי עם סימון", "פתח לי שמות הצדיקים ותקריא", "צור לי סטטוס על מעלת ההתבודדות", "צור לי חוברת על שמחה", "תזכיר לי תיקון חצות"]], ["📚 על הספרים", ["איפה רבנו מדבר על התבודדות", "כמה תורות יש בחלק ב׳", "כמה פעמים מופיע רצון", "שם אמו של רבנו", "עצה להינצל מכעס"]], ["💪 חיזוק", ["תחזק אותי באמונה", "אני מיואש, קשה לי", "תן לי חיזוק"]], ["🕯️ זמנים", ["מתי נכנסת שבת", "מתי השקיעה היום", "עד מתי קריאת שמע"]], ["⚙️ האפליקציה", ["איך מגדילים אותיות?", "איך משתפים כתמונה?", "מה חדש באפליקציה"]]]
+        [["🛠️ פעולות", ["פתח לי תהלים פרק צ ותריץ את המסך", "תקריא לי את התיקון הכללי עם סימון", "פתח לי שמות הצדיקים ותקריא", "צור לי סטטוס על מעלת ההתבודדות", "צור לי חוברת על שמחה", "תזכיר לי תיקון חצות"]], ["📚 על הספרים", ["איפה רבנו מדבר על התבודדות", "כמה תורות יש בחלק ב׳", "כמה פעמים מופיע רצון", "שם אמו של רבנו", "עצה להינצל מכעס"]], ["🧭 לימוד", ["מה כדאי ללמוד עכשיו?", "דיבורים על תפילה", "דיבורים על שמחה"]], ["💪 חיזוק", ["תחזק אותי באמונה", "אני מיואש, קשה לי", "תן לי חיזוק"]], ["🕯️ זמנים", ["מתי נכנסת שבת", "מתי השקיעה היום", "עד מתי קריאת שמע"]], ["⚙️ האפליקציה", ["איך מגדילים אותיות?", "איך משתפים כתמונה?", "מה חדש באפליקציה"]]]
           .map((t) => '<div class="bx-g"><b>' + t[0] + '</b><div class="bx-l">' + t[1].map((t) => '<button type="button" class="bx-i" data-ch="' + o(t) + '">' + o(t) + "</button>").join("") + "</div></div>")
           .join("") +
         '</details><div id="botLog"></div><div class="bot-me" id="botMe" hidden></div><div id="botR" class="bot-res"></div><div class="bot-row"><div class="bot-in"><input type="text" id="botQ" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="למשל: איך מגדילים אותיות? · כמה תורות על שמחה?" enterkeyhint="send"><button id="botX" aria-label="ניקוי" hidden>✕</button></div><button class="btn pri" id="botGo">שאל</button></div></div>',
@@ -13430,6 +13503,39 @@ function MAIN(t) {
           return ((botPend = null), (c.innerHTML = t.full), a("[data-qa]", c).forEach((e) => (e.onclick = () => (Wt(), setTimeout(t.acts[+e.dataset.qa], 230)))));
         }
         botPend = null;
+        // 🧭 לימוד מודרך
+        {
+          const PK = (t, e) => {
+            const i = botPackHtml(t, e);
+            if (!i) return ((c.innerHTML = '<div class="bot-say">לא מצאתי דיבורים על «' + o(t) + "» 🙏 נסה נושא אחר:</div>" + botTopicAsk().replace(/^<div class="bot-say">[\s\S]*?<\/div>/, "")), TB(), !0);
+            ((c.innerHTML = i.html),
+              a("[data-pk]", c).forEach((t) => (t.onclick = () => (Wt(), setTimeout(i.acts[+t.dataset.pk], 230)))),
+              (l("#pkMore", c).onclick = () => PK(t, (e || 0) + 1)),
+              (l("#pkOther", c).onclick = () => ((c.innerHTML = botTopicAsk()), TB())));
+            return !0;
+          };
+          const TB = () =>
+            a("[data-tp]", c).forEach(
+              (t) =>
+                (t.onclick = () => {
+                  botTopicQ = !1;
+                  const e = "*" === t.dataset.tp ? BOT_TOPICS[Math.floor(Math.random() * BOT_TOPICS.length)][1] : t.dataset.tp;
+                  PK(e, 0);
+                }),
+            );
+          const q = " " + bcF(bcN(t)) + " ";
+          if (botTopicQ) {
+            botTopicQ = !1;
+            const e = bcN(t)
+              .replace(/(^| )(על|את|הנושא|נושא|של|מעלת|מעלה|בבקשה|אני|רוצה|לי|תביא|תן|דיבורים|אולי|נגיד|למשל)(?= |$)/g, " ")
+              .replace(/\s+/g, " ")
+              .trim();
+            if (e && e.split(" ").length <= 4 && !/(^| )(איך|איפה|מתי|כמה)( |$)/.test(q) && PK(e, 0)) return;
+          }
+          if (BOT_GUIDE.test(q)) return ((c.innerHTML = botTopicAsk()), void TB());
+          const D = /(^| )(דיבורים|לימוד|ללמוד|תלמד אותי|דברי חיזוק|מאמרים) (על|בעניין|בענין|בנושא) (.+)$/.exec(bcN(t));
+          if (D && PK(D[4].trim(), 0)) return;
+        }
         if (botRemQ) {
           const e = botRemTime(String(t).replace(/[\u0591-\u05C7]/g, "").replace(/["'׳״`]/g, "").replace(/[^א-ת0-9:. ]/g, " ").replace(/\s+/g, " ").trim(), botRemQ.lbl),
             i = botRemQ;
@@ -13542,7 +13648,7 @@ function MAIN(t) {
           }
         }
         const K = T.hits.find((t) => ["distress", "sad"].includes(t.k)),
-          W = T.hits.length ? (K ? [K] : T.hits.slice(0, 2)) : [],
+          W = T.hits.length ? (K ? [K] : T.hits.filter((t) => "hello" !== t.k || 1 === T.hits.length).slice(0, 2)) : [],
           S = W.length
             ? '<div class="bot-say">' +
               W.map((t) => o(botTalkReply(t)).replace(/\n/g, "<br>")).join("<br><br>") +
@@ -20845,8 +20951,9 @@ function doGet(e){
     } catch (t) {}
   }, 4200);
   const rr = {
-    v: "2026-11-13f",
+    v: "2026-11-13g",
     items: [
+      ["2026-11-13", "🧭", "העוזר מוביל אותך ללמוד", 'כותבים "מה כדאי ללמוד?" – והעוזר שואל איזה נושא הכי חשוב לך עכשיו (תפילה, אמונה, שמחה, התבודדות…), ומביא דיבורים נפלאים מכמה ספרים שונים: ליקוטי מוהר״ן, ליקוטי הלכות, ליקוטי עצות, שיחות הר״ן, עלים לתרופה, השתפכות הנפש וליקוטי תפילות. עם "עוד דיבורים", חוברת ונושא אחר.'],
       ["2026-11-13", "📖", "העוזר פותח כל חלק ופרק", '"פתח לי פרק שירה ליום שלישי", "פרק שירה של היום", "פתח לי הלל", "פתח לי ברכת המזון" – והוא עונה כמו חבר ("בשמחה, אח יקר! הנה…") ופותח מיד.'],
       ["2026-11-13", "⏰", "העוזר קובע תזכורות בעצמו", 'כותבים "תזכיר לי לקרוא תהלים מחר ב־8", "תזכיר לי להתקשר בעוד שעה", "תזכיר לי ללמוד כל יום ב־21:30", "תזכיר לי תיקון חצות" – והתזכורת נקבעת מיד (חצות וקריאת שמע לפי זמני העיר שלך). בלי שעה? הוא שואל מתי, עם כפתורים מוכנים. אפשר לבטל בלחיצה.'],
       ["2026-11-13", "🕯️", "זמנים בצ׳אט עם העוזר", 'שואלים "מתי נכנסת שבת?", "מתי השקיעה היום?", "עד מתי קריאת שמע?", "מתי יוצאת השבת בחיפה?" – והעוזר עונה בצ׳אט עם השעה המדויקת לעיר שלך (בפעם הראשונה הוא שואל באיזו עיר), עם קישור "לחץ כאן" ללוח המלא.'],
