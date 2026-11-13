@@ -12124,7 +12124,7 @@ function MAIN(t) {
 
     const STOP = new Set(
       (
-        "המילה מילה המלה מלה המילים מילים הביטוי ביטוי המושג מושג השם איפה היכן באיזה באיזו איזה איזו איזהו מה מי מהו מהי מהם יש האם הם על של שלו את עם כמה פעמים פעם מופיע מופיעה מופיעים מופיעות מוזכר מוזכרת מוזכרים נזכר נזכרת נאמר נאמרה נאמרו אמר אומר אמרו כתוב כתובה כתובים כותב מדבר מדברת מדברים מדובר מביא מובא מובאת הכי ביותר בה בו לי לנו אני רוצה תגיד תראה תמצא תביא מקור מקורות המקור ענין עניין העניין הענין נושא בנושא בעניין לגבי אודות מעלת מעלה מעלות גודל חשיבות ספר בספר הספר הספרים ספרי שם כל או גם אם כי זה זו הזה הזאת זאת שבו שבה ידי על בא באה שהוא שהיא הוא היא רבנו רבינו רבי מוהרן הקדוש הקדושה בבקשה אפשר צריך למצוא לחפש חפש מחפש מצא דבר דברים בעניין יותר פחות ארוכה ארוך קצרה קצר הארוכה הארוך הקצרה הקצר ארוכות להינצל להנצל להימלט ניצול נגד לבטל לשבר להתגבר איך מה לעשות כשיש כשאני תרופה סגולה"
+        "בסך הכל סך בסהכ סהכ בכלל ביחד יחד כולל מספר המספר התכוונתי כוונתי התכוונת שואל שאלתי יש שיש בה סהכ המילה מילה המלה מלה המילים מילים הביטוי ביטוי המושג מושג השם איפה היכן באיזה באיזו איזה איזו איזהו מה מי מהו מהי מהם יש האם הם על של שלו את עם כמה פעמים פעם מופיע מופיעה מופיעים מופיעות מוזכר מוזכרת מוזכרים נזכר נזכרת נאמר נאמרה נאמרו אמר אומר אמרו כתוב כתובה כתובים כותב מדבר מדברת מדברים מדובר מביא מובא מובאת הכי ביותר בה בו לי לנו אני רוצה תגיד תראה תמצא תביא מקור מקורות המקור ענין עניין העניין הענין נושא בנושא בעניין לגבי אודות מעלת מעלה מעלות גודל חשיבות ספר בספר הספר הספרים ספרי שם כל או גם אם כי זה זו הזה הזאת זאת שבו שבה ידי על בא באה שהוא שהיא הוא היא רבנו רבינו רבי מוהרן הקדוש הקדושה בבקשה אפשר צריך למצוא לחפש חפש מחפש מצא דבר דברים בעניין יותר פחות ארוכה ארוך קצרה קצר הארוכה הארוך הקצרה הקצר ארוכות להינצל להנצל להימלט ניצול נגד לבטל לשבר להתגבר איך מה לעשות כשיש כשאני תרופה סגולה"
       )
         .split(" ")
         .map((t) => sk(norm(t))),
@@ -12479,7 +12479,7 @@ function MAIN(t) {
       const f = fact(P.qs);
       if (f) return { kind: "fact", f, P };
       const isCountW = /(^| )כמה (פעמים|פעם)( |$)|(^| )(מופיע|מופיעה|מוזכר|מוזכרת|נזכר)( |$)/.test(P.raw) && /(^| )כמה( |$)/.test(P.raw);
-      const isCountU = !isCountW && /(^| )כמה( |$)/.test(P.raw) && P.unit;
+      const isCountU = !isCountW && /(^| )(כמה|מספר|המספר|מה מספר)( |$)/.test(P.raw) && P.unit;
       const lg = /הכי (ארוכ|ארוך|קצר)|(ארוכה|ארוך|קצרה|קצר|הארוכה|הארוך|הקצרה|הקצר) ביותר/.exec(P.raw);
       if (lg) {
         const short = /קצר/.test(lg[0]);
@@ -12757,6 +12757,18 @@ function MAIN(t) {
   }
   setTimeout(() => botFloat(!!s.get("botFab", !1)), 1500);
   window.__botFloat = botFloat;
+  // מחליף טקסט בשורה ומאפס את המקלדת – אחרת במקלדות מסוימות (סמסונג) מקש המחיקה מפסיק לעבוד
+  function botSetVal(t, e, i) {
+    const c = document.activeElement === t || i;
+    (c && t.blur(),
+      (t.value = e),
+      c &&
+        setTimeout(() => {
+          try {
+            (t.focus(), t.setSelectionRange(e.length, e.length));
+          } catch (t) {}
+        }, 60));
+  }
   let botLastQ = { t: "", at: 0 },
     botRemQ = null,
     botLogNodes = [],
@@ -13494,7 +13506,7 @@ function MAIN(t) {
         }
         t.length >= 2 && ((c.dataset.q = t), thr() ? ((ME.hidden = !1), (ME.textContent = t)) : (ME.hidden = !0));
         (setTimeout(() => {
-          (clrV(), thr() && t.length >= 2 && ((i.value = ""), (XB.hidden = !0), ME.scrollIntoView({ block: "start", behavior: "smooth" })));
+          (clrV(), thr() && t.length >= 2 && (botSetVal(i, ""), (XB.hidden = !0), ME.scrollIntoView({ block: "start", behavior: "smooth" })));
         }, 30));
         if (t.length < 2) return void (c.dataset.q || LG.children.length || (c.innerHTML = '<div class="bot-tip">👋 שלום! אני העוזר שלך – שאל אותי, או בקש שאעשה משהו בשבילך. רעיונות יש בלשונית "💡 דוגמאות" למעלה.</div>'));
         // "כן" – אחרי "תרצה לראות מקורות?"
@@ -13780,9 +13792,12 @@ function MAIN(t) {
     // שיחה קודמת (באותה הפעלה) חוזרת כשפותחים שוב
     thr() && botLogNodes.length && botLogNodes.forEach((t) => LG.appendChild(t));
     ((l("#botGo", e).onclick = n),
-      (i.onkeydown = (t) => "Enter" === t.key && (t.preventDefault(), n())),
+      // חשוב: הפונקציה לא מחזירה ערך – החזרת false ב-onkeydown מבטלת את המקש (וכך מקש המחיקה לא עבד)
+      (i.onkeydown = (t) => {
+        "Enter" === t.key && (t.preventDefault(), n());
+      }),
       (i.oninput = () => (XB.hidden = !i.value)),
-      (XB.onpointerdown = (t) => (t.preventDefault(), (i.value = ""), (XB.hidden = !0), i.focus())),
+      (XB.onpointerdown = (t) => (t.preventDefault(), botSetVal(i, "", !0), (XB.hidden = !0))),
       (XB.onclick = (t) => t.preventDefault()),
       a("#botEx [data-ch]", e).forEach((t) => (t.onclick = () => ((l("#botEx", e).open = !1), (i.value = t.dataset.ch.replace(/,/g, "")), n()))),
       (l("#botFabC", e).onchange = (t) => (s.set("botFab", !!t.target.checked), botFloat(!!t.target.checked), st(t.target.checked ? "🔘 הכפתור הצף של העוזר מופעל – אפשר לגרור אותו לכל מקום" : "הכפתור הצף כובה"))),
