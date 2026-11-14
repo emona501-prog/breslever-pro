@@ -12849,6 +12849,67 @@ function MAIN(t) {
   // 🛠️ העוזר מבצע פעולות: חוברת לפי נושא
   // 🛠️ העוזר מבצע: פתח / תקריא (עם סימון) / תריץ את המסך / צור סטטוס / תזכיר לי
   const BOT_YT = "https://www.youtube.com/@yeshurun148";
+  // 🙏 מי יצר את העוזר + הערוץ – ופנייה (השארת פרטים) אם רוצים אפליקציה / הפקת שיר
+  let botLead = null,
+    botLeadTopic = "";
+  const BL_APP = /(^| )(מי|מה)( זה)? ?(המציא|המציאו|יצר|יצרו|בנה|בנו|פיתח|פיתחו|עשה|עשו|תכנת|הכינ|הקימ|כתב)( את)? ?(ה?אפליקציה|אותכ|ה?בוט|ה?עוזר|זה|ה?תוכנה|ה?יישומ|ה?תוכנית)|מי (עומד|עומדימ) מאחורי|מי ה?(יוצר|יוצרימ|מפתח|מפתחימ|ממציא)|של מי ה?(אפליקציה|בוט|עוזר)|מי בנה אותכ|מי יצר אותכ|מי עשה אותכ|מי המציא אותכ|מי ברא אותכ/,
+    BL_APPP = /חי אפליקציות|(^| )(ה|ו|ב|ש|וה)?(מי זה|מי הוא|מי אתמ|מי הממ|מי עומד|פרטימ|טלפונ|מספר|קשר|איפה אתמ|איפה הוא|כמה עולה|כמה זה עולה|מחיר|כתובת|מייל|אימייל|השמ שלו|השמ שלכמ|תספר עוד|ספר עוד|עוד פרטימ|מי האיש|מה השמ)( |$)/,
+    BL_YT = /(ערוצ|יוטיוב|יו טיוב|youtube)/,
+    BL_YTP = /גאולה וישועה|(^| )(ה|ו|ב|ש|וה)?(מי שר|מי הזמר|מי מנהל|מי מפיק|מי עומד|מי עושה|מי זה|פרטימ|טלפונ|קשר|כמה עולה|מחיר|להזמינ|להפיק|הפקה|הפקת|לעשות שיר|שיר משלי|שיר משלנו)( |$)/,
+    BL_WANT_APP = /(רוצה|רוצימ|אפשר|מעוניינ|מעוניינימ|להזמינ|לבנות|שתבנו|תבנו)( גמ)? ?(לי |לנו )?(אפליקציה|אפליקציות|יישומ)/,
+    BL_WANT_SONG = /(רוצה|רוצימ|אפשר|מעוניינ|מעוניינימ|להזמינ)( גמ)? ?(לי |לנו )?(להפיק|הפקת|להקליט|שיר)/;
+  function botLeadForm(k) {
+    const app = "app" === k;
+    return (
+      '<div class="bot-say">' +
+      (app ? "תשאירו פה את הפרטים שלכם, ובעזרת השם נשתדל לחזור אליכם בהקדם. ברוכים תהיו! 🙏" : "מצוין! 🎶 השאירו פרטים, ובעזרת השם נשתדל לחזור אליכם בהקדם. ברוכים תהיו! 🙏") +
+      '</div><div class="bot-a bot-new"><input type="text" id="blName" placeholder="שם" autocomplete="name"><input type="tel" id="blTel" placeholder="טלפון / וואטסאפ" autocomplete="tel" style="margin-top:8px"><textarea id="blTxt" rows="3" style="margin-top:8px" placeholder="' +
+      (app ? "כמה מילים על האפליקציה שאתם רוצים" : "כמה מילים על השיר שאתם רוצים להפיק") +
+      '"></textarea><button class="btn pri" id="blSend" style="width:100%;margin-top:8px">📨 שליחה</button></div>'
+    );
+  }
+  // מחזיר {html, bind} כשההודעה שייכת לשיחה הזו, אחרת null
+  function botLeadTalk(raw) {
+    const t = " " + botNorm(raw) + " ",
+      yes = /^ ?(כנ|כנ בטח|בטח|ברור|כמובנ|אשמח|נשמח|כנ בבקשה|כנ רוצה|כנ רוצימ|רוצה|רוצימ|למה לא|יאללה|אוקי|בשמחה|כנ כנ) ?$/.test(t),
+      no = /^ ?(לא|לא תודה|לא צריכ|אינ צורכ|עזוב|בינתיימ לא|לא כרגע) ?$/.test(t);
+    const ask = (k) => ((botLead = { k, stage: "ask" }), { html: '<div class="bot-say">' + ("app" === k ? "מה, אתם רוצים גם אפליקציה ברמה כזו? 😊" : "אתם רוצים גם להפיק שיר? 🎶") + '</div><div class="bot-chips"><button class="pill" data-bl="1">כן 🙌</button><button class="pill" data-bl="0">לא, תודה</button></div>' });
+    const form = (k) => ((botLead = { k, stage: "form" }), { html: botLeadForm(k), form: k });
+    if (botLead && "ask" === botLead.stage && yes) return form(botLead.k);
+    if (botLead && "ask" === botLead.stage && no) return ((botLead = null), { html: '<div class="bot-say">בסדר גמור 😊 במה עוד אוכל לעזור?</div>' });
+    botLead = null;
+    if (BL_WANT_APP.test(t)) return form("app");
+    if (BL_WANT_SONG.test(t) && !/אפליקציה/.test(t)) return form("song");
+    if (BL_APP.test(t)) return ((botLeadTopic = "app"), { html: '<div class="bot-say">בחסדי השם נוצרתי על ידי <b>חי אפליקציות</b> 🙏 במה אוכל לעזור לך?</div>' });
+    if (/חי אפליקציות/.test(t) || ("app" === botLeadTopic && BL_APPP.test(t))) return ((botLeadTopic = "app"), ask("app"));
+    if (/גאולה וישועה/.test(t) && BL_YTP.test(t.replace(/גאולה וישועה/, " "))) return ((botLeadTopic = "song"), ask("song"));
+    if (BL_YT.test(t) && /(ממליצ|תמליצ|המלצה|איזה|איזו|הכי טוב|כדאי|שווה|יש לכמ|יש לכ|שלכמ|שלכ|תראה|תפתח)/.test(t) && !/(תורה|הלכה|שיעור על)/.test(t))
+      return (
+        (botLeadTopic = "song"),
+        {
+          html: '<div class="bot-say">אני ממליץ בחום על הערוץ <b>«גאולה וישועה»</b> 🎵 – ערוץ מלא תוכן של שירי קודש, לזיכוי הרבים ולשמח הלבבות של עם ישראל.</div><div class="bot-chips"><button class="pill" id="blYt">▶️ לערוץ גאולה וישועה</button></div>',
+        }
+      );
+    if ("song" === botLeadTopic && BL_YTP.test(t)) return ask("song");
+    return null;
+  }
+  // מחבר את הכפתורים של התשובה
+  function botLeadBind(c, r, redo) {
+    a("[data-bl]", c).forEach((t) => (t.onclick = () => redo("1" === t.dataset.bl ? "כן" : "לא")));
+    const y = l("#blYt", c);
+    y && (y.onclick = () => NAT.openUrl(BOT_YT));
+    const b = l("#blSend", c);
+    b &&
+      (b.onclick = () => {
+        const nm = (l("#blName", c).value || "").trim(),
+          tel = (l("#blTel", c).value || "").trim(),
+          tx = (l("#blTxt", c).value || "").trim();
+        if (!tel && !nm) return void st("נא למלא שם או טלפון 🙏");
+        (ideaSend(("app" === r.form ? "📩 פנייה – רוצים אפליקציה" : "🎵 פנייה – הפקת שיר") + "\nשם: " + nm + "\nטלפון: " + tel + (tx ? "\nפרטים: " + tx : "")),
+          (botLead = null),
+          (c.innerHTML = '<div class="bot-say">🙏 תודה רבה! הפרטים נשלחו' + (inboxUrl() ? "" : " (יישלחו ברגע שיהיה חיבור)") + ". בעזרת השם נחזור אליכם בהקדם. ברוכים תהיו!</div>"));
+      });
+  }
   const bcN = (t) =>
     String(t || "")
       .replace(/[֑-ׇ]/g, "")
@@ -13930,6 +13991,11 @@ function MAIN(t) {
           (clrV(), thr() && t.length >= 2 && (botSetVal(i, ""), (XB.hidden = !0), ME.scrollIntoView({ block: "start", behavior: "smooth" })));
         }, 30));
         if (t.length < 2) return void (c.dataset.q || LG.children.length || (c.innerHTML = '<div class="bot-tip">👋 שלום! אני העוזר שלך – שאל אותי, או בקש שאעשה משהו בשבילך. רעיונות יש בלשונית "💡 דוגמאות" למעלה.</div>'));
+        // 🙏 מי יצר אותי / הערוץ / השארת פרטים
+        {
+          const r = botLeadTalk(t);
+          if (r) return ((botPend = null), (c.innerHTML = r.html), void botLeadBind(c, r, (x) => (botSetVal(i, x), n())));
+        }
         // "כן" – אחרי "תרצה לראות מקורות?"
         if (botPend && /^(כנ|כנ בבקשה|כנ תודה|כנ תראה|כנ תביא|בטח|אשמח|תראה|תביא|מקורות|תראה מקורות|תביא מקורות|יאללה|בשמחה|כמובנ)$/.test(botNorm(t).trim())) {
           const t = botPend;
@@ -14108,7 +14174,7 @@ function MAIN(t) {
           try {
             const r = botQAget().ask(QT);
             if (r) {
-              const k = "src" !== r.kind || BOT_SRC_STRONG.test(" " + botNorm(QT) + " ") || !e.r.length,
+              const k = "src" !== r.kind || BOT_SRC_STRONG.test(" " + botNorm(QT) + " ") || BOT_SRC_STRONG.test(" " + String(QT).replace(/[֑-ׇ]/g, "").replace(/[^א-ת ]/g, " ") + " ") || !e.r.length,
                 v = botQAView(r);
               v && (QV = Object.assign(v, { strong: k, only: "src" !== r.kind }));
             }
@@ -21393,8 +21459,9 @@ function doGet(e){
     } catch (t) {}
   }, 4200);
   const rr = {
-    v: "2026-11-14d",
+    v: "2026-11-15a",
     items: [
+      ["2026-11-15", "🙏", "העוזר מכיר את מי שיצר אותו", '"מי המציא את האפליקציה?" – "בחסדי השם נוצרתי על ידי חי אפליקציות". ו"על איזה ערוץ אתה ממליץ?" – ערוץ «גאולה וישועה», ערוץ מלא תוכן של שירי קודש לזיכוי הרבים ולשמח הלבבות של עם ישראל. רוצים גם אתם אפליקציה ברמה כזו, או להפיק שיר? אפשר להשאיר פרטים דרך העוזר.'],
       ["2026-11-14", "🔤", "ההקראה מבינה ראשי תיבות", 'בתוך הסוגריים: "(ת״ה סי׳ רצ״ח)" נקרא "תרומת הדשן סימן ריש צדי חית", "(תהלים ע״ב)" – "עין בית", "דף נט ע״ב" – "עמוד בית". שמות הראשונים נקראים כשם: רַמְבָּם, הָרַמְבָּם, רַאֲבָד, רַשְׁבָּא, מַהֲרִיל. ס״א בזוהר – סטרא אחרא, ובשאר הספרים – ספרים אחרים. וז״ל, הנ״ל, וכו׳ – במילים מלאות. ו"הגה" בשולחן ערוך – הָגָה.'],
       ["2026-11-14", "⚖️", "שולחן ערוך או ליקוטי הלכות?", '"תקרא לי הלכות ברכות השחר בשולחן ערוך" – נפתח בשולחן ערוך (גם "שו״ע" בלבד). בלי שם ספר העוזר שואל "בליקוטי הלכות או בשולחן ערוך?" עם כפתורים; "הלכה ג" הולך לליקוטי הלכות ו"סימן" לשולחן ערוך; ואם כבר פתוח ספר – הוא נשאר בו. ובסיפורים: "סיפור מהבעל שם טוב" עובד, ובקשה חוזרת מביאה כל פעם סיפור אחר.'],
       ["2026-11-14", "🎯", "העוזר מוצא בדיוק את המקום", '"תקרא לי ליקוטי הלכות הלכות ערב הלכה ג", "הלכות שבת הלכה ו אות ג", "תהלים פרק נון", "פרק מאה ועשרים", "ליקוטי מוהר״ן תורה ו אות ד", "שולחן ערוך הלכות שבת סימן רנ", "פרשת השבוע" – העוזר מוצא את החלק, ההלכה והאות בדיוק, גם בדיבור קולי. וההקראה כבר לא "מאייתת" אותיות בחומש ובתנ״ך.'],
