@@ -12930,6 +12930,131 @@ function MAIN(t) {
       }
     return { si: S[0], ci: 0, miss: num };
   }
+  // 🎯 איתור מדויק בתוך ספר: חלק (הלכות ערב / פרשת…) ← הלכה/תורה/פרק/סימן (מספר באותיות, בספרות, בשם אות "נון" או במילים "מאה ועשרים") ← אות/סעיף/פסוק
+  const BC_LN = { אלפ: 1, בית: 2, גימל: 3, דלת: 4, הא: 5, הי: 5, ואו: 6, וו: 6, ויו: 6, זינ: 7, זיינ: 7, חית: 8, טית: 9, יוד: 10, כפ: 20, למד: 30, ממ: 40, נונ: 50, סמכ: 60, עינ: 70, עיינ: 70, פא: 80, פה: 80, פי: 80, צדי: 90, צדיק: 90, קופ: 100, ריש: 200, שינ: 300, תו: 400, תיו: 400, תאו: 400 };
+  const BC_NW = { אחד: 1, אחת: 1, ראשונ: 1, ראשונה: 1, שתימ: 2, שניימ: 2, שנימ: 2, שתי: 2, שני: 2, שניה: 2, שנייה: 2, שלוש: 3, שלש: 3, שלושה: 3, שלשה: 3, שלישי: 3, שלישית: 3, ארבע: 4, ארבעה: 4, רביעי: 4, רביעית: 4, חמש: 5, חמישה: 5, חמשה: 5, חמישי: 5, חמישית: 5, שש: 6, שישה: 6, ששה: 6, שישי: 6, שישית: 6, שבע: 7, שבעה: 7, שביעי: 7, שביעית: 7, שמונה: 8, שמיני: 8, שמינית: 8, תשע: 9, תשעה: 9, תשיעי: 9, תשיעית: 9, עשר: 10, עשרה: 10, עשירי: 10, עשירית: 10, עשרימ: 20, שלושימ: 30, שלשימ: 30, ארבעימ: 40, חמישימ: 50, חמשימ: 50, שישימ: 60, ששימ: 60, שבעימ: 70, שמונימ: 80, תשעימ: 90, מאה: 100, מאתיימ: 200, מאות: 0 };
+  // מספר שמתחיל במילה i (מילים בלי אותיות סופיות). מחזיר {v, len}
+  function bcNum(w, i) {
+    const t = w[i] || "";
+    if (/^\d{1,3}$/.test(t)) return { v: +t, len: 1 };
+    // שמות של אותיות: "נון", "קוף כף"
+    if (BC_LN[t]) {
+      let v = 0,
+        k = i;
+      for (; k < w.length && BC_LN[w[k]] && k - i < 3; k++) v += BC_LN[w[k]];
+      return { v, len: k - i };
+    }
+    // מילים: "מאה ועשרים", "שלוש מאות וחמש", "אחת עשרה"
+    const nw = (x) => (null != BC_NW[x] ? BC_NW[x] : /^ו./.test(x) && null != BC_NW[x.slice(1)] ? BC_NW[x.slice(1)] : null);
+    if (null != nw(t)) {
+      let v = 0,
+        k = i,
+        last = 0;
+      for (; k < w.length && null != nw(w[k]); k++) {
+        const x = nw(w[k]),
+          bare = w[k].replace(/^ו/, "");
+        "מאות" === bare ? (v += last * 99) : 10 === x && /^עשרה?$/.test(bare) && k > i && last > 0 && last < 10 ? (v += 10) : (v += x);
+        last = x;
+      }
+      if (v > 0) return { v, len: k - i };
+    }
+    if (/^[א-ת]{1,4}$/.test(t)) {
+      const v = gmv(t);
+      if (v) return { v, len: 1 };
+    }
+    return null;
+  }
+  const BC_CHK = /^[בלומש]?(תורה|פרק|הלכה|סימנ|שיחה|מעשה|מזמור|מאמר|דפ|מכתב|תפילה|תפלה|שיר|פרשה|תיקונ|תקונ)$/,
+    BC_ITK = /^[בלומש]?(אות|סעיפ|פסוק|ובאות)$/;
+  function bcLocate(v, q, forceSi) {
+    const w = bcF(q).split(" "),
+      sw = w.map((t) => bcS(t));
+    const P = /(^| )[בו]?חלק (ב|שני|השני)( |$)|תנינא/.test(q) ? 2 : /(^| )[בו]?חלק (א|ראשונ|הראשונ)( |$)/.test(bcF(q)) ? 1 : 0;
+    const S = [];
+    n.forEach((t, e) => {
+      t.g === "V" + v && (!P || (1 === P ? /חלק א|ראשון/ : /חלק ב|שני|תנינא/).test(m(String(t.short || "")))) && S.push(e);
+    });
+    if (!S.length && null == forceSi) return null;
+    // 1) שם החלק בתוך הספר ("הלכות ערב", "ערב", "פרשת נח")
+    let sec = null != forceSi ? forceSi : -1,
+      secLen = 0;
+    if (sec < 0) {
+      const e = " " + sw.join(" ") + " ";
+      S.forEach((si) => {
+        const full = bcS(bcN(m(String(n[si].short || "")))),
+          core = full.replace(/^(הלכות|הלכת|ענינ|ענינ|דינ|פרשת) /, ""),
+          cands = [full];
+        core !== full && core.replace(/ /g, "").length >= 3 && cands.push(core);
+        cands.forEach((c) => {
+          if (!c || c.length < 2) return;
+          new RegExp("(^| )[והבלמש]{0,2}" + c.replace(/ /g, " [והבלמש]{0,2}") + "(?= |$)").test(e) && c.length > secLen && ((sec = si), (secLen = c.length));
+        });
+      });
+    }
+    // 2) מספר ההלכה/התורה/הפרק/הסימן ומספר האות/הסעיף/הפסוק
+    let num = 0,
+      item = 0;
+    for (let i = 0; i < w.length; i++) {
+      if (BC_ITK.test(w[i])) {
+        const r = bcNum(w, i + 1);
+        r && !item && ((item = r.v), (i += r.len));
+      } else if (BC_CHK.test(w[i]) && !num) {
+        const r = bcNum(w, i + 1);
+        r && ((num = r.v), (i += r.len));
+      }
+    }
+    // מספר מיד אחרי שם החלק ("הלכות ערב ג")
+    if (!num && sec >= 0 && null == forceSi) {
+      const full = bcS(bcN(m(String(n[sec].short || "")))).split(" "),
+        lastW = full[full.length - 1];
+      const k = sw.lastIndexOf(lastW);
+      if (k >= 0 && k + 1 < w.length) {
+        const r = bcNum(w, k + 1);
+        r && !/^(עמ|את|של|לי|כל|מה|אמ|גמ|זה|זו|בו|בה|לו|לה|המ|הנ|כי|אכ|רק|עד|אל|על|מנ|כנ|לא|יש|אז|פה|שמ)$/.test(w[k + 1]) && (num = r.v);
+      }
+    }
+    const chNum = (c) => {
+      const i = /^\s*(?:תורה|פרק|הלכה|שיחה|מעשה|סימן|מזמור|אות|מאמר|דף|מכתב|תפלה|תפילה|שיר|תקון|תיקון)?\s*([א-ת"'׳״]{1,6}|\d{1,3})(?=[\s\-–:.,]|$)/.exec(m(g(String(c.t || ""))));
+      return i ? gmv(i[1].replace(/["'׳״]/g, "")) : 0;
+    };
+    const pool = sec >= 0 ? [sec] : S;
+    let si = -1,
+      ci = -1,
+      miss = 0,
+      amb = 0;
+    if (num) {
+      const hits = [];
+      pool.forEach((t) => n[t].c.forEach((c, e) => chNum(c) === num && hits.push([t, e])));
+      // "הלכה ג" בלי לומר באיזה הלכות – יש הרבה כאלה בספר
+      sec < 0 && S.length > 20 && new Set(hits.map((h) => h[0])).size > 3 && (amb = { l: [...new Set(hits.map((h) => h[0]))].slice(0, 4).map((t) => m(String(n[t].short || "")).replace(/:$/, "")), ct: m(g(String(n[hits[0][0]].c[hits[0][1]].t || ""))).split(/ [-–] /)[0] });
+      hits.length ? ((si = hits[0][0]), (ci = hits[0][1])) : (miss = num);
+    }
+    // 3) שם של פרק בתוך הספר ("מעשה מאבידת בת מלך", "אות אמת")
+    if (si < 0 && !num) {
+      const bk = new Set(bcS(bcN(m(String(($t[v] || {}).title || "")))).split(" ")),
+        Q = sw.filter((t) => t.length > 1 && !BC_STOP.has(t) && !bk.has(t) && !/^(מעשה|אות|ספר|את|לי|על|של|פרק|הלכה|תורה|סימנ|חלק|א|ב|ראשנ|שנ|מנ|המעשה|מה)$/.test(t)).map((t) => t.replace(/^(מה|מ|ה|ו|ב|ל)(?=[א-ת]{3})/, ""));
+      let best = 0;
+      Q.length &&
+        pool.forEach((t) =>
+          n[t].c.forEach((c, e) => {
+            const T = bcS(bcN(m(g(String(c.t || "")))))
+              .split(" ")
+              .map((x) => x.replace(/^(מה|מ|ה|ו|ב|ל)(?=[א-ת]{3})/, ""));
+            const k = Q.filter((x) => T.includes(x)).length,
+              sc = k * 10 - T.length * 0.1;
+            k && k >= Math.min(2, Q.length) && sc > best && ((best = sc), (si = t), (ci = e));
+          }),
+        );
+    }
+    si < 0 && ((si = sec >= 0 ? sec : S[0]), (ci = 0));
+    const ch = n[si].c[ci];
+    let ii = 0;
+    if (item && ch.i) {
+      const k = ch.i.findIndex((t) => gmv(String(t.n || "").replace(/[^א-ת0-9]/g, "")) === item);
+      ii = k >= 0 ? k : Math.min(item - 1, ch.i.length - 1);
+    }
+    return { si, ci, ii, sec: sec >= 0, first: !num && ci === 0 && sec < 0 && si === S[0], miss, amb, item: item && ii > 0 ? item : 0 };
+  }
   // מציאת חלק/פרק לפי שם (למשל "פרק שירה ליום שלישי", "הלל") כשאין שם של ספר
   const BC_STOP = new Set("פתח תפתח פתחי תפתחי תביא לי קח אותי תעביר לך תראה הצג את של עם בבקשה אפשר רוצה תקריא הקרא תקרא קרא תריצ תריץ הרצ הרץ גלילה המסכ המסך מסכ מסך ותריצ ותריץ ותקריא סימונ סימון אותמ אותם אותו אותה צור סטטוס".split(" ").map((t) => bcS(t)));
   function bcSecFind(q) {
@@ -12991,11 +13116,11 @@ function MAIN(t) {
   }
   const BOT_YES = ["בשמחה, אח יקר! 📖", "בשמחה רבה! 📖", "ברור, אחי! 📖", "בכיף! 📖"];
   // מחכה עד שהקטע המבוקש באמת מוצג על המסך (בטלפון איטי / ספר שעוד נטען) – ורק אז מקריא/מריץ
-  function bcWait(id, fn, ms) {
+  function bcWait(id, fn, ms, any) {
     const t0 = Date.now(),
       k = () => {
-        const el = id && document.querySelector('#reader .item[data-id="' + String(id).replace(/"/g, "") + '"]');
-        if (el || !id) return void setTimeout(fn, 250);
+        const el = any ? document.querySelector("#reader .item") : id && document.querySelector('#reader .item[data-id="' + String(id).replace(/"/g, "") + '"]');
+        if (el || (!id && !any)) return void setTimeout(fn, any ? 700 : 250);
         if (Date.now() - t0 > (ms || 8e3)) return void fn();
         setTimeout(k, 150);
       };
@@ -13107,6 +13232,26 @@ function MAIN(t) {
       if (/^(עוד סיפור|עוד מעשה|עוד משל|עוד אחד|סיפור אחר|עוד)$/.test(q) && botStoryLast) return botStoryCmd("עוד", 1);
     }
     if (!(R || C || ST || O)) return null;
+    // פרשת השבוע – העלייה של היום בשניים מקרא
+    if (/(פרשת השבוע|הפרשה של השבוע|פרשה של השבוע|פרשת שבוע|הפרשה השבועית)/.test(q) && !ST) {
+      let pn = "";
+      try {
+        pn = Ts(0).n || "";
+      } catch (t) {}
+      return {
+        say: BOT_YES[Math.floor(Math.random() * BOT_YES.length)] + " הנה <b>פרשת השבוע" + (pn ? " – " + o(pn) : "") + "</b> (העלייה של היום)" + (R ? " – ומקריא לך" : "") + (C ? " – ומריץ את המסך" : ""),
+        run: () => {
+          const t = Kd(0);
+          t && t.si >= 0 && t.k >= 0 ? It("reader", { si: t.si, aly: t.k }) : It("calendar");
+          bcWait(null, () => {
+            const f = document.querySelector("#reader .item");
+            try {
+              (R && f && (H && s.set("ttsHl", !0), mf.fromItem(f.dataset.id)), C && setTimeout(() => ld.start(), R ? 600 : 0));
+            } catch (t) {}
+          }, 0, 1);
+        },
+      };
+    }
     let B = bcBook(q);
     ST && !O && !R && !C && / (על|בעניין|בענין|בנושא) /.test(" " + q + " ") && !/(^| )[במ]?(תורה|פרק|הלכה|סימן|שיחה|מעשה)( |$)/.test(q) && (B = null);
     if (ST && !B) {
@@ -13129,6 +13274,12 @@ function MAIN(t) {
           }
         },
       };
+    }
+    if (!B && (O || R || C || ST)) {
+      const e = bcSecFind(q);
+      // נמצא שם של חלק ("הלכות ערב הלכה ג") – ממשיכים לאתר בתוך אותו ספר
+      if (e && (/(^| )[בלומש]?(תורה|פרק|הלכה|סימן|שיחה|מזמור|אות|סעיף|פסוק|דף)( |$)/.test(q) || / [א-ת]{1,3}$| \d{1,3}$/.test(q)))
+        B = { v: +String(n[e.si].g || "V0").slice(1), si: e.si };
     }
     if (!B && (O || R || C || ST)) {
       const e = bcSecFind(q);
@@ -13165,11 +13316,14 @@ function MAIN(t) {
       return null;
     }
     const nm = m(String(($t[B.v] || {}).title || ""));
-    const ch = bcChapter(B.v, bcF(q), B.at);
+    const ch = bcLocate(B.v, q, B.si);
     if (!ch) return null;
+    if (ch.amb)
+      return { stay: 1, say: "📖 באיזה חלק בדיוק? ב" + o(nm) + " יש «" + o(ch.amb.ct) + "» בהרבה מקומות – למשל ב" + ch.amb.l.map((t) => "«" + o(t) + "»").join(", ") + ". תכתוב גם את שם החלק, למשל: <b>«תקרא לי " + o(nm + " הלכות שבת " + ch.amb.ct) + "»</b>" };
     const c = n[ch.si].c[ch.ci],
-      lbl = nm + (ch.first ? "" : " · " + m(g(String(c.t || ""))).split(/ [-–] /)[0]),
-      fid = (c.i && c.i[0] && c.i[0].id) || null,
+      sn = ch.sec || B.si != null ? m(String(n[ch.si].short || "")).replace(/:$/, "") : "",
+      lbl = nm + (sn && sn !== nm ? " · " + sn : "") + (ch.first ? "" : " · " + m(g(String(c.t || ""))).split(/ [-–] /)[0]) + (ch.item ? " · אות " + (c.i[ch.ii].n || ch.item) : ""),
+      fid = (c.i && c.i[ch.ii] && c.i[ch.ii].id) || (c.i && c.i[0] && c.i[0].id) || null,
       tk = 23 === B.v || "tikkun" === n[ch.si].id,
       acts = [];
     (R && acts.push("מקריא לך" + (H ? " עם סמן עוקב" : "")), C && acts.push("מריץ את המסך"), ST && acts.push("מכין סטטוס לשיתוף"));
@@ -21143,8 +21297,9 @@ function doGet(e){
     } catch (t) {}
   }, 4200);
   const rr = {
-    v: "2026-11-14a",
+    v: "2026-11-14b",
     items: [
+      ["2026-11-14", "🎯", "העוזר מוצא בדיוק את המקום", '"תקרא לי ליקוטי הלכות הלכות ערב הלכה ג", "הלכות שבת הלכה ו אות ג", "תהלים פרק נון", "פרק מאה ועשרים", "ליקוטי מוהר״ן תורה ו אות ד", "שולחן ערוך הלכות שבת סימן רנ", "פרשת השבוע" – העוזר מוצא את החלק, ההלכה והאות בדיוק, גם בדיבור קולי. וההקראה כבר לא "מאייתת" אותיות בחומש ובתנ״ך.'],
       ["2026-11-14", "📖", "סיפורים מכל ספרי ברסלב", 'בסיפורי מעשיות נוספה לשונית "סיפורים שונים מכלל ספרי ברסלב" – כ־1,160 סיפורים, מעשיות, משלים וחלומות מחיי מוהר"ן, שיחות הר"ן, שבחי הר"ן, כוכבי אור, שיח שרפי קודש, ימי שמואל ועוד, כל אחד עם קישור למקור. ובעוזר: "ספר לי סיפור על הבעל שם טוב" – והוא מוצא ומקריא. "עוד סיפור" – הבא.'],
       ["2026-11-13", "🧭", "העוזר מוביל אותך ללמוד", 'כותבים "מה כדאי ללמוד?" – והעוזר שואל איזה נושא הכי חשוב לך עכשיו (תפילה, אמונה, שמחה, התבודדות…), ומביא דיבורים נפלאים מכמה ספרים שונים: ליקוטי מוהר״ן, ליקוטי הלכות, ליקוטי עצות, שיחות הר״ן, עלים לתרופה, השתפכות הנפש וליקוטי תפילות. עם "עוד דיבורים", חוברת ונושא אחר.'],
       ["2026-11-13", "📖", "העוזר פותח כל חלק ופרק", '"פתח לי פרק שירה ליום שלישי", "פרק שירה של היום", "פתח לי הלל", "פתח לי ברכת המזון" – והוא עונה כמו חבר ("בשמחה, אח יקר! הנה…") ופותח מיד.'],
@@ -23353,6 +23508,13 @@ function doGet(e){
     e,
   ]);
   function rf(t) {
+    // טעמי המקרא וסימנים נוספים – מנוע הדיבור נתקע עליהם ומתחיל לאיית אות-אות
+    t = String(t || "")
+      .replace(/[\u0591-\u05AF\u05BD\u05C0\u05C4\u05C5\u05C6]/g, "")
+      .replace(/\u05C3/g, ".")
+      .replace(/\{[א-ת]{1,3}\}/g, " ")
+      .replace(/\(\s*[א-ת]{1,3}["'׳״]?\s*\)/g, " ")
+      .replace(/\u00A0/g, " ");
     return (
       (t = (t = (t =
         " " +
@@ -23745,7 +23907,8 @@ function doGet(e){
                   .map((t) => g(t[1]))
                   .join(". "),
               ),
-              l = i.n ? ("tikkun" === Bt.v ? "מִזְמוֹר " : "tanach" === ($t[+String(e.s.g).slice(1)] || {}).cat ? "פָּסוּק " : "אוֹת ") + i.n + ". " : "",
+              ct = ($t[+String(e.s.g).slice(1)] || {}).cat,
+              l = i.n ? ("tikkun" === Bt.v ? "מִזְמוֹר " : "tanach" === ct || "teh" === ct ? "פָּסוּק " : "sa" === ct ? "סְעִיף " : "אוֹת ") + String(i.n).replace(/[()]/g, "") + ". " : "",
               a = l + c;
             let o = 0;
             const s = bf(l);
