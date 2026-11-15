@@ -2372,7 +2372,7 @@ function MAIN(t) {
                   '<details class="sty-g" data-g="' +
                   t +
                   '"' +
-                  ("1" === t || ke.q ? " open" : "") +
+                  (ke.q ? " open" : "") +
                   "><summary>" +
                   xe[t] +
                   ' <span class="sty-c">(' +
