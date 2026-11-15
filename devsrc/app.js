@@ -22372,7 +22372,8 @@ function doGet(e){
             if (!e.ok) throw new Error("http" + e.status);
             i = await e.json();
           }
-          const c = (i.assets || []).find((t) => /\.apk$/i.test(t.name));
+          // לייט מתעדכן מקובץ הלייט, והרגילה – מהקובץ הרגיל
+          const c = (i.assets || []).find((t) => (LITE ? /lite\.apk$/i : /^(?!.*lite\.apk$).*\.apk$/i).test(t.name));
           return {
             v: String(i.tag_name || "").replace(/^v/, ""),
             notes: i.body || "",

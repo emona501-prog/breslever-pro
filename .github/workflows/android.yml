@@ -68,7 +68,7 @@ jobs:
           npx cap copy android
           cd android
           ./gradlew assembleRelease --no-daemon 2>&1 | tail -20
-          cp app/build/outputs/apk/release/app-release.apk ../breslever-pro-lite.apk
+          cp app/build/outputs/apk/release/app-release.apk ../breslever-pro_lite.apk
       - name: פרסום בעמוד ההורדות
         uses: softprops/action-gh-release@v2
         with:
@@ -77,5 +77,5 @@ jobs:
           body_path: RELEASE_NOTES.md
           files: |
             breslever-pro.apk
-            breslever-pro-lite.apk
+            breslever-pro_lite.apk
           make_latest: true
