@@ -7,3 +7,4 @@ android/.gradle/
 desktop/node_modules/
 desktop/dist/
 desktop/app/
+www/dbg.html

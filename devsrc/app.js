@@ -652,24 +652,44 @@ async function BOOT() {
       const t = document.getElementById("spLogo");
       t && t.classList.add("out");
     }, 1450 + i));
-  // 🎵 מנגינה קצרה בפתיחה (אפשר לכבות בהגדרות). נעצרת בנגיעה הראשונה
+  // 🎵 מנגינה קצרה בפתיחה – כברירת מחדל שקטה (כמו מתג השקט באייפון): פס קטן "לשמיעת המנגינה".
+  // מי שלוחץ שומע, ומהפעם הבאה היא מתנגנת לבד; לחיצה נוספת משתיקה. אפשר לשנות גם בהגדרות ← כללי
   try {
-    if ("1" !== localStorage.getItem(SPFX + "introMusicOff")) {
-      const a = new Audio("intro.mp3");
-      a.volume = 0.55;
-      window.__introA = a;
-      const stop = () => {
-        const k = setInterval(() => {
-          a.volume > 0.08 ? (a.volume = Math.max(0, a.volume - 0.08)) : (clearInterval(k), a.pause());
-        }, 40);
-        removeEventListener("pointerdown", stop, !0);
-      };
-      addEventListener("pointerdown", stop, !0);
-      setTimeout(() => {
+    const sp = document.getElementById("splash"),
+      on = "1" === localStorage.getItem(SPFX + "introMusicOn"),
+      a = new Audio("intro.mp3"),
+      b = document.createElement("button");
+    a.volume = 0.55;
+    window.__introA = a;
+    b.id = "spMus";
+    b.type = "button";
+    b.style.cssText = "white-space:nowrap;position:absolute;bottom:calc(10px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);z-index:5;display:flex;align-items:center;gap:8px;padding:9px 18px;border-radius:999px;border:1px solid rgba(243,215,142,.45);background:rgba(18,26,45,.55);color:#f3d78e;font:500 14px Heebo,sans-serif;padding:7px 16px;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)";
+    const lbl = (p) => (b.innerHTML = p ? "🔊 <span>מנגן… לחיצה משתיקה</span>" : "🔇 <span>לחצו לשמיעת המנגינה</span>");
+    let playing = !1;
+    const play = () => {
+        a.currentTime = 0;
         const p = a.play();
-        p && p.catch && p.catch(() => removeEventListener("pointerdown", stop, !0));
-      }, 250 + i);
-    }
+        playing = !0;
+        lbl(!0);
+        p && p.catch && p.catch(() => ((playing = !1), lbl(!1)));
+      },
+      stop = () => {
+        playing = !1;
+        lbl(!1);
+        const k = setInterval(() => {
+          a.volume > 0.08 ? (a.volume = Math.max(0, a.volume - 0.08)) : (clearInterval(k), a.pause(), (a.volume = 0.55));
+        }, 40);
+      };
+    a.addEventListener("ended", () => ((playing = !1), lbl(!1)));
+    b.onclick = (e) => {
+      e.stopPropagation();
+      try {
+        playing ? (localStorage.removeItem(SPFX + "introMusicOn"), stop()) : (localStorage.setItem(SPFX + "introMusicOn", "1"), play());
+      } catch (t) {}
+    };
+    lbl(!1);
+    sp && sp.appendChild(b);
+    on && setTimeout(play, 250 + i);
   } catch (t) {}
   try {
     const t = document.getElementById("spVid");
@@ -1440,15 +1460,10 @@ function MAIN(t) {
         return (
           "📲 מתוך אפליקציית ספרי רבנו – ברסלב PRO" +
           (t ? "\n\n🔗 לפתיחה באפליקציה:\n" + t : "") +
-          "\n\n🌐 אתר / אייפון:\n" +
-          rt.replace(/\/$/, "") +
-          "\n\n🤖 אנדרואיד:\n" +
-          yt +
-          "breslever-pro.apk\n\n💻 ווינדוס:\n" +
-          yt +
-          "breslever-pro-setup.exe\n\n🍎 מק:\n" +
-          yt +
-          "breslever-pro-mac.dmg"
+          // קישור אחד לכל המכשירים – הדף מזהה לבד אנדרואיד / אייפון / מחשב
+          "\n\n📥 להורדת האפליקציה – לכל מכשיר:\n" +
+          rt.replace(/\/?$/, "/") +
+          "get.html"
         );
       })(t)
     );
@@ -21922,9 +21937,10 @@ function doGet(e){
     } catch (t) {}
   }, 4200);
   const rr = {
-    v: "2026-11-15c",
+    v: "2026-11-15e",
     items: [
-      ["2026-11-15", "🎵", "מנגינה קצרה בפתיחה", "כשנכנסים לאפליקציה מתנגנת מנגינה קצרה ונעימה. נגיעה במסך עוצרת אותה, ואפשר לכבות אותה בהגדרות ← כללי."],
+      ["2026-11-15", "🌐", "קישור אחד לכל המכשירים", "בשיתוף מהאפליקציה יש עכשיו קישור הורדה אחד שמזהה לבד אנדרואיד / אייפון / מחשב. ובאייפון ובדפדפן – כל ספר שפתחתם פעם אחת נפתח אחר כך גם בלי אינטרנט."],
+      ["2026-11-15", "🎵", "מנגינה קצרה בפתיחה", "במסך הפתיחה יש פס קטן 🔇 \"לחצו לשמיעת המנגינה\". מי שלוחץ שומע – ומהפעם הבאה היא מתנגנת לבד. לחיצה נוספת משתיקה. אפשר לשנות גם בהגדרות ← כללי."],
       ["2026-11-15", "⚖️", "הבוט מוצא כל סימן בשולחן ערוך", 'אפשר לבקש גם בלי לומר "שולחן ערוך": "תקרא לי חושן משפט סימן א סעיף א", "יורה דעה סימן ב", "אבן העזר סימן ב סעיף ג".'],
       ["2026-11-15", "🎯", "יעדים שמתקדמים איתך", 'תהלים, זוהר, שניים מקרא וכל ספר: המנה של היום נשארת עד שמסמנים "סיימתי" – ולמחרת מחכה המנה הבאה (למשל אחרי תהלים א–ה → ו–י). לא סימנתם? היעד מחכה לכם.'],
       ["2026-11-15", "🎲", "הגרלת דיבור – בוחרים מאיפה", 'ברירת המחדל: ספרי רבנו ותלמידיו, תנ"ך, תהלים וזוהר. אפשר לבחור ספר מסוים מספרי רבנו, רק תורה / נביאים / כתובים, חלקים מהזוהר – ולהוסיף עוד ספרים.'],
@@ -26053,7 +26069,7 @@ function doGet(e){
           '<div class="sw"><span>סרטון פתיחה בכניסה לאפליקציה</span><input type="checkbox" id="introC" ' +
             ("1" === localStorage.getItem(SPFX + "introOff") ? "" : "checked") +
             '></div><div class="sw"><span>🎵 מנגינה קצרה בפתיחה</span><input type="checkbox" id="introMC" ' +
-            ("1" === localStorage.getItem(SPFX + "introMusicOff") ? "" : "checked") +
+            ("1" === localStorage.getItem(SPFX + "introMusicOn") ? "checked" : "") +
             '></div><div class="sw"><span>ברכה בכניסה לאפליקציה</span><input type="checkbox" id="grC" ' +
             (O.greet ? "checked" : "") +
             '></div><div class="sw"><span>דפדוף ספר – מעבר תלת־ממדי בין פרקים (החלקה לצדדים)</span><input type="checkbox" id="flipC" ' + (s.get("flip3d", !1) ? "checked" : "") + '></div><div class="sw"><span>סימון "קראתי" ושלוש נקודות (⋮) ליד כל קטע ופסוק (ברירת המחדל: לפי פרק)</span><input type="checkbox" id="rdC" ' +
@@ -26652,7 +26668,7 @@ function doGet(e){
         mc &&
           (mc.onchange = () => {
             try {
-              mc.checked ? localStorage.removeItem(SPFX + "introMusicOff") : localStorage.setItem(SPFX + "introMusicOff", "1");
+              mc.checked ? localStorage.setItem(SPFX + "introMusicOn", "1") : localStorage.removeItem(SPFX + "introMusicOn");
             } catch (t) {}
             if (mc.checked) {
               try {
