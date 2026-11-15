@@ -28517,8 +28517,11 @@ function doGet(e){
       setTimeout(i, 3e3);
     })());
 }
+// service worker – רק באתר (אייפון / דפדפן). באפליקציה המותקנת ובמחשב הוא לא נחוץ ואף מפריע – מסירים
 ("serviceWorker" in navigator &&
   addEventListener("load", () => {
-    navigator.serviceWorker.register("sw.js").catch(() => {});
+    NAT.on || "https:" !== location.protocol || "localhost" === location.hostname
+      ? navigator.serviceWorker.getRegistrations && navigator.serviceWorker.getRegistrations().then((r) => r.forEach((t) => t.unregister())).catch(() => {})
+      : navigator.serviceWorker.register("sw.js").catch(() => {});
   }),
   BOOT());

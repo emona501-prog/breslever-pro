@@ -2,11 +2,11 @@
 // כל ספר שנפתח פעם אחת נשמר במכשיר; העמוד הראשי – מהרשת כשיש, ומהמטמון כשאין.
 // באפליקציה המותקנת (localhost) לא שומרים כלום – הספרים כבר בתוך האפליקציה.
 const C = 'bpro-v1';
-const WEB = location.protocol === 'https:' && location.hostname !== 'localhost';
+const WEB = location.protocol === 'https:' && /github\.io$/.test(location.hostname);
 self.addEventListener('install', e => self.skipWaiting());
 self.addEventListener('activate', e => e.waitUntil(self.clients.claim()));
-self.addEventListener('fetch', e => {
-  if (!WEB) return;
+// באפליקציה המותקנת – בלי מטפל fetch בכלל (אחרת אנדרואיד מנתב את כל הבקשות דרכו והמסך נשאר כחול)
+if (WEB) self.addEventListener('fetch', e => {
   const r = e.request;
   if (r.method !== 'GET') return;
   const u = new URL(r.url);
