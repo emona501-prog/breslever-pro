@@ -340,8 +340,54 @@ try {
   window.__NAT = NAT;
 } catch (t) {}
 // 📦 טעינה לפי דרישה: בפתיחה נטען רק "שלד" (המבנה של כל הספרים, בלי טקסט). הטקסט של ספר נטען כשפותחים אותו.
+// 🪶 ברסלב PRO לייט – לנגנים ומכשירים עם זיכרון קטן (אותו קוד; window.LITE נקבע בבניית הלייט)
+const LITE = (() => {
+  try {
+    return !!window.LITE;
+  } catch (t) {
+    return !1;
+  }
+})();
+try {
+  LITE && document.documentElement.classList.add("lite");
+} catch (t) {}
 const LZ = {
   on: !1,
+  cap: 8,
+  lru: {},
+  pin: {},
+  keep: null,
+  touch(v) {
+    null != v && (this.lru[v] = performance.now());
+  },
+  // בלייט: משחררים מהזיכרון ספרים שלא השתמשו בהם לאחרונה
+  unload(v) {
+    if (!this.ok[v]) return;
+    (this.fill[v] || []).forEach((t) => t.b && (t.b.length = 0));
+    (this.ir[v] || []).forEach((t) => t.b && (t.b.length = 0));
+    (delete this.ok[v], delete this.p[v], delete this.loc[v]);
+    this.cb.forEach((f) => {
+      try {
+        f(v, 1);
+      } catch (t) {}
+    });
+  },
+  trim() {
+    if (!LITE) return;
+    const L = Object.keys(this.ok).map(Number);
+    if (L.length <= this.cap || Object.keys(this.p).some((v) => !this.ok[v])) return;
+    const K = new Set();
+    try {
+      const k = this.keep && this.keep();
+      [].concat(k || []).forEach((v) => {
+        K.add(v);
+        (this.dep[v] || []).forEach((d) => K.add(d));
+      });
+    } catch (t) {}
+    Object.keys(this.pin).forEach((v) => this.pin[v] > 0 && K.add(+v));
+    const C = L.filter((v) => !K.has(v)).sort((a, b) => (this.lru[a] || 0) - (this.lru[b] || 0));
+    for (let n = L.length; n > this.cap && C.length; n--) this.unload(C.shift());
+  },
   ok: {},
   p: {},
   dep: {},
@@ -395,7 +441,8 @@ const LZ = {
         } finally {
           this.filling--;
         }
-        this.ok[v] = !0;
+        ((this.ok[v] = !0), this.touch(v));
+        LITE && setTimeout(() => this.trim(), 0);
         this.cb.forEach((f) => {
           try {
             f(v);
@@ -408,10 +455,19 @@ const LZ = {
       }));
   },
   ensure(vs, prog) {
+    [].concat(vs).forEach((v) => this.touch(v));
     vs = [...new Set([].concat(vs).filter((v) => null != v && this.url[v] != null && !this.ok[v]))];
     if (!vs.length) return Promise.resolve();
     let k = 0;
-    return Promise.all(vs.map((v) => this.load(v).then(() => prog && prog(++k, vs.length))));
+    // בזמן הטעינה – הספרים של הבקשה "נעוצים" ולא משתחררים
+    vs.forEach((v) => (this.pin[v] = (this.pin[v] || 0) + 1));
+    const un = () => setTimeout(() => vs.forEach((v) => (this.pin[v] = Math.max(0, (this.pin[v] || 0) - 1))), 4e3);
+    return Promise.all(vs.map((v) => this.load(v).then(() => prog && prog(++k, vs.length)))).then(
+      (r) => (un(), r),
+      (e) => {
+        throw (un(), e);
+      },
+    );
   },
   all(prog) {
     return this.ensure(Object.keys(this.url).map(Number), prog);
@@ -744,7 +800,7 @@ async function BOOT() {
       try {
         (t.pause(), t.removeAttribute("autoplay"));
       } catch (t) {}
-      "1" === localStorage.getItem(SPFX + "introOff")
+      LITE || "1" === localStorage.getItem(SPFX + "introOff")
         ? (t.remove(), document.getElementById("splash").classList.add("novid"))
         : (t.addEventListener("playing", () => {
             t.dataset.started = "1";
@@ -8925,7 +8981,17 @@ function MAIN(t) {
   function qc(t, e) {
     {
       const q = (l("#sq") && l("#sq").value) || Nc.q || "";
-      if (LZ.on && q.trim().length >= 2 && lzGate(lzAll(), l("#sRes"), () => qc(t, e), "טוען את הספרים לחיפוש…")) return;
+      if (LITE && !Nc.liteInit) ((Nc.liteInit = 1), "all" === Nc.scope && (Nc.scope = bresScope()));
+      if (LZ.on && q.trim().length >= 2) {
+        let need = lzAll();
+        if (LITE) {
+          const S = Nc.scope || "all";
+          "M" === S[0] ? (need = S.slice(1).split(",").filter((t) => /^V\d+$/.test(t)).map((t) => +t.slice(1))) : /^V\d+$/.test(S) && (need = [+S.slice(1)]);
+          if (need.length > 40 && !Nc.liteAll && !confirm("חיפוש בכל הספרים צורך הרבה זיכרון, ובמכשיר חלש הוא עלול להיות איטי.\nלהמשיך?")) return void ((Nc.scope = bresScope()), qc(t, e));
+          need.length > 40 && (Nc.liteAll = 1);
+        }
+        if (lzGate(need, l("#sRes"), () => qc(t, e), "טוען את הספרים לחיפוש…")) return;
+      }
     }
     (a("#sModes .pill[data-mode]").forEach((t) => t.classList.toggle("on", t.dataset.mode === Nc.mode)),
       a("#sFlex .pill").forEach((t) => {
@@ -12439,7 +12505,7 @@ function MAIN(t) {
     // ---- היקף: ספרים, יחידות, מחברים ----
     const B = E.B;
     const vols = (f) => B.map((b, i) => (b && !b.hidden && f(b, i) ? i : -1)).filter((i) => i >= 0);
-    const BRES = vols((b, i) => ["rn", "rnt", "anash", "tcherin"].includes(b.cat) && ![1, 26].includes(i));
+    const BRES = vols((b, i) => (LITE ? ["rn"] : ["rn", "rnt", "anash", "tcherin"]).includes(b.cat) && ![1, 26].includes(i));
     const STORY = [2, 5, 8, 9, 10, 24, 25, 48, 110, 111, 112];
     const ALIAS = []; // {w:[skel...], vols, lbl, kind}
     const al = (txt, vs, lbl, kind) => txt.split("|").forEach((t) => ALIAS.push({ w: skl(t), vols: vs, lbl, kind }));
@@ -13253,6 +13319,15 @@ function MAIN(t) {
   const BOT_YT = "https://www.youtube.com/@yeshurun148";
   // 📦 טעינה לפי דרישה – עזרים
   const lzVol = (si) => (n[si] && n[si].g ? +String(n[si].g).slice(1) : null);
+  // הספר שפתוח עכשיו לא משתחרר מהזיכרון
+  LZ.keep = () => {
+    const r = [];
+    try {
+      Bt && Bt.p && null != Bt.p.si && r.push(lzVol(Bt.p.si));
+      Bt && Bt.p && null != Bt.p.s && u[Bt.p.s] && r.push(lzVol(u[Bt.p.s].si));
+    } catch (t) {}
+    return r.filter((t) => null != t);
+  };
   const lzAll = () => Object.keys(LZ.url).map(Number);
   const lzBy = (f) => lzAll().filter((v) => $t[v] && f($t[v], v));
   const lzHtml = (msg) => '<div class="lz-load"><div class="lz-spin"></div><div>' + (msg || "טוען את הספר…") + ' <b class="lz-p"></b></div></div>';
@@ -14683,7 +14758,7 @@ function MAIN(t) {
             const P = botQAget().parse(QT);
             sc = P && P.scope && P.scope.length ? P.scope : null;
           } catch (t) {}
-          if (GATE(sc || lzBy((b, v) => ["rn", "rnt", "anash", "tcherin"].includes(b.cat) && ![1, 26].includes(v)), "טוען את הספרים כדי לענות…")) return;
+          if (GATE(sc || lzBy((b, v) => (LITE ? ["rn"] : ["rn", "rnt", "anash", "tcherin"]).includes(b.cat) && ![1, 26].includes(v)), "טוען את הספרים כדי לענות…")) return;
         }
         if (!(W.length && !R) && (!W.length || BOT_SRC_STRONG.test(" " + botNorm(QT) + " ")))
           try {

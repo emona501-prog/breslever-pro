@@ -51,11 +51,31 @@ jobs:
           ./gradlew assembleRelease --no-daemon --stacktrace 2>&1 | tee "$RUNNER_TEMP/gradle.log" || { M=$(grep -v "^\s*$" "$RUNNER_TEMP/gradle.log" | grep -B30 -A12 "What went wrong" | head -60 | sed ':a;N;$!ba;s/%/%25/g;s/\r//g;s/\n/%0A/g'); echo "::error title=gradle::$M"; exit 1; }
       - name: שם הקובץ
         run: cp android/app/build/outputs/apk/release/app-release.apk breslever-pro.apk
+      # 🪶 ברסלב PRO לייט – אותו קוד בדיוק, אפליקציה נפרדת (מזהה אחר) לנגנים ומכשירים עם זיכרון קטן
+      - name: בניית לייט
+        env:
+          KEYSTORE_PATH: ${{ runner.temp }}/release.jks
+          KEYSTORE_PASS: ${{ env.KS_PASS }}
+          VERSION_NAME: ${{ steps.ver.outputs.v }}
+          VERSION_CODE: ${{ github.run_number }}
+        run: |
+          set -e -o pipefail
+          python3 devsrc/patches/mklite.py www/index.html
+          sed -i 's/applicationId "com.chaiproductions.breslovpro"/applicationId "com.chaiproductions.breslovpro.lite"/' android/app/build.gradle
+          grep -q 'breslovpro.lite' android/app/build.gradle
+          for f in android/app/src/main/res/values-iw/strings.xml android/app/src/main/res/values-he/strings.xml; do sed -i 's|>ברסלב פרו<|>ברסלב פרו לייט<|g' "$f"; done
+          sed -i 's|>Breslov Pro<|>Breslov Pro Lite<|g' android/app/src/main/res/values/strings.xml
+          npx cap copy android
+          cd android
+          ./gradlew assembleRelease --no-daemon 2>&1 | tail -20
+          cp app/build/outputs/apk/release/app-release.apk ../breslever-pro-lite.apk
       - name: פרסום בעמוד ההורדות
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ steps.ver.outputs.v }}
           name: ברסלב PRO ${{ steps.ver.outputs.v }}
           body_path: RELEASE_NOTES.md
-          files: breslever-pro.apk
+          files: |
+            breslever-pro.apk
+            breslever-pro-lite.apk
           make_latest: true
