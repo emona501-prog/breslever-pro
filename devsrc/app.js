@@ -657,7 +657,7 @@ async function BOOT() {
   try {
     const sp = document.getElementById("splash"),
       on = "1" === localStorage.getItem(SPFX + "introMusicOn"),
-      a = new Audio("intro.mp3"),
+      a = new Audio("intro2.mp3"),
       b = document.createElement("button");
     a.volume = 0.55;
     window.__introA = a;
@@ -26709,7 +26709,7 @@ function doGet(e){
             } catch (t) {}
             if (mc.checked) {
               try {
-                const a = new Audio("intro.mp3");
+                const a = new Audio("intro2.mp3");
                 ((a.volume = 0.55), a.play().catch(() => {}));
               } catch (t) {}
             }
