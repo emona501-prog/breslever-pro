@@ -652,6 +652,25 @@ async function BOOT() {
       const t = document.getElementById("spLogo");
       t && t.classList.add("out");
     }, 1450 + i));
+  // 🎵 מנגינה קצרה בפתיחה (אפשר לכבות בהגדרות). נעצרת בנגיעה הראשונה
+  try {
+    if ("1" !== localStorage.getItem(SPFX + "introMusicOff")) {
+      const a = new Audio("intro.mp3");
+      a.volume = 0.55;
+      window.__introA = a;
+      const stop = () => {
+        const k = setInterval(() => {
+          a.volume > 0.08 ? (a.volume = Math.max(0, a.volume - 0.08)) : (clearInterval(k), a.pause());
+        }, 40);
+        removeEventListener("pointerdown", stop, !0);
+      };
+      addEventListener("pointerdown", stop, !0);
+      setTimeout(() => {
+        const p = a.play();
+        p && p.catch && p.catch(() => removeEventListener("pointerdown", stop, !0));
+      }, 250 + i);
+    }
+  } catch (t) {}
   try {
     const t = document.getElementById("spVid");
     if (t) {
@@ -13273,13 +13292,20 @@ function MAIN(t) {
           ["חמש", ch],
           ["החמש", ch],
         ].forEach((t) => t[1].length && bcBooks.push({ v: t[1][0], vs: t[1], sk: t[0] }));
+        // "חושן משפט סימן א" בלי "שולחן ערוך" – רק אם לא נמצא ספר אחר (שלא יתבלבל עם "ליקוטי הלכות אורח חיים")
+        sa.forEach((e) => {
+          const t = m(String($t[e].title)).split(/ · /)[1];
+          t && bcBooks.push({ v: e, sk: bcS(bcN(t)), weak: 1 });
+        });
       })());
     const e = " " + bcS(q) + " ";
     let i = null;
     for (const t of bcBooks) {
       const c = new RegExp("(^| )[והבלמש]?" + t.sk.replace(/ /g, " [והבלמש]?") + "(?= |$)").exec(e);
-      c && (!i || t.sk.length > i.sk.length) && (i = Object.assign({ at: c.index + c[0].length - 1 }, t));
+      c && (!i || (i.weak && !t.weak) || (!t.weak === !i.weak && t.sk.length > i.sk.length)) && (i = Object.assign({ at: c.index + c[0].length - 1, from: c.index }, t));
     }
+    // המילים של שם הספר (שלא ייחשבו שם של חלק: "שולחן" ≈ "שלוחין")
+    i && (i.span = [e.slice(0, i.from + 1).trim().split(" ").filter(Boolean).length, e.slice(0, i.at).trim().split(" ").filter(Boolean).length]);
     return i;
   }
   function bcChapter(v, q, after) {
@@ -13347,37 +13373,52 @@ function MAIN(t) {
   const BC_CHK = /^[בלומש]?(תורה|פרק|הלכה|סימנ|שיחה|מעשה|מזמור|מאמר|דפ|מכתב|תפילה|תפלה|שיר|פרשה|תיקונ|תקונ)$/,
     BC_ITK = /^[בלומש]?(אות|סעיפ|פסוק|ובאות)$/;
   // כמה מילים מתחילת שם החלק מופיעות ברצף בבקשה ("הלכות ברכות השחר" ← "הלכות ברכות השחר ושאר ברכות")
-  function bcSecScore(sw, short) {
+  function bcSecScore(sw, short, rw) {
     const full = bcS(bcN(m(String(short || "")))).split(" ").filter(Boolean),
+      fullR = bcF(bcN(m(String(short || "")))).split(" ").filter(Boolean),
       lead = /^(הלכות|הלכת|ענינ|דינ|פרשת|ספר|חלק)$/.test(full[0] || ""),
       // "ספר שלישי" / "חלק ב" – רק בשם המלא (שלא יתבלבל עם "פרק עשרים ושלוש")
       core = lead && !/^(ספר|חלק)$/.test(full[0]) ? full.slice(1) : null,
-      run = (T) => {
+      run = (T, off) => {
         let best = 0;
         for (let i = 0; i < sw.length; i++) {
           let k = 0;
           for (; k < T.length && i + k < sw.length; k++) {
+            // מילה משם הספר – רק התאמה מלאה באותיות ("שולחן" ≠ "שלוחין")
+            // (כתיב מלא/חסר מותר: "תיקון" = "תקון")
             const a = sw[i + k],
-              b = T[k];
-            if (!(a === b || (a.length > b.length && a.slice(a.length - b.length) === b && /^[והבלמש]{1,2}$/.test(a.slice(0, a.length - b.length))))) break;
+              b = T[k],
+              pre = a.length > b.length ? a.slice(0, a.length - b.length) : "";
+            if (!(a === b || (pre && a.slice(pre.length) === b && /^[והבלמש]{1,2}$/.test(pre)))) break;
+            if (rw && rw[i + k]) {
+              const x = rw[i + k].slice(pre.length),
+                y = fullR[k + off] || "",
+                sub = (u, v) => {
+                  let j = 0;
+                  for (const ch of v) u[j] === ch && j++;
+                  return j === u.length;
+                };
+              if (!(x === y || sub(x, y) || sub(y, x))) break;
+            }
           }
           k > best && (best = k);
         }
         return best;
       };
     let sc = 0;
-    const kf = run(full);
+    const kf = run(full, 0);
     // "הלכות X": צריך לפחות את X; חלק בלי מילת פתיחה – לפחות מילה אחת של 3 אותיות
     kf >= Math.min(full.length, lead ? 2 : 1) && (full[lead ? 1 : 0] || "").length >= 2 && (sc = kf + (kf === full.length ? 0.5 : 0) - full.length * 0.01);
     if (core && core.length) {
-      const kc = run(core);
+      const kc = run(core, 1);
       kc >= 1 && core[0].length >= 3 && kc - 0.3 + (kc === core.length ? 0.5 : 0) - core.length * 0.01 > sc && (sc = kc - 0.3 + (kc === core.length ? 0.5 : 0) - core.length * 0.01);
     }
     return sc;
   }
-  function bcLocate(v, q, forceSi) {
+  function bcLocate(v, q, forceSi, span) {
     const w = bcF(q).split(" "),
       sw = w.map((t) => bcS(t)),
+      rw = span ? w.map((t, i) => (i >= span[0] && i < span[1] ? t : null)) : null,
       VS = new Set([].concat(v).map((t) => "V" + t));
     const P = /(^| )[בו]?חלק (ב|שני|השני)( |$)|תנינא/.test(q) ? 2 : /(^| )[בו]?חלק (א|ראשונ|הראשונ)( |$)/.test(bcF(q)) ? 1 : 0;
     const S = [];
@@ -13390,7 +13431,7 @@ function MAIN(t) {
       secLen = 0;
     if (sec < 0)
       S.forEach((si) => {
-        const k = bcSecScore(sw, n[si].short);
+        const k = bcSecScore(sw, n[si].short, rw);
         k > secLen && ((sec = si), (secLen = k));
       });
     // 2) מספר ההלכה/התורה/הפרק/הסימן ומספר האות/הסעיף/הפסוק
@@ -13772,7 +13813,7 @@ function MAIN(t) {
       return null;
     }
     let nm = m(String(($t[B.v] || {}).title || ""));
-    const ch = bcLocate(B.vs || B.v, q, B.si);
+    const ch = bcLocate(B.vs || B.v, q, B.si, B.span);
     if (!ch) return null;
     B.vs && (nm = /^שלחנ/.test(B.sk) || /^ה?שע$/.test(B.sk) ? "שולחן ערוך" : /זהר/.test(B.sk) ? "הזוהר" : "החומש");
     if (!ch.amb) nm = m(String(($t[+String(n[ch.si].g).slice(1)] || {}).title || nm));
@@ -13780,7 +13821,7 @@ function MAIN(t) {
       return { stay: 1, say: "📖 באיזה חלק בדיוק? ב" + o(nm) + " יש «" + o(ch.amb.ct) + "» בהרבה מקומות – למשל ב" + ch.amb.l.map((t) => "«" + o(t) + "»").join(", ") + ". תכתוב גם את שם החלק, למשל: <b>«תקרא לי " + o(nm + " הלכות שבת " + ch.amb.ct) + "»</b>" };
     const c = n[ch.si].c[ch.ci],
       sn = ch.sec || B.si != null ? m(String(n[ch.si].short || "")).replace(/:$/, "") : "",
-      lbl = nm + (sn && sn !== nm ? " · " + sn : "") + (ch.first ? "" : " · " + m(g(String(c.t || ""))).split(/ [-–] /)[0]) + (ch.item ? " · אות " + (c.i[ch.ii].n || ch.item) : ""),
+      lbl = nm + (sn && sn !== nm ? " · " + sn : "") + (ch.first ? "" : " · " + m(g(String(c.t || ""))).split(/ [-–] /)[0]) + (ch.item ? ("sa" === ($t[+String(n[ch.si].g).slice(1)] || {}).cat ? " · סעיף " : " · אות ") + (c.i[ch.ii].n || ch.item) : ""),
       fid = (c.i && c.i[ch.ii] && c.i[ch.ii].id) || (c.i && c.i[0] && c.i[0].id) || null,
       tk = 23 === B.v || "tikkun" === n[ch.si].id,
       acts = [];
@@ -21881,8 +21922,10 @@ function doGet(e){
     } catch (t) {}
   }, 4200);
   const rr = {
-    v: "2026-11-15b",
+    v: "2026-11-15c",
     items: [
+      ["2026-11-15", "🎵", "מנגינה קצרה בפתיחה", "כשנכנסים לאפליקציה מתנגנת מנגינה קצרה ונעימה. נגיעה במסך עוצרת אותה, ואפשר לכבות אותה בהגדרות ← כללי."],
+      ["2026-11-15", "⚖️", "הבוט מוצא כל סימן בשולחן ערוך", 'אפשר לבקש גם בלי לומר "שולחן ערוך": "תקרא לי חושן משפט סימן א סעיף א", "יורה דעה סימן ב", "אבן העזר סימן ב סעיף ג".'],
       ["2026-11-15", "🎯", "יעדים שמתקדמים איתך", 'תהלים, זוהר, שניים מקרא וכל ספר: המנה של היום נשארת עד שמסמנים "סיימתי" – ולמחרת מחכה המנה הבאה (למשל אחרי תהלים א–ה → ו–י). לא סימנתם? היעד מחכה לכם.'],
       ["2026-11-15", "🎲", "הגרלת דיבור – בוחרים מאיפה", 'ברירת המחדל: ספרי רבנו ותלמידיו, תנ"ך, תהלים וזוהר. אפשר לבחור ספר מסוים מספרי רבנו, רק תורה / נביאים / כתובים, חלקים מהזוהר – ולהוסיף עוד ספרים.'],
       ["2026-11-15", "📦", "האפליקציה נפתחת מהר יותר", "הספרים נטענים רק כשפותחים אותם – פחות הורדה ופחות זיכרון."],
@@ -26009,6 +26052,8 @@ function doGet(e){
           "✨ כללי",
           '<div class="sw"><span>סרטון פתיחה בכניסה לאפליקציה</span><input type="checkbox" id="introC" ' +
             ("1" === localStorage.getItem(SPFX + "introOff") ? "" : "checked") +
+            '></div><div class="sw"><span>🎵 מנגינה קצרה בפתיחה</span><input type="checkbox" id="introMC" ' +
+            ("1" === localStorage.getItem(SPFX + "introMusicOff") ? "" : "checked") +
             '></div><div class="sw"><span>ברכה בכניסה לאפליקציה</span><input type="checkbox" id="grC" ' +
             (O.greet ? "checked" : "") +
             '></div><div class="sw"><span>דפדוף ספר – מעבר תלת־ממדי בין פרקים (החלקה לצדדים)</span><input type="checkbox" id="flipC" ' + (s.get("flip3d", !1) ? "checked" : "") + '></div><div class="sw"><span>סימון "קראתי" ושלוש נקודות (⋮) ליד כל קטע ופסוק (ברירת המחדל: לפי פרק)</span><input type="checkbox" id="rdC" ' +
@@ -26602,6 +26647,20 @@ function doGet(e){
               t.checked ? localStorage.removeItem(SPFX + "introOff") : localStorage.setItem(SPFX + "introOff", "1");
             } catch (t) {}
             st(t.checked ? "סרטון הפתיחה יוצג בכניסה" : "סרטון הפתיחה כובה");
+          });
+        const mc = l("#introMC");
+        mc &&
+          (mc.onchange = () => {
+            try {
+              mc.checked ? localStorage.removeItem(SPFX + "introMusicOff") : localStorage.setItem(SPFX + "introMusicOff", "1");
+            } catch (t) {}
+            if (mc.checked) {
+              try {
+                const a = new Audio("intro.mp3");
+                ((a.volume = 0.55), a.play().catch(() => {}));
+              } catch (t) {}
+            }
+            st(mc.checked ? "🎵 המנגינה תתנגן בפתיחה" : "המנגינה בפתיחה כובתה");
           });
       }
       if (
