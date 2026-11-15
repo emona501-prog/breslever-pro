@@ -766,8 +766,8 @@ async function BOOT() {
     window.__introA = a;
     b.id = "spMus";
     b.type = "button";
-    b.style.cssText = "white-space:nowrap;position:absolute;bottom:calc(10px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);z-index:5;display:flex;align-items:center;gap:8px;padding:9px 18px;border-radius:999px;border:1px solid rgba(243,215,142,.45);background:rgba(18,26,45,.55);color:#f3d78e;font:500 14px Heebo,sans-serif;padding:7px 16px;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)";
-    const lbl = (p) => (b.innerHTML = p ? "🔊 <span>מנגן… לחיצה משתיקה</span>" : "🔇 <span>לחצו לשמיעת המנגינה</span>");
+    b.style.cssText = "white-space:nowrap;position:absolute;top:calc(8px + env(safe-area-inset-top));left:8px;z-index:5;display:flex;align-items:center;gap:8px;padding:9px 18px;border-radius:999px;border:1px solid rgba(243,215,142,.45);background:rgba(18,26,45,.55);color:#f3d78e;font:500 13px Heebo,sans-serif;padding:5px 12px;gap:5px;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)";
+    const lbl = (p) => (b.innerHTML = p ? "🔊 <span>השתק</span>" : "🔇 <span>מנגינה</span>");
     let playing = !1;
     const play = () => {
         a.currentTime = 0;
