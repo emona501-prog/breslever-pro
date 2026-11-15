@@ -11943,9 +11943,9 @@ function MAIN(t) {
     for (let t = 0; t < e.per && i.length; t++) l.push(i[(c + t) % i.length]);
     return l;
   }
-  function halLabel(t) {
+  function halLabel(t, ids) {
     try {
-      const e = halIds(t).map((t) => y[t]).filter(Boolean);
+      const e = (ids || halIds(t)).map((t) => y[t]).filter(Boolean);
       if (!e.length) return "";
       const i = e[0],
         c = e[e.length - 1],
@@ -14959,7 +14959,9 @@ function doGet(e){
   };
   // יעד מתקדם (תהלים, זוהר, שמו"ת, ספר): המנה של היום נשארת עד שמסמנים "סיימתי".
   // אחרי הסימון – למחרת מחכה המנה הבאה. לא סימנתם – היעד ממתין.
-  const GOAL_SEQ = ["teh", "zohar", "book", "smt"];
+  const GOAL_SEQ = ["teh", "zohar", "book", "smt", "hal"];
+  // סוג יעד: 🔁 סדר יומי (מתקדם איתי / חוזר כל יום) או ✅ חד-פעמי (מסמנים – והוא יורד מהרשימה)
+  const goalOnce = (g) => !!(g && g.once);
   function goals() {
     const t = s.get("goals", []);
     if (!Array.isArray(t)) return [];
@@ -14967,7 +14969,9 @@ function doGet(e){
       D = s.get("goalsDone", {}) || {};
     let ch = !1;
     t.forEach((g) => {
-      if (!GOAL_SEQ.includes(g.k)) return;
+      // שולחן ערוך: עובר ממעקב לפי תאריכים למעקב "מתקדם איתי" – ממשיכים בדיוק מהמקום של היום
+      "hal" !== g.k || g.hv || ((g.hv = 1), (g.v2 = 1), (ch = !0), (g.q = g.q || halPlan().per || 3), (g.pos = halIdx(0)));
+      if (!GOAL_SEQ.includes(g.k) || goalOnce(g)) return;
       // מעבר מהשיטה הקודמת (שקידמה מיד בסימון)
       if (!g.v2) {
         ((g.v2 = 1), (ch = !0));
@@ -15027,8 +15031,12 @@ function doGet(e){
       if ("tikkun" === t.k) return { lbl: "תיקון הכללי", go: () => It("tikkun") };
       if ("free" === t.k) return { lbl: t.txt || "יעד אישי", go: null };
       if ("hal" === t.k) {
-        const e = halPlan();
-        return e.on ? { lbl: "שולחן ערוך · " + halLabel(0), go: () => halOpen(0) } : { lbl: "שולחן ערוך – יש להפעיל הלכה יומית", go: () => halSheet() };
+        const S = halSeq();
+        if (!S.length) return { lbl: "שולחן ערוך", go: null };
+        const c = (t.pos || 0) % S.length,
+          ids = [];
+        for (let k = 0; k < (t.q || 1); k++) ids.push(S[(c + k) % S.length]);
+        return { lbl: "שולחן ערוך · " + halLabel(0, ids), go: () => Ye(ids[0]) };
       }
       if ("smt" === t.k) {
         const S = goalSeqC.smt || (goalSeqC.smt = goalSeq(t));
@@ -15071,6 +15079,28 @@ function doGet(e){
     const l = goals(),
       a = l.find((e) => e.id === t);
     // לא מקדמים מיד – רק מסמנים את היום; למחרת מחכה המנה הבאה
+    // ✅ יעד חד-פעמי – בוצע ויורד מהרשימה (אפשר לבטל מיד)
+    if (e && goalOnce(a)) {
+      const L = l.filter((t) => t !== a),
+        at = l.indexOf(a);
+      return (
+        goalsSave(L),
+        (() => {
+          const u = document.getElementById("glUndo");
+          u && u.remove();
+          const b = document.createElement("div");
+          ((b.id = "glUndo"),
+            (b.style.cssText = "position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:100000;display:flex;gap:12px;align-items:center;background:#1d2b45;color:#fff;padding:10px 16px;border-radius:999px;box-shadow:0 6px 18px rgba(0,0,0,.25);font:600 14.5px var(--ui-font,Heebo,sans-serif);white-space:nowrap"),
+            (b.innerHTML = '✅ בוצע! היעד ירד מהרשימה <button type="button" style="border:0;background:#f3d78e;color:#1d2b45;border-radius:999px;padding:5px 12px;font-weight:700">ביטול</button>'),
+            document.body.appendChild(b),
+            (b.querySelector("button").onclick = () => {
+              const G = goals();
+              (G.splice(Math.min(at, G.length), 0, a), goalsSave(G), b.remove());
+            }),
+            setTimeout(() => b.remove(), 6e3));
+        })()
+      );
+    }
     if (e && !i[c][t]) (a && GOAL_SEQ.includes(a.k) && (a.dd = halDay()), (i[c][t] = 1));
     else if (!e && i[c][t]) (a && GOAL_SEQ.includes(a.k) && delete a.dd, delete i[c][t]);
     // שומרים רק 60 ימים אחרונים
@@ -15092,7 +15122,7 @@ function doGet(e){
         .map((t, e) => {
           const i = goalToday(t),
             c = goalDone(t.id);
-          return '<div class="gl-it' + (c ? " done" : "") + '"><label class="gl-ck"><input type="checkbox" data-gck="' + t.id + '"' + (c ? " checked" : "") + '></label><button type="button" class="gl-go" data-ggo="' + e + '"><span class="gl-ic">' + (GOAL_T[t.k] || {}).ic + "</span><span><b>" + o(i.lbl) + "</b>" + (i.go ? "<small>לחצו לפתיחה ←</small>" : "") + "</span></button></div>";
+          return '<div class="gl-it' + (c ? " done" : "") + '"><label class="gl-ck"><input type="checkbox" data-gck="' + t.id + '"' + (c ? " checked" : "") + '></label><button type="button" class="gl-go" data-ggo="' + e + '"><span class="gl-ic">' + (GOAL_T[t.k] || {}).ic + "</span><span><b>" + o(i.lbl) + "</b>" + '<small class="gl-md">' + (goalOnce(t) ? "✅ חד-פעמי" : GOAL_SEQ.includes(t.k) ? "🔁 מתקדם איתי" : "🔁 כל יום") + "</small>" + (i.go ? "<small>לחצו לפתיחה ←</small>" : "") + "</span></button></div>";
         })
         .join("")
     );
@@ -15166,8 +15196,9 @@ function doGet(e){
             (s.set("halPlan", Object.assign(halPlan(), { on: !0, pos: 0, d0: halDay() })), halSet({}));
           }
           if ("book" === e) return void (Wt(), setTimeout(() => goalPickBook(c), 260));
+          if ("hal" === e) ((c.hv = 1), (c.v2 = 1), (c.pos = halIdx(0)));
           if (i.q) return void (Wt(), setTimeout(() => goalPickQ(c), 260));
-          (goalsSave(goals().concat([c])), Wt(), st("🎯 היעד נוסף"), setTimeout(goalsOpen, 260));
+          (Wt(), setTimeout(() => goalPickMode(c), 260));
         }),
     );
   }
@@ -15183,8 +15214,23 @@ function doGet(e){
         }),
     ),
       (l("#gqOk", i).onclick = () => {
-        ("hal" === t.k && halSet({ per: t.q }), goalsSave(goals().concat([t])), Wt(), st("🎯 היעד נוסף"), setTimeout(goalsOpen, 260));
+        (Wt(), setTimeout(() => goalPickMode(t), 260));
       }));
+  }
+  function goalPickMode(t) {
+    const seq = GOAL_SEQ.includes(t.k),
+      e = GOAL_T[t.k],
+      i = Ut(
+        "<h3>" + e.ic + " " + e.n + '</h3><div class="sh-sub">איזה סוג יעד?</div><div class="gl-types">' +
+          '<button type="button" data-gm="0"><span>🔁</span><b>' + (seq ? "סדר יומי – מתקדם איתי" : "סדר יומי – כל יום") + "</b><small>" + (seq ? "מסמנים שסיימתם – ולמחרת מחכה ההמשך. לא סימנתם? היעד מחכה לכם" : "חוזר בכל יום מחדש") + "</small></button>" +
+          '<button type="button" data-gm="1"><span>✅</span><b>חד-פעמי</b><small>מסמנים "בוצע" – והיעד יורד מהרשימה</small></button></div>',
+      );
+    a("[data-gm]", i).forEach(
+      (e) =>
+        (e.onclick = () => {
+          ("1" === e.dataset.gm ? (t.once = 1) : delete t.once, goalsSave(goals().concat([t])), Wt(), st("🎯 היעד נוסף"), setTimeout(goalsOpen, 260));
+        }),
+    );
   }
   function goalPickBook(t) {
     const e = Ut(
@@ -15206,12 +15252,12 @@ function doGet(e){
     const t = () => {
       const e = goals(),
         i = Ut(
-          '<h3>✏️ סידור היעדים</h3><div class="sh-sub">הסדר כאן הוא סדר היום שלכם.</div>' +
+          '<h3>✏️ סידור היעדים</h3><div class="sh-sub">הסדר כאן הוא סדר היום שלכם. 🔁/✅ – מחליף בין סדר יומי ליעד חד-פעמי.</div>' +
             (e.length
               ? e
                   .map(
                     (t, i) =>
-                      '<div class="gl-row"><span>' + (GOAL_T[t.k] || {}).ic + " " + o(goalToday(t).lbl) + '</span><button class="btn sm" data-gu="' + i + '"' + (i ? "" : " disabled") + '>▲</button><button class="btn sm" data-gd="' + i + '"' + (i < e.length - 1 ? "" : " disabled") + '>▼</button><button class="btn sm" data-gx="' + i + '">🗑</button></div>',
+                      '<div class="gl-row"><span>' + (GOAL_T[t.k] || {}).ic + " " + o(goalToday(t).lbl) + '</span><button class="btn sm" data-gm="' + i + '" title="סוג היעד">' + (goalOnce(t) ? "✅" : "🔁") + '</button><button class="btn sm" data-gu="' + i + '"' + (i ? "" : " disabled") + '>▲</button><button class="btn sm" data-gd="' + i + '"' + (i < e.length - 1 ? "" : " disabled") + '>▼</button><button class="btn sm" data-gx="' + i + '">🗑</button></div>',
                   )
                   .join("")
               : '<div class="gl-empty">אין יעדים</div>') +
@@ -15221,7 +15267,15 @@ function doGet(e){
           const l = goals();
           ([l[i], l[i + c]] = [l[i + c], l[i]], goalsSave(l), Wt(), setTimeout(t, 200));
         };
-      (a("[data-gu]", i).forEach((t) => (t.onclick = () => c(+t.dataset.gu, -1))),
+      (a("[data-gm]", i).forEach(
+        (e) =>
+          (e.onclick = () => {
+            const L = goals(),
+              g = L[+e.dataset.gm];
+            g && (g.once ? delete g.once : (g.once = 1), goalsSave(L), st(g.once ? "✅ עכשיו חד-פעמי – אחרי הסימון הוא יורד מהרשימה" : "🔁 עכשיו סדר יומי"), Wt(), setTimeout(t, 200));
+          }),
+      ),
+      a("[data-gu]", i).forEach((t) => (t.onclick = () => c(+t.dataset.gu, -1))),
         a("[data-gd]", i).forEach((t) => (t.onclick = () => c(+t.dataset.gd, 1))),
         a("[data-gx]", i).forEach(
           (e) =>
@@ -22025,8 +22079,9 @@ function doGet(e){
     } catch (t) {}
   }, 4200);
   const rr = {
-    v: "2026-11-15f",
+    v: "2026-11-15g",
     items: [
+      ["2026-11-15", "🎯", "יעדים: סדר יומי או חד-פעמי", "כשמוסיפים יעד בוחרים: 🔁 סדר יומי שמתקדם איתכם (תהלים, זוהר, שולחן ערוך, שמו\"ת, כל ספר – למחרת מחכה ההמשך), או ✅ חד-פעמי – מסמנים בוצע והוא יורד מהרשימה. אפשר להחליף ב\"סידור ומחיקה\"."],
       ["2026-11-15", "📖", "שיתוף עם המקור בספרים", "כל קטע ששולחים כולל \"📖 מקור:\" – הספר, החלק, התורה/הסימן והאות/הסעיף/הפסוק. בסיפורים המלוקטים מופיע הספר המקורי שהסיפור לקוח ממנו."],
       ["2026-11-15", "🧠", "הבוט מבין יותר", "שאלות ארוכות כמו \"תחפש לי איפה רבי נחמן סיפר את המעשיות על המהרש\"א\" – הבוט מסנן את המילים המיותרות, ואם לא מצא עם כל המילים הוא מנסה שוב עם החשובות שבהן."],
       ["2026-11-15", "🌐", "קישור אחד לכל המכשירים", "בשיתוף מהאפליקציה יש עכשיו קישור הורדה אחד שמזהה לבד אנדרואיד / אייפון / מחשב. ובאייפון ובדפדפן – כל ספר שפתחתם פעם אחת נפתח אחר כך גם בלי אינטרנט."],
