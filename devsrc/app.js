@@ -335,7 +335,158 @@ const NAT = {
 try {
   window.__NAT = NAT;
 } catch (t) {}
+// 📦 טעינה לפי דרישה: בפתיחה נטען רק "שלד" (המבנה של כל הספרים, בלי טקסט). הטקסט של ספר נטען כשפותחים אותו.
+const LZ = {
+  on: !1,
+  ok: {},
+  p: {},
+  dep: {},
+  url: {},
+  fill: {},
+  ir: {},
+  loc: {},
+  sec: {},
+  cb: [],
+  dbg: (() => {
+    try {
+      return !!localStorage.getItem("lzDbg");
+    } catch (t) {
+      return !1;
+    }
+  })(),
+  seen: {},
+  filling: 0,
+  spy(v) {
+    const L = this;
+    return new Proxy([], {
+      get(t, k) {
+        if (!L.filling && !L.ok[v] && "symbol" != typeof k) {
+          const st = (new Error().stack || "").split("\n").slice(2, 6).join(" | ");
+          L.seen[st] || ((L.seen[st] = 1), console.warn("LZ-UNLOADED V" + v + " ." + String(k) + " :: " + st));
+        }
+        return Reflect.get(t, k);
+      },
+    });
+  },
+  ready(v) {
+    return !this.on || !!this.ok[v];
+  },
+  readyAll(vs) {
+    return !this.on || vs.every((v) => this.ok[v]);
+  },
+  // טוען ספר (וכל ספר שהוא תלוי בו). מחזיר Promise
+  load(v) {
+    if (!this.on || this.ok[v] || null == this.url[v]) return Promise.resolve();
+    if (this.p[v]) return this.p[v];
+    return (this.p[v] = Promise.all((this.dep[v] || []).map((d) => this.load(d)))
+      .then(() => fetch(this.url[v]))
+      .then((r) => {
+        if (!r.ok) throw new Error("load " + this.url[v]);
+        return r.json();
+      })
+      .then((d) => {
+        this.filling++;
+        try {
+          this.fillVol(v, d);
+        } finally {
+          this.filling--;
+        }
+        this.ok[v] = !0;
+        this.cb.forEach((f) => {
+          try {
+            f(v);
+          } catch (t) {}
+        });
+      })
+      .catch((t) => {
+        delete this.p[v];
+        throw t;
+      }));
+  },
+  ensure(vs, prog) {
+    vs = [...new Set([].concat(vs).filter((v) => null != v && this.url[v] != null && !this.ok[v]))];
+    if (!vs.length) return Promise.resolve();
+    let k = 0;
+    return Promise.all(vs.map((v) => this.load(v).then(() => prog && prog(++k, vs.length))));
+  },
+  all(prog) {
+    return this.ensure(Object.keys(this.url).map(Number), prog);
+  },
+  fillVol(v, d) {
+    const F = this.fill[v] || [],
+      loc = [];
+    let k = 0;
+    d.forEach((sc) =>
+      (sc.c || []).forEach((ch) =>
+        (ch.i || []).forEach((it) => {
+          const t = F[k++];
+          if (!t) return;
+          let b = it.b;
+          if (b && !Array.isArray(b) && null != b["@"]) {
+            const r = t.lz;
+            b = r ? (r[0] === v ? loc[r[1]] : (this.loc[r[0]] || [])[r[1]]) : null;
+          } else loc.push(b);
+          Array.isArray(b) && t.b.push(...b);
+        }),
+      ),
+    );
+    this.loc[v] = loc;
+    // קטעים שמובאים מספר אחר (קונטרסים, ליקוט הסיפורים)
+    (this.ir[v] || []).forEach((e) => {
+      const i = e.ir,
+        c = this.sec[i[0]],
+        l = c && (c._rc || c.c)[i[1]],
+        a = l && l.i && l.i[i[2]];
+      if (!a || !a.b) return;
+      if (null != i[5]) {
+        const T = { tr: 1, am: 1, src: 1, sl: 1, fold: 1, ins: 1, go: 1, tch: 1, img: 1 },
+          s = a.b
+            .filter((x) => Array.isArray(x) && x.length > 1 && "string" == typeof x[1] && !T[x[0]])
+            .map((x) => x[1].replace(/<[^>]+>/g, ""))
+            .join(" ")
+            .slice(i[5], i[6]);
+        e.b.push(["go", "📖 " + i[4], i[3]]);
+        i[7] && e.b.push(["p", "<b>״" + i[7].replace(/[<>&]/g, "") + "״</b>"]);
+        e.b.push(["p", (i[8] ? "… " : "") + s + (i[9] ? " …" : "")]);
+        return;
+      }
+      (i[4] && e.b.push(["go", "📖 " + i[4], i[3]]), e.b.push(...a.b));
+    });
+  },
+};
+try {
+  window.__LZ = LZ;
+} catch (t) {}
+async function loadSkel(t) {
+  const r = await fetch(window.BOOK_SKEL);
+  if (!r.ok) throw new Error("load skel");
+  t.style.width = "60%";
+  const S = await r.json(),
+    out = [];
+  LZ.on = !0;
+  S.order.forEach((v) => {
+    const K = S.v[v];
+    ((LZ.url[v] = K.u), (LZ.dep[v] = K.d || []), (LZ.fill[v] = []), (LZ.ir[v] = []));
+    K.s.forEach((sc) => {
+      (sc.c || []).forEach((ch) =>
+        (ch.i || []).forEach((it) => {
+          it.b = LZ.dbg ? LZ.spy(v) : [];
+          it.ir ? LZ.ir[v].push(it) : ((it["@"] && ((it.lz = it["@"]), delete it["@"])), LZ.fill[v].push(it));
+        }),
+      );
+      ((sc._rc = (sc.c || []).slice()), sc.id && (LZ.sec[sc.id] = sc), out.push(sc));
+    });
+  });
+  return out;
+}
 async function loadBookRaw(t) {
+  if (window.BOOK_SKEL && "undefined" != typeof fetch)
+    try {
+      return await loadSkel(t);
+    } catch (e) {
+      console.warn("skel", e);
+      LZ.on = !1;
+    }
   const e = window.BOOK_DATA_URLS;
   if (e && e.length) {
     let i = 0;
@@ -1523,6 +1674,15 @@ function MAIN(t) {
       } catch (t) {}
       ((I = i), (U = c));
     }
+    // 📦 הספר עוד לא נטען – מציגים "טוען…" וממשיכים כשמוכן
+    if (LZ.on && "reader" === t && e) {
+      let need = [];
+      try {
+        null != e.si && n[e.si] ? (need = [lzVol(e.si)]) : (e.tbk || e.tbkm) && (need = lzBy((b) => "tanach" === b.cat || "teh" === b.cat));
+      } catch (t) {}
+      const el = document.getElementById(jt[t]);
+      if (need.length && lzGate(need, el && (el.querySelector("#reader") || el), () => Bt.v === t && Bt.p === e && Pt(t, e, i), "טוען את הספר…")) return;
+    }
     const c = Ft[t];
     c && c(e);
     try {
@@ -2349,7 +2509,7 @@ function MAIN(t) {
                               : l.some((t) => t.every((t) => n.some((e) => e.startsWith(t)))) && (r = 1),
                               r && a.push({ si: c, ci: o, sc: r, t: m(e.t), sub: m(t.short) }),
                               e.i.forEach((l) => {
-                                const s = l.b && l.b[0];
+                                const s = l.h0 ? ["h", l.h0] : l.b && l.b[0];
                                 if (!s || "h" !== s[0]) return;
                                 const n = In(g(s[1]));
                                 i.every((t) => n.some((e) => e.startsWith(t))) &&
@@ -5824,7 +5984,7 @@ function MAIN(t) {
           a = i ? i[1] : "";
         t.i.forEach((t) => {
           if (!t.n) return;
-          const i = (t.b.find((t) => "sl" === t[0]) || [])[1],
+          const i = t.sl || (t.b.find((t) => "sl" === t[0]) || [])[1],
             o = i ? m(g(i)).trim() : "";
           if (!l || (o && "מפטיר" !== o && oi.includes(o))) {
             const i = c.length;
@@ -8660,6 +8820,10 @@ function MAIN(t) {
   const Nc = { mode: "all", whole: "whole" === ac.sm, scope: "all", q: "", shown: 60, last: null, sel: new Set() };
   let Bc;
   function qc(t, e) {
+    {
+      const q = (l("#sq") && l("#sq").value) || Nc.q || "";
+      if (LZ.on && q.trim().length >= 2 && lzGate(lzAll(), l("#sRes"), () => qc(t, e), "טוען את הספרים לחיפוש…")) return;
+    }
     (a("#sModes .pill[data-mode]").forEach((t) => t.classList.toggle("on", t.dataset.mode === Nc.mode)),
       a("#sFlex .pill").forEach((t) => {
         const e = t.dataset.sx;
@@ -9758,6 +9922,10 @@ function MAIN(t) {
   let Vc = null;
   let Qc = "all";
   function Uc() {
+    if (LZ.on) {
+      const need = "all" === Qc ? lzAll() : "sel" === Qc ? rndSel() : "V" === Qc[0] ? [+Qc.slice(1)] : u[Qc] ? [lzVol(u[Qc].si)] : lzAll();
+      if (lzGate(need, l("#rCard"), Uc, "טוען את הספרים להגרלה…")) return;
+    }
     const t = h.filter(
       (t) =>
         "tikkun" !== t.s.id &&
@@ -12849,6 +13017,27 @@ function MAIN(t) {
   // 🛠️ העוזר מבצע פעולות: חוברת לפי נושא
   // 🛠️ העוזר מבצע: פתח / תקריא (עם סימון) / תריץ את המסך / צור סטטוס / תזכיר לי
   const BOT_YT = "https://www.youtube.com/@yeshurun148";
+  // 📦 טעינה לפי דרישה – עזרים
+  const lzVol = (si) => (n[si] && n[si].g ? +String(n[si].g).slice(1) : null);
+  const lzAll = () => Object.keys(LZ.url).map(Number);
+  const lzBy = (f) => lzAll().filter((v) => $t[v] && f($t[v], v));
+  const lzHtml = (msg) => '<div class="lz-load"><div class="lz-spin"></div><div>' + (msg || "טוען את הספר…") + ' <b class="lz-p"></b></div></div>';
+  // מציג "טוען…" בתוך el, טוען את הספרים ואז מריץ again. מחזיר true אם צריך לחכות
+  function lzGate(vols, el, again, msg) {
+    if (!LZ.on || LZ.readyAll(vols)) return !1;
+    el && (el.innerHTML = lzHtml(msg));
+    LZ.ensure(vols, (k, N) => {
+      const p = el && el.querySelector(".lz-p");
+      p && N > 1 && (p.textContent = k + "/" + N);
+    })
+      .then(() => again())
+      .catch(() => {
+        el && (el.innerHTML = '<div class="lz-load">😔 לא הצלחתי לטעון. בדקו את החיבור לאינטרנט ונסו שוב. <button class="btn sm lz-retry">🔄 נסה שוב</button></div>');
+        const b = el && el.querySelector(".lz-retry");
+        b && (b.onclick = () => lzGate(vols, el, again, msg));
+      });
+    return !0;
+  }
   // 🙏 מי יצר את העוזר + הערוץ – ופנייה (השארת פרטים) אם רוצים אפליקציה / הפקת שיר
   let botLead = null,
     botLeadTopic = "";
@@ -13224,7 +13413,7 @@ function MAIN(t) {
   function bcWait(id, fn, ms, any) {
     const t0 = Date.now(),
       k = () => {
-        const el = any ? document.querySelector("#reader .item") : id && document.querySelector('#reader .item[data-id="' + String(id).replace(/"/g, "") + '"]');
+        const el = "function" == typeof id ? id() : any ? document.querySelector("#reader .item") : id && document.querySelector('#reader .item[data-id="' + String(id).replace(/"/g, "") + '"]');
         if (el || (!id && !any)) return void setTimeout(fn, any ? 700 : 250);
         if (Date.now() - t0 > (ms || 8e3)) return void fn();
         setTimeout(k, 150);
@@ -13269,6 +13458,8 @@ function MAIN(t) {
         }));
   }
   function botStoryCmd(q, read) {
+    // 📦 ספרי הסיפורים (הליקוט תלוי בכל הספרים שהסיפורים לקוחים מהם)
+    if (LZ.on && !LZ.ready(2)) return { lz: [2], say: "", run: () => {} };
     const more = /(^| )(עוד|אחר|נוסף|הבא)( |$)/.test(q) && !/ על /.test(" " + q + " ");
     if (more && botStoryLast && botStoryLast.k + 1 < botStoryLast.list.length) {
       const t = botStoryLast,
@@ -13359,12 +13550,16 @@ function MAIN(t) {
         run: () => {
           const t = Kd(0);
           t && t.si >= 0 && t.k >= 0 ? It("reader", { si: t.si, aly: t.k }) : It("calendar");
-          bcWait(null, () => {
+          const sid = t && t.si >= 0 && n[t.si] ? n[t.si].id + "." : "";
+          bcWait(() => {
+            const f = document.querySelector("#reader .item");
+            return f && (!sid || String(f.dataset.id).startsWith(sid)) ? f : null;
+          }, () => {
             const f = document.querySelector("#reader .item");
             try {
               (R && f && (H && s.set("ttsHl", !0), mf.fromItem(f.dataset.id)), C && setTimeout(() => ld.start(), R ? 600 : 0));
             } catch (t) {}
-          }, 0, 1);
+          });
         },
       };
     }
@@ -13972,13 +14167,16 @@ function MAIN(t) {
       clrV = () => {
         (l("#botClr", e).style.display = thr() && (LG.children.length || c.dataset.q) ? "" : "none");
       },
-      n = () => {
-        const t = (i.value || "").trim();
+      n = (qo, re) => {
+        const t = (null != qo && "string" == typeof qo ? qo : i.value || "").trim();
+        re = !0 === re;
+        // 📦 אחרי שהספרים נטענו – ממשיכים את אותה שאלה (בלי להכפיל אותה בשרשור)
+        const GATE = (vols, msg) => !!(LZ.on && !LZ.readyAll(vols) && lzGate(vols, c, () => n(t, !0), msg || "טוען את הספרים…"));
         // שליחה כפולה (Enter + "שאל" / מקלדת ששולחת פעמיים) – מתעלמים
-        if (t.length >= 2 && botLastQ.t === t && Date.now() - botLastQ.at < 2500) return;
+        if (!re && t.length >= 2 && botLastQ.t === t && Date.now() - botLastQ.at < 2500) return;
         t.length >= 2 && (botLastQ = { t, at: Date.now() });
         // 💬 שרשור: התשובה הקודמת עוברת להיסטוריה
-        if (thr() && t.length >= 2 && c.dataset.q) {
+        if (!re && thr() && t.length >= 2 && c.dataset.q) {
           const t = document.createElement("div");
           t.className = "bot-turn";
           const e = document.createElement("div");
@@ -13987,9 +14185,10 @@ function MAIN(t) {
           (LG.appendChild(t), (botLogNodes = [...LG.children]));
         }
         t.length >= 2 && ((c.dataset.q = t), thr() ? ((ME.hidden = !1), (ME.textContent = t)) : (ME.hidden = !0));
-        (setTimeout(() => {
-          (clrV(), thr() && t.length >= 2 && (botSetVal(i, ""), (XB.hidden = !0), ME.scrollIntoView({ block: "start", behavior: "smooth" })));
-        }, 30));
+        re ||
+          setTimeout(() => {
+            (clrV(), thr() && t.length >= 2 && (botSetVal(i, ""), (XB.hidden = !0), ME.scrollIntoView({ block: "start", behavior: "smooth" })));
+          }, 30);
         if (t.length < 2) return void (c.dataset.q || LG.children.length || (c.innerHTML = '<div class="bot-tip">👋 שלום! אני העוזר שלך – שאל אותי, או בקש שאעשה משהו בשבילך. רעיונות יש בלשונית "💡 דוגמאות" למעלה.</div>'));
         // 🙏 מי יצר אותי / הערוץ / השארת פרטים
         {
@@ -14005,6 +14204,8 @@ function MAIN(t) {
         // 🧭 לימוד מודרך
         {
           const PK = (t, e) => {
+            // 📦 הספרים של הלימוד המודרך – נטענים לפני
+            if (LZ.on && !LZ.readyAll(BOT_PACKV())) return (lzGate(BOT_PACKV(), c, () => PK(t, e), "טוען את הספרים…"), !0);
             const i = botPackHtml(t, e);
             if (!i) return ((c.innerHTML = '<div class="bot-say">לא מצאתי דיבורים על «' + o(t) + "» 🙏 נסה נושא אחר:</div>" + botTopicAsk().replace(/^<div class="bot-say">[\s\S]*?<\/div>/, "")), TB(), !0);
             ((c.innerHTML = i.html),
@@ -14077,6 +14278,7 @@ function MAIN(t) {
         }
         // 🛠️ פקודות: פתח / תקריא / תריץ / סטטוס / תזכיר לי
         const CM = botCmd(t);
+        if (CM && CM.lz) return void GATE(CM.lz, "טוען את הסיפורים…");
         if (CM && CM.stay && CM.opts) {
           c.innerHTML = '<div class="bot-say">' + CM.say + '</div><div class="bot-chips">' + CM.opts.map((t, e) => '<button class="pill" data-bo="' + e + '">' + o(t[0]) + "</button>").join("") + "</div>";
           a("[data-bo]", c).forEach((t) => (t.onclick = () => botOpen(CM.opts[+t.dataset.bo][1])));
@@ -14139,6 +14341,7 @@ function MAIN(t) {
             })()
           );
         }
+        if (LZ.on && !LZ.readyAll([11]) && /(חזק|חיזוק|מיואש|ייאוש|יאוש|עצוב|קשה לי|נשבר)/.test(t) && GATE([11])) return;
         const T = botTalk(t);
         // 💪 חיזוק – לפי מה שהכותב מרגיש (מצוקה חמורה נשארת עם התשובה הקיימת וקווי הסיוע)
         if (!T.hits.some((t) => "distress" === t.k)) {
@@ -14170,6 +14373,14 @@ function MAIN(t) {
         // 📚 שאלה על תוכן הספרים
         let QV = null;
         const QT = W.length ? T.rest : t;
+        if (!(W.length && !R) && (!W.length || BOT_SRC_STRONG.test(" " + botNorm(QT) + " ")) && LZ.on) {
+          let sc = null;
+          try {
+            const P = botQAget().parse(QT);
+            sc = P && P.scope && P.scope.length ? P.scope : null;
+          } catch (t) {}
+          if (GATE(sc || lzBy((b, v) => ["rn", "rnt", "anash", "tcherin"].includes(b.cat) && ![1, 26].includes(v)), "טוען את הספרים כדי לענות…")) return;
+        }
         if (!(W.length && !R) && (!W.length || BOT_SRC_STRONG.test(" " + botNorm(QT) + " ")))
           try {
             const r = botQAget().ask(QT);
@@ -14306,6 +14517,12 @@ function MAIN(t) {
       clrV());
   }
   window.__botOpen = botOpen;
+  window.__It = It;
+  window.__We = We;
+  // 📦 כשספר נטען – מנקים את המטמונים שנבנו מהטקסט
+  LZ.cb.push(() => {
+    (($i = null), (gc = null), (Lc = null), (botQA = null), (botStoryS = null));
+  });
   window.__yt2 = (t) => (y[t] ? m(g((y[t].it.b || []).map((t) => t[1]).join(" "))) : null);
   window.__findPh = (t) => {
     const e = ic();
@@ -20729,7 +20946,9 @@ function doGet(e){
     const i = m(e.c.t),
       c = m(e.s.short);
     if (t.c) return { t: i, sub: i === c ? "" : c, r: e };
-    if (e.it.b[0] && "h" === e.it.b[0][0]) return { t: m(g(e.it.b[0][1])), sub: i === c ? i : i + " · " + c, r: e };
+    if (e.it.h0 || (e.it.b[0] && "h" === e.it.b[0][0])) return { t: m(g(e.it.h0 || e.it.b[0][1])), sub: i === c ? i : i + " · " + c, r: e };
+    // 📦 הספר עוד לא נטען – כותרת לפי הפרק והאות
+    if (!e.it.b.length) return { t: i + (e.it.n ? " · " + m(String(e.it.n)) : ""), sub: i === c ? "" : c, r: e };
     return {
       t:
         m(g(e.it.b.map((t) => ("string" == typeof t[1] ? t[1].replace(/<small>[\s\S]*?<\/small>/g, " ").replace(/<br>/g, " ") : "")).join(" ")))
@@ -27836,6 +28055,8 @@ function doGet(e){
     try {
       const t = NAT.on ? NAT.P("WidgetBridge") : null;
       if (!t) return;
+      // 📦 הדיבורים בווידג'ט – מהספרים שנבחרו; טוענים אותם קודם
+      if (LZ.on && !LZ.readyAll(wdgVols())) return void LZ.ensure(wdgVols()).then(Jd).catch(() => {});
       t.update({ data: JSON.stringify(Xd()) }).catch(() => {});
     } catch (t) {}
   }
@@ -27970,7 +28191,7 @@ function doGet(e){
       const e = new Array(h.length),
         i = () => setTimeout(c, 16);
       function c() {
-        if ($i || Tf.on) return;
+        if ($i || Tf.on || (LZ.on && !LZ.readyAll(lzAll()))) return;
         const c = performance.now();
         for (; t < h.length && performance.now() - c < 35;) ((e[t] = ec(h[t])), t++);
         t < h.length ? i() : $i || Tf.on || ($i = e);

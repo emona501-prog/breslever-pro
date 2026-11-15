@@ -1,4 +1,5 @@
 #!/bin/bash
+python3 /home/claude/content/lazy/gen_skel.py >/dev/null || exit 1
 # בנייה: app.js (מקור קריא) -> www/index.html (מוקטן) בריפו
 set -e
 cd /home/claude/src
