@@ -208,9 +208,13 @@ const PERSIST = {
       navigator.storage && navigator.storage.persist && navigator.storage.persist().catch(() => {});
     } catch (t) {}
     try {
-      if (!localStorage.getItem(SPFX + "alive")) {
+      // (שחזור + טעינה מחדש – פעם אחת בלבד, שלא תיווצר לולאה של טעינות)
+      if (!localStorage.getItem(SPFX + "alive") && !sessionStorage.getItem(SPFX + "restoreTried")) {
+        try {
+          sessionStorage.setItem(SPFX + "restoreTried", "1");
+        } catch (t) {}
         const t = await this.get("cur");
-        if (t && t.data && Object.keys(t.data).length)
+        if (t && t.data && Object.keys(t.data).length && sessionStorage.getItem(SPFX + "restoreTried"))
           return (
             Object.keys(t.data).forEach((e) => {
               try {
@@ -643,6 +647,49 @@ async function myBooksInject(t) {
         ((c.c0 = c.c.slice()), t.push(c));
       }));
 }
+// 🛟 שומר-כניסה: אם הפתיחה נתקעת – מראים מה קרה (לצילום מסך) ואפשר להמשיך / לנסות שוב
+window.__bootErr = [];
+window.__bs = "start";
+addEventListener("error", (t) => {
+  try {
+    window.__bootErr.push(String((t && (t.message || (t.error && t.error.message))) || "error") + (t && t.filename ? " @" + String(t.filename).split("/").pop() + ":" + t.lineno + ":" + t.colno : ""));
+  } catch (e) {}
+});
+addEventListener("unhandledrejection", (t) => {
+  try {
+    window.__bootErr.push("promise: " + String((t && t.reason && (t.reason.stack || t.reason.message)) || (t && t.reason) || "").slice(0, 300));
+  } catch (e) {}
+});
+function bootRescue(why) {
+  try {
+    const sp = document.getElementById("splash");
+    if (!sp || !sp.isConnected) return;
+    const v = document.getElementById("spVid");
+    try {
+      v && (v.pause(), v.remove());
+    } catch (t) {}
+    sp.classList.add("novid");
+    let box = document.getElementById("spRescue");
+    box ||
+      ((box = document.createElement("div")),
+      (box.id = "spRescue"),
+      (box.style.cssText = "position:relative;z-index:9;max-width:92vw;margin-top:14px;background:rgba(0,0,0,.35);border:1px solid rgba(243,215,142,.4);border-radius:14px;padding:12px 14px;color:#f6efdc;font:14px/1.5 Heebo,sans-serif;text-align:center"),
+      sp.appendChild(box));
+    const err = (window.__bootErr || []).slice(-4).join("\n");
+    box.innerHTML =
+      "<b>" + (why || "הפתיחה לוקחת יותר זמן מהרגיל") + "</b><br><small>צלמו את המסך ושלחו לנו – זה יעזור לתקן</small>" +
+      '<div dir="ltr" style="font:11px/1.4 monospace;opacity:.85;margin:8px 0;white-space:pre-wrap;word-break:break-all;text-align:left">v' + "1.0.64" + " · " + (NAT.on ? "app" : "web") + " · step=" + window.__bs + "\n" + err.replace(/[<&]/g, (c) => ({ "<": "&lt;", "&": "&amp;" })[c]) + "</div>" +
+      '<button id="spRetry" style="margin:4px;padding:8px 16px;border-radius:999px;border:0;background:#f3d78e;color:#1d2b45;font-weight:700">🔄 לנסות שוב</button>' +
+      '<button id="spGo" style="margin:4px;padding:8px 16px;border-radius:999px;border:1px solid #f3d78e;background:transparent;color:#f3d78e;font-weight:700">להמשיך בכל זאת ←</button>';
+    document.getElementById("spRetry").onclick = () => location.reload();
+    document.getElementById("spGo").onclick = () => {
+      sp.style.transition = "opacity .3s";
+      sp.style.opacity = "0";
+      setTimeout(() => sp.remove(), 320);
+    };
+  } catch (t) {}
+}
+setTimeout(() => bootRescue(), 16e3);
 async function BOOT() {
   const t = document.getElementById("spMsg"),
     e = document.getElementById("spBar"),
@@ -718,9 +765,11 @@ async function BOOT() {
           }, 1550));
     }
   } catch (t) {}
+  window.__bs = "persist";
   try {
     if (await PERSIST.boot()) return;
   } catch (t) {}
+  window.__bs = "load";
   applyBookText();
   try {
     const i = await loadBookRaw(e);
@@ -797,7 +846,9 @@ async function BOOT() {
     }
     ((t.textContent = "מכין את הספר…"),
       await new Promise((t) => setTimeout(t, 20)),
+      (window.__bs = "main"),
       MAIN(c),
+      (window.__bs = "done"),
       setTimeout(() => {
         try {
           const t = sessionStorage.getItem(SPFX + "admGo");
@@ -809,6 +860,8 @@ async function BOOT() {
       splashDone());
   } catch (e) {
     (console.error(e),
+      window.__bootErr.push("BOOT: " + String((e && (e.stack || e.message)) || e).slice(0, 400)),
+      setTimeout(() => bootRescue("אירעה שגיאה בפתיחה"), 300),
       (t.innerHTML =
         e && "nods" === e.message
           ? "הדפדפן הזה ישן מדי לפתיחת הספר.<br>עדכן את Chrome ונסה שוב."
