@@ -22393,11 +22393,16 @@ function doGet(e){
           }
           const i = () =>
             (function (t) {
+              // רק מה שחדש לעומת הגרסה שמותקנת אצלכם, בלי סימני עריכה (## / **)
+              let keep = !0;
               const e = String(t.notes || "")
                   .split(/\r?\n/)
-                  .map((t) => t.replace(/^[-*•]\s*/, "").trim())
-                  .filter(Boolean)
-                  .slice(0, 12),
+                  .map((t) => {
+                    const h = /^#+\s*.*?(\d+\.\d+\.\d+)/.exec(t);
+                    return h ? ((keep = hr(h[1], pr)), keep ? "§גרסה " + h[1] : "") : keep ? t.replace(/^[-*•]\s*/, "").replace(/\*\*/g, "").trim() : "";
+                  })
+                  .filter((t) => t && !/^#/.test(t))
+                  .slice(0, 14),
                 i = Ut(
                   '<div class="wn"><div class="wn-h"><img src="' +
                     ue +
@@ -22411,9 +22416,9 @@ function doGet(e){
                       ? e
                           .map(
                             (t) =>
-                              '<div class="wn-i"><span class="wn-ic">✨</span><span><small style="color:var(--ink);font-size:14px">' +
-                              o(t) +
-                              "</small></span></div>",
+                              "§" === t[0]
+                                ? '<div style="font-weight:700;color:var(--accent,#8a6a2a);margin:10px 0 2px;font-size:14px">📦 ' + o(t.slice(1)) + "</div>"
+                                : '<div class="wn-i"><span class="wn-ic">✨</span><span><small style="color:var(--ink);font-size:14px">' + o(t) + "</small></span></div>",
                           )
                           .join("")
                       : "") +
