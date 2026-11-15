@@ -31,6 +31,15 @@
   .all a.me{border-color:var(--gold);box-shadow:0 0 0 2px rgba(176,138,58,.25)}
   footer{text-align:center;color:var(--soft);font-size:14px;margin-top:28px}
   [hidden]{display:none!important}
+  .ver{display:grid;gap:10px;margin:14px 0}
+  .vc{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px}
+  .vc.rec{border-color:var(--gold);box-shadow:0 0 0 2px rgba(176,138,58,.25)}
+  .vc h3{margin:0 0 4px;font-size:17px}
+  .vc p{margin:0 0 10px;color:var(--soft);font-size:14.5px}
+  .vc a{display:block;text-align:center;background:var(--ink);color:#fff;text-decoration:none;font-weight:700;padding:11px;border-radius:12px}
+  .vc.rec a{background:var(--gold)}
+  .tag{display:inline-block;background:#e9f5ec;color:#2b6b3b;border-radius:999px;padding:1px 9px;font-size:12.5px;font-weight:700;margin-inline-start:6px;vertical-align:middle}
+  .all a.wide{grid-column:1/-1}
 </style>
 </head>
 <body>
@@ -48,6 +57,7 @@
     <a id="aI" href="iphone.html"><span>🍏</span>אייפון / אייפד</a>
     <a id="aW" href="https://github.com/emona501-prog/breslever-pro/releases/latest/download/breslever-pro-setup.exe"><span>💻</span>Windows</a>
     <a id="aM" href="https://github.com/emona501-prog/breslever-pro/releases/latest/download/breslever-pro-mac.dmg"><span>🖥️</span>מק</a>
+    <a id="aL" class="wide" href="https://github.com/emona501-prog/breslever-pro/releases/latest/download/breslever-pro_lite.apk"><span>🪶</span>אנדרואיד לייט – לנגנים ומכשירים חלשים</a>
   </div>
   <a class="main" style="background:var(--ink);font-size:16px;padding:12px;margin-top:14px" href="./">🌐 או פתיחה מיד בדפדפן</a>
 
@@ -61,9 +71,15 @@
   else if(/windows/i.test(ua)) os="W";
   else if(/Macintosh|Mac OS X/.test(ua)) os="M";
   var D={
-    A:'<a class="main" href="'+document.getElementById("aA").href+'">📲 הורדה לאנדרואיד</a><div class="sub">עובדת גם בלי אינטרנט</div>'+
-      '<div class="sub">🪶 לנגן או מכשיר חלש: <a href="https://github.com/emona501-prog/breslever-pro/releases/latest/download/breslever-pro_lite.apk">ברסלב PRO לייט</a></div>'+
-      '<div class="note">אחרי ההורדה: פותחים את הקובץ <b>breslever-pro.apk</b> מההתראה או מ"הורדות". אם הטלפון שואל – מאשרים <b>"התקנה ממקור זה"</b> ולוחצים <b>"התקן"</b>.</div>',
+    A:(function(){
+      // זיכרון המכשיר (כרום באנדרואיד יודע להגיד בערך): 3GB ומטה – ממליצים על לייט
+      var m=navigator.deviceMemory||0, lite=m&&m<=3;
+      var reg='<div class="vc'+(lite?'':' rec')+'"><h3>📲 ברסלב PRO'+(lite?'':'<span class="tag">מומלץ לכם</span>')+'</h3><p>לטלפון רגיל. כל האפשרויות במלואן: סרטון פתיחה, חיפוש בכל הספרים בבת אחת, ובוט שעונה מכל ספרי ברסלב.</p><a href="'+document.getElementById("aA").href+'">הורדה – ברסלב PRO</a></div>';
+      var lt='<div class="vc'+(lite?' rec':'')+'"><h3>🪶 ברסלב PRO לייט'+(lite?'<span class="tag">מומלץ למכשיר שלכם</span>':'')+'</h3><p>לנגנים, מכשירים כשרים וטלפונים עם זיכרון קטן (RAM של 3GB ומטה). <b>אותם ספרים בדיוק – כולם</b>, ואותה אפליקציה, רק מערכת קלה יותר: בלי סרטון פתיחה ואפקטים, ספרים שלא בשימוש משתחררים מהזיכרון, והחיפוש והבוט עובדים בחלקים. מי שיש לו טלפון חזק – לא צריך את הלייט.</p><a href="'+document.getElementById("aL").href+'">הורדה – ברסלב PRO לייט</a></div>';
+      return '<h2 style="margin-top:20px">איזו גרסה מתאימה לי?</h2><div class="ver">'+(lite?lt+reg:reg+lt)+'</div>'+
+        '<div class="sub">עובדות גם בלי אינטרנט · אפשר להתקין גם את שתיהן (כל אחת שומרת סימניות ויעדים משלה)</div>'+
+        '<div class="note">אחרי ההורדה: פותחים את הקובץ שירד מההתראה או מ"הורדות". אם הטלפון שואל – מאשרים <b>"התקנה ממקור זה"</b> ולוחצים <b>"התקן"</b>.</div>';
+    })(),
     I:'<a class="main" href="iphone.html">🍏 התקנה לאייפון – 4 צעדים קצרים</a><div class="sub">מוסיפים את האפליקציה למסך הבית דרך Safari</div>',
     W:'<a class="main" href="'+document.getElementById("aW").href+'">💻 הורדה ל-Windows</a><div class="sub">עובדת גם בלי אינטרנט. אם מופיעה אזהרה כחולה – "מידע נוסף" ← "הפעל בכל זאת"</div>',
     M:'<a class="main" href="'+document.getElementById("aM").href+'">🖥️ הורדה למק</a><div class="sub">עובדת גם בלי אינטרנט. בפתיחה הראשונה: לחיצה ימנית על האפליקציה ← "פתח"</div>'
