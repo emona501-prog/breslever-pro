@@ -21642,8 +21642,11 @@ function doGet(e){
               Qn.got || Jn();
             }, 2500);
           })
-          .catch(() => {
-            ((Qn.natFail = !0), Qn.on && (window.addEventListener("deviceorientationabsolute", Un, !0), window.addEventListener("deviceorientation", Un, !0)));
+          .catch((e) => {
+            // אין חיישן מצפן בכלל (נפוץ בנגנים ובמכשירים כשרים)
+            (/no compass sensor/.test(String((e && e.message) || e)) && ((Qn.noSens = !0), setTimeout(Jn, 50)),
+              (Qn.natFail = !0),
+              Qn.on && (window.addEventListener("deviceorientationabsolute", Un, !0), window.addEventListener("deviceorientation", Un, !0)));
           })
       );
     }
@@ -21697,7 +21700,7 @@ function doGet(e){
                       : "נמוך – כיילו (תנועת 8)";
               return (
                 " · 📡 חיישן הטלפון" +
-                ("geo" === Qn.src ? " (בלי ג׳ירוסקופ)" : "") +
+                ("geo" === Qn.src || "am" === Qn.src ? " (בלי ג׳ירוסקופ)" : "") +
                 " · דיוק: " +
                 t +
                 (null != Qn.accDeg ? " (±" + Math.round(Qn.accDeg) + "°)" : "")
@@ -21722,7 +21725,9 @@ function doGet(e){
           return { az: (Rn(Math.atan2(-Math.sin(f), Math.tan(r) * Math.cos(d) - Math.sin(d) * Math.cos(f))) + 360) % 360, alt: Rn(p) };
         })(e.lat, e.lon, new Date());
         s.innerHTML =
-          (Qn.rel
+          (Qn.noSens
+            ? '<span style="color:var(--muted)">📵 <b>במכשיר הזה אין חיישן מצפן</b> (נפוץ בנגנים ובמכשירים פשוטים), ולכן הכיוון לא מתעדכן לבד. אפשר כך:</span><br>'
+            : Qn.rel
             ? '<span style="color:var(--muted)">הדפדפן הזה לא נותן כיוון מצפן אמיתי (רק סיבוב יחסי). נסו בכרום, או בצורה הבאה:</span><br>'
             : !1 === Qn.got && Qn.on
               ? '<span style="color:var(--muted)">לא התקבלו נתונים ממצפן הטלפון.</span><br>'

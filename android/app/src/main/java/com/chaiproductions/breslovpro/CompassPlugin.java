@@ -22,6 +22,10 @@ public class CompassPlugin extends Plugin implements SensorEventListener {
     private long last = 0;
     private int acc = 3;
     private final float[] R = new float[9];
+    // גיבוי למכשירים בלי "חיישן סיבוב" (נגנים / מכשירים פשוטים): מד תאוצה + מגנטומטר
+    private Sensor accS, magS;
+    private final float[] grav = new float[3], geo = new float[3];
+    private boolean hasG = false, hasM = false;
 
     @PluginMethod
     public void start(PluginCall call) {
@@ -31,15 +35,21 @@ public class CompassPlugin extends Plugin implements SensorEventListener {
             sensor = sm.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR);
             src = "rv";
             if (sensor == null) { sensor = sm.getDefaultSensor(Sensor.TYPE_GEOMAGNETIC_ROTATION_VECTOR); src = "geo"; }
-            inited = false;
-            if (sensor == null) { call.reject("no rotation sensor"); return; }
+            inited = false; hasG = false; hasM = false; accS = null; magS = null;
+            if (sensor == null) {
+                accS = sm.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+                magS = sm.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
+                if (accS == null || magS == null) { call.reject("no compass sensor"); return; }
+                src = "am";
+            }
             Double lat = call.getDouble("lat"), lon = call.getDouble("lon");
             if (lat != null && lon != null) {
                 GeomagneticField gf = new GeomagneticField(lat.floatValue(), lon.floatValue(), 0f, System.currentTimeMillis());
                 decl = gf.getDeclination();
             }
             sm.unregisterListener(this);
-            sm.registerListener(this, sensor, SensorManager.SENSOR_DELAY_GAME);
+            if (sensor != null) sm.registerListener(this, sensor, SensorManager.SENSOR_DELAY_GAME);
+            else { sm.registerListener(this, accS, SensorManager.SENSOR_DELAY_GAME); sm.registerListener(this, magS, SensorManager.SENSOR_DELAY_GAME); }
             JSObject r = new JSObject(); r.put("ok", true); r.put("decl", decl);
             call.resolve(r);
         } catch (Exception e) { call.reject("compass failed: " + e.getMessage()); }
@@ -58,7 +68,14 @@ public class CompassPlugin extends Plugin implements SensorEventListener {
 
     @Override
     public void onSensorChanged(SensorEvent ev) {
-        SensorManager.getRotationMatrixFromVector(R, ev.values);
+        int ty = ev.sensor.getType();
+        if (ty == Sensor.TYPE_ACCELEROMETER || ty == Sensor.TYPE_MAGNETIC_FIELD) {
+            float[] dst = ty == Sensor.TYPE_ACCELEROMETER ? grav : geo;
+            if (ty == Sensor.TYPE_ACCELEROMETER ? !hasG : !hasM) System.arraycopy(ev.values, 0, dst, 0, 3);
+            else for (int i = 0; i < 3; i++) dst[i] += (ev.values[i] - dst[i]) * 0.25f;
+            if (ty == Sensor.TYPE_ACCELEROMETER) hasG = true; else hasM = true;
+            if (!hasG || !hasM || !SensorManager.getRotationMatrix(R, null, grav, geo)) return;
+        } else SensorManager.getRotationMatrixFromVector(R, ev.values);
         // שטוח / זקוף – עם "השהיה" כדי שלא יקפוץ בין המצבים
         float up = Math.abs(R[8]);
         if (flatState && up < 0.55f) flatState = false; else if (!flatState && up > 0.75f) flatState = true;
@@ -72,7 +89,7 @@ public class CompassPlugin extends Plugin implements SensorEventListener {
         double hd = ((Math.toDegrees(Math.atan2(fs, fc)) + decl) % 360 + 360) % 360;
         JSObject o = new JSObject();
         o.put("h", hd); o.put("flat", flatState); o.put("acc", acc); o.put("src", src); o.put("decl", decl);
-        if (ev.values.length > 4 && ev.values[4] >= 0) o.put("accDeg", Math.toDegrees(ev.values[4]));
+        if (sensor != null && ev.values.length > 4 && ev.values[4] >= 0) o.put("accDeg", Math.toDegrees(ev.values[4]));
         notifyListeners("heading", o);
     }
 
