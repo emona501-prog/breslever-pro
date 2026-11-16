@@ -22177,8 +22177,9 @@ function doGet(e){
     } catch (t) {}
   }, 4200);
   const rr = {
-    v: "2026-11-16a",
+    v: "2026-11-16b",
     items: [
+      ["2026-11-16", "🚗", "תזכורת לתפילת הדרך", "באנדרואיד: מדליקים בהגדרות ← כללי \"🚗 תזכורת לתפילת הדרך\". אחרי חצי שעה בנסיעה קופצת התראה: \"היי צדיק! יצאת מהעיר?\" – ולחיצה פותחת את ההלכה בגדול ואת נוסח תפילת הדרך. אפשר גם לבחור את הבלוטות׳ של הרכב."],
       ["2026-11-16", "📖", "תהילים מחולק", "כל אחד לוקח פרק פנוי, קורא ומסמן – וביחד מסיימים ספר תהילים שלם. משותף עם אפליקציית \"אשריכם ישראל\". אפשר גם לפתוח ספר להקדשה (לרפואה, לעילוי נשמת, להצלחה). נכנסים מ־✦ ← \"תהילים מחולק\"."],
       ["2026-11-15", "🎯", "יעדים: סדר יומי או חד-פעמי", "כשמוסיפים יעד בוחרים: 🔁 סדר יומי שמתקדם איתכם (תהלים, זוהר, שולחן ערוך, שמו\"ת, כל ספר – למחרת מחכה ההמשך), או ✅ חד-פעמי – מסמנים בוצע והוא יורד מהרשימה. אפשר להחליף ב\"סידור ומחיקה\"."],
       ["2026-11-15", "📖", "שיתוף עם המקור בספרים", "כל קטע ששולחים כולל \"📖 מקור:\" – הספר, החלק, התורה/הסימן והאות/הסעיף/הפסוק. בסיפורים המלוקטים מופיע הספר המקורי שהסיפור לקוח ממנו."],
@@ -22835,6 +22836,74 @@ function doGet(e){
           else NAT.openUrl("https://wa.me/?text=" + encodeURIComponent(t));
         }),
     );
+  }
+  // ===== 🚗 תפילת הדרך: תזכורת בנסיעה (אנדרואיד) + ההלכה בגדול לפני הנוסח =====
+  const TRV = () => (NAT.on ? NAT.P("Travel") : null);
+  function hdOpen() {
+    const v = VOLS.findIndex((t) => "תפילת הדרך" === String((t && t.title) || t || "").trim()),
+      si = v >= 0 ? n.findIndex((t) => t.g === "V" + v) : -1;
+    si >= 0 && We(si, 0);
+    setTimeout(
+      () =>
+        Ut(
+          '<div class="hd-box"><div class="hd-ic">🚗</div><h3 style="text-align:center;margin:0 0 8px">תפילת הדרך</h3><div class="hd-t">אח יקר, כדי לומר תפילת הדרך <b>בברכה</b>:</div><div class="hd-r"><b>לפי מנהג הספרדים</b> – אם נוסעים לפחות <b>72 דקות</b> בין עיר לעיר, צריך לברך תפילת הדרך. הנסיעה הלוך וחזור מצטרפת יחד.</div><div class="hd-r"><b>לפי מנהג האשכנזים</b> – החיוב נמדד במרחק ולא בזמן: אם נוסעים לפחות <b>3.840 ק״מ</b> בין עיר לעיר, צריך לברך תפילת הדרך.</div><div class="hd-t">ואם אין את התנאים האלה – תאמר את נוסח תפילת הדרך <b>בלא ברכה</b>.</div><button class="btn pri" id="hdGo" style="width:100%;margin-top:12px">📖 לנוסח תפילת הדרך</button><div style="text-align:center;margin-top:8px;font-size:14px">נסיעה טובה ובטוחה! 🙏</div></div>',
+        ) && (l("#hdGo").onclick = () => Wt()),
+      si >= 0 ? 350 : 0,
+    );
+  }
+  window.__hdOpen = hdOpen;
+  async function trvToggle(on, el) {
+    const P = TRV();
+    if (!P) return;
+    try {
+      if (on) {
+        const r = await P.start();
+        s.set("trvOn", !0);
+        r && !r.notif && st("⚠️ כדי לקבל את התזכורת – אשרו התראות לאפליקציה בהגדרות הטלפון", 6e3);
+        r && r.gms && !r.ar
+          ? (st("⚠️ בלי הרשאת \"פעילות גופנית\" הטלפון לא יזהה נסיעה. אפשר לבחור את הבלוטות׳ של הרכב במקום", 7e3), trvCarPick())
+          : r && !r.gms
+            ? (st("בטלפון הזה אין שירותי גוגל – בחרו את הבלוטות׳ של הרכב, וכשהטלפון יתחבר אליו תקבלו תזכורת", 6e3), trvCarPick())
+            : st("🚗 התזכורת הופעלה! אחרי חצי שעה בנסיעה תקפוץ התראה", 4500);
+      } else (await P.stop(), s.set("trvOn", !1), st("התזכורת לתפילת הדרך כובתה", 3e3));
+    } catch (t) {
+      (el && (el.checked = !on), st("⚠️ לא הצלחנו להפעיל – " + String((t && t.message) || t).slice(0, 60), 5e3));
+    }
+    trvExtra();
+  }
+  async function trvExtra() {
+    const x = l("#trvX"),
+      P = TRV();
+    if (!x || !P) return;
+    if (!s.get("trvOn", !1)) return void (x.innerHTML = "");
+    let r = {};
+    try {
+      r = (await P.status()) || {};
+    } catch (t) {}
+    ((x.innerHTML =
+      '<div class="row2" style="margin:-4px 0 8px"><button class="btn sm" id="trvCar">🚙 ' + (r.car ? "הרכב: " + o(r.car) : "גם לפי חיבור לרכב (בלוטות׳)") + '</button><button class="btn sm" id="trvTest">🔔 בדיקת ההתראה</button></div>'),
+      (l("#trvCar").onclick = () => trvCarPick()),
+      (l("#trvTest").onclick = () => P.test().then(() => st("נשלחה התראת בדיקה – לחצו עליה", 3500)).catch(() => {})));
+  }
+  async function trvCarPick() {
+    const P = TRV();
+    if (!P) return;
+    let L = [];
+    try {
+      L = ((await P.bonded()) || {}).list || [];
+    } catch (t) {
+      return st("⚠️ צריך לאשר הרשאת \"מכשירים בקרבת מקום\" כדי לבחור את הרכב", 5e3);
+    }
+    if (!L.length) return st("לא נמצאו מכשירי בלוטות׳ מוכרים. חברו קודם את הטלפון לרכב, ואז נסו שוב", 5e3);
+    const w = Ut('<h3>🚙 איזה מהם הרכב שלכם?</h3><div class="sh-sub">כשהטלפון יתחבר אליו ותעבור חצי שעה – תקבלו תזכורת לתפילת הדרך.</div><div class="gl-types">' + L.map((t, i) => '<button type="button" data-car="' + i + '"><span>🚗</span><b>' + o(t.name) + "</b></button>").join("") + '</div><button class="btn sm" id="carNone" style="margin-top:8px">בלי רכב</button>');
+    (a("[data-car]", w).forEach(
+      (e) =>
+        (e.onclick = async () => {
+          const c = L[+e.dataset.car];
+          (await P.setCar({ addr: c.addr, name: c.name }), Wt(), st("🚗 נשמר: " + c.name, 3e3), trvExtra());
+        }),
+    ),
+      (l("#carNone", w).onclick = async () => (await P.setCar({ addr: "", name: "" }), Wt(), trvExtra())));
   }
   // ===== 📖 תהילים מחולק – משותף עם "אשריכם ישראל" (אותו שרת Firebase, אותם ספרים) =====
   const THM = {
@@ -26569,7 +26638,9 @@ function doGet(e){
           "✨ כללי",
           '<div class="sw"><span>סרטון פתיחה בכניסה לאפליקציה</span><input type="checkbox" id="introC" ' +
             ("1" === localStorage.getItem(SPFX + "introOff") ? "" : "checked") +
-            '></div><div class="sw"><span>🎵 מנגינה קצרה בפתיחה</span><input type="checkbox" id="introMC" ' +
+            "'></div>" +
+            (NAT.on ? '<div class="sw"><span>🚗 תזכורת לתפילת הדרך<small style="display:block;color:var(--muted);font-size:12px">אחרי חצי שעה בנסיעה – התראה אחת ביום</small></span><input type="checkbox" id="trvC" ' + (s.get("trvOn", !1) ? "checked" : "") + '></div><div id="trvX"></div>' : "") +
+            '<div class="sw"><span>🎵 מנגינה קצרה בפתיחה</span><input type="checkbox" id="introMC" ' +
             ("1" === localStorage.getItem(SPFX + "introMusicOn") ? "checked" : "") +
             '></div><div class="sw"><span>ברכה בכניסה לאפליקציה</span><input type="checkbox" id="grC" ' +
             (O.greet ? "checked" : "") +
@@ -27165,6 +27236,8 @@ function doGet(e){
             } catch (t) {}
             st(t.checked ? "סרטון הפתיחה יוצג בכניסה" : "סרטון הפתיחה כובה");
           });
+        const tv = l("#trvC");
+        tv && ((tv.onchange = () => trvToggle(tv.checked, tv)), trvExtra());
         const mc = l("#introMC");
         mc &&
           (mc.onchange = () => {
@@ -28914,6 +28987,7 @@ function doGet(e){
         if ((void 0 !== Gt && Gt && Wt(!0), "random" === t)) It("random");
         else if ("cont" === t) tt.last && y[tt.last.id] ? Ye(tt.last.id) : It("home", {});
         else if ("goals" === t) goalsOpen();
+        else if ("haderech" === t) hdOpen();
         else if ("hal" === t) halOpen();
         else if ("q:" === String(t).slice(0, 2)) {
           const e = String(t).slice(2);

@@ -63,6 +63,7 @@ jobs:
           python3 devsrc/patches/mklite.py www/index.html
           sed -i 's/applicationId "com.chaiproductions.breslovpro"/applicationId "com.chaiproductions.breslovpro.lite"/' android/app/build.gradle
           grep -q 'breslovpro.lite' android/app/build.gradle
+          sed -i 's/android:targetPackage="com.chaiproductions.breslovpro"/android:targetPackage="com.chaiproductions.breslovpro.lite"/g' android/app/src/main/res/xml/shortcuts.xml
           for f in android/app/src/main/res/values-iw/strings.xml android/app/src/main/res/values-he/strings.xml; do sed -i 's|>ברסלב פרו<|>ברסלב פרו לייט<|g' "$f"; done
           sed -i 's|>Breslov Pro<|>Breslov Pro Lite<|g' android/app/src/main/res/values/strings.xml
           npx cap copy android
