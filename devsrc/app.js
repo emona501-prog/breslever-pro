@@ -1556,6 +1556,8 @@ function MAIN(t) {
       !0,
     ));
   const rt = BOOK.publicUrl || "https://emona501-prog.github.io/breslever-pro/";
+  // 📥 הקישור היחיד לשיתוף האפליקציה – דף אחד שמזהה לבד אנדרואיד / לייט / אייפון / מחשב
+  const APP_LINK = rt.replace(/\/?$/, "/") + "get.html";
   function ft() {
     try {
       if (/^https:/.test(location.protocol) && !/localhost|127\.0\.0\.1/.test(location.host))
@@ -1586,8 +1588,7 @@ function MAIN(t) {
           (t ? "\n\n🔗 לפתיחה באפליקציה:\n" + t : "") +
           // קישור אחד לכל המכשירים – הדף מזהה לבד אנדרואיד / אייפון / מחשב
           "\n\n📥 להורדת האפליקציה – לכל מכשיר:\n" +
-          rt.replace(/\/?$/, "/") +
-          "get.html"
+          APP_LINK
         );
       })(t)
     );
@@ -22763,13 +22764,13 @@ function doGet(e){
   }
   function Lr() {
     const t = (function () {
-        const t = ft();
+        const t = APP_LINK;
         return (
           '📚 *ברסלב PRO* – ספרי רבנו הקדוש ותלמידיו באפליקציה אחת, בחינם!\nליקוטי מוהר"ן · ליקוטי הלכות · ליקוטי תפילות ועוד עשרות ספרים\n🔎 חיפוש חכם · 📒 חוברת לימוד בקליק · 🕰️ זמני היום · 🕯️ לוח הילולות · 📜 כל הסיפורים\n🙏 סידור מלא, ברכות, סגולות ותפילות' +
-          (t ? "\n\n👇 לכניסה לאפליקציה:\n" + t : "")
+          (t ? "\n\n📥 להורדה ולכניסה – לכל מכשיר:\n" + t : "")
         );
       })(),
-      e = ft(),
+      e = APP_LINK,
       i = Ut(
         '<h3>📤 שתפו את ברסלב PRO</h3><div class="sh-sub">כל מי שיכנס וילמד בזכותכם – הזכות שלכם. שתפו עם חברים, משפחה וקבוצות.</div><div class="acts"><button class="act" data-as="wa"><span class="ic">💬</span>וואטסאפ</button><button class="act" data-as="share"><span class="ic">📤</span>שיתוף</button><button class="act" data-as="img"><span class="ic">🖼️</span>תמונה מעוצבת</button><button class="act" data-as="copy"><span class="ic">📋</span>העתקת ' +
           (e ? "הקישור" : "הטקסט") +
@@ -22794,7 +22795,7 @@ function doGet(e){
                         title: "ברסלב PRO",
                         date: "",
                         link: e,
-                        cap: t.replace(/\n\n👇[\s\S]*$/, ""),
+                        cap: t.replace(/\n\n📥[\s\S]*$/, ""),
                         foot: "לזיכוי הרבים – שתפו הלאה!",
                         rows: [
                           { t: "**ספרי רבנו הקדוש ותלמידיו**", sub: 'ליקוטי מוהר"ן · ליקוטי הלכות · ליקוטי תפילות ועוד עשרות ספרים', ic: "📚" },
