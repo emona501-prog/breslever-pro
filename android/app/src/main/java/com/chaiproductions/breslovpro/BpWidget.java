@@ -135,6 +135,18 @@ public class BpWidget extends AppWidgetProvider {
                 rv.setChronometer(R.id.w_cd, SystemClock.elapsedRealtime() + (nextT - now), "בעוד %s", true);
                 rv.setChronometerCountDown(R.id.w_cd, true);
             } else { rv.setTextViewText(R.id.w_zl, "🕰️ זמני היום – פתחו את האפליקציה לעדכון"); rv.setViewVisibility(R.id.w_cd, View.GONE); }
+            // 🔴 דקות ספורות לפני הזמן: השורה נצבעת באדום ופס מהבהב
+            int warn = cfg.optInt("zwarn", 10);
+            boolean hot = nz != null && warn > 0 && nextT - now <= warn * 60000L;
+            rv.setInt(R.id.w_zrow, "setBackgroundResource", hot ? R.drawable.widget_red : R.drawable.widget_gold);
+            rv.setViewVisibility(R.id.w_zwarn, hot ? View.VISIBLE : View.GONE);
+            if (hot) {
+                long mins = Math.max(1, (nextT - now + 59999) / 60000);
+                String wt = "⚠️ " + nz.optString("n") + " – בעוד " + (mins <= 1 ? "דקה" : mins + " דקות") + "!";
+                rv.setTextViewText(R.id.w_zw1, wt);
+                rv.setTextViewText(R.id.w_zw2, wt);
+                rv.setOnClickPendingIntent(R.id.w_zwarn, act(ctx, "zm", 3));
+            }
             rv.setOnClickPendingIntent(R.id.w_zrow, act(ctx, "zm", 2));
 
             // סרגל מתחלף: הילולות, תזכורות, חומש היום, עוד זמנים
@@ -214,8 +226,17 @@ public class BpWidget extends AppWidgetProvider {
             JSONObject d = data(ctx);
             if (d != null) {
                 JSONArray zm = d.optJSONArray("zm");
-                if (zm != null) for (int k = 0; k < zm.length(); k++) { long t = zm.getJSONObject(k).optLong("t", 0); if (t > now + 5000) { next = Math.min(next, t + 3000); break; } }
                 JSONObject cfg = d.optJSONObject("cfg");
+                int warn = cfg == null ? 10 : cfg.optInt("zwarn", 10);
+                if (zm != null) for (int k = 0; k < zm.length(); k++) {
+                    long t = zm.getJSONObject(k).optLong("t", 0);
+                    if (t > now + 5000) {
+                        next = Math.min(next, t + 3000);
+                        // רענון כשמתחילות דקות האזהרה, ואחר כך כל דקה (לעדכון "בעוד X דקות")
+                        if (warn > 0) { long w = t - warn * 60000L; next = Math.min(next, w > now + 5000 ? w + 500 : now + 60000L); }
+                        break;
+                    }
+                }
                 JSONArray qs = d.optJSONArray("quotes");
                 if (qs != null && qs.length() > 1 && (cfg == null || cfg.optBoolean("quote", true))) {
                     long qms = Math.max(1, cfg == null ? 10 : cfg.optInt("qmin", 10)) * 60000L;

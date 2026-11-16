@@ -1449,8 +1449,11 @@ function MAIN(t) {
     const i = it(t, e);
     return i.length > 0 && i.every((t) => tt.read[t]);
   }
+  function shortPr(v) {
+    return null != v && !isNaN(v) && "misc" === ($t[v] || {}).cat;
+  }
   function lt(t, e) {
-    if (!et()) return "";
+    if (!et() || (n[t] && shortPr(+String(n[t].g || "").slice(1)))) return "";
     const i = ct(t, e);
     return (
       '<span class="rbx' +
@@ -5611,6 +5614,18 @@ function MAIN(t) {
         (t) =>
           (t.onclick = () => {
             (s.set("libTab", t.dataset.lt), Ft.home({}), "tanach" === t.dataset.lt && tanachNote());
+            // ⬆️ מקפיץ את המסך לרשימת הספרים של הלשונית (אפשר לכבות בהגדרות)
+            !1 !== s.get("libJump", !0) &&
+              setTimeout(() => {
+                try {
+                  const T = document.getElementById("libTabs"),
+                    S = document.getElementById("libSubs");
+                  let x = T && T.nextElementSibling;
+                  S && S.offsetHeight > 4 && S.compareDocumentPosition(x) & Node.DOCUMENT_POSITION_FOLLOWING && (x = S);
+                  for (; x && x.offsetHeight < 4 && x.nextElementSibling; ) x = x.nextElementSibling;
+                  x && x.scrollIntoView({ behavior: "smooth", block: "start" });
+                } catch (t) {}
+              }, 80);
           }),
       ));
     let c = document.getElementById("libSubs");
@@ -6459,7 +6474,7 @@ function MAIN(t) {
     "📊 כניסות לאפליקציה": "כמה פעמים נכנסו לאפליקציה – נתונים כלליים בלבד, בלי שום פרט אישי.",
   };
   function ui(t, e = {}) {
-    let i = '<div class="item' + (t.n ? "" : " unl") + '" id="' + Ke(t.id) + '" data-id="' + t.id + '">';
+    let i = (/\.0\.0$/.test(t.id) && hdVolId() === t.id.split(".")[0] ? hdCard() : "") + '<div class="item' + (t.n ? "" : " unl") + '" id="' + Ke(t.id) + '" data-id="' + t.id + '">';
     const c = null != e.chapTitle ? e.chapTitle : y[t.id] ? m(g(y[t.id].c.t)).trim() : "";
     let l = t.b.filter((t) => !(("H" === t[0] || "h" === t[0]) && m(g(t[1])).trim() === c)),
       a = "";
@@ -6585,7 +6600,8 @@ function MAIN(t) {
       }
     } catch (t) {}
     return (
-      (i += '<label class="rd-ck"><input type="checkbox" data-rd="' + t.id + '" ' + (tt.read[t.id] ? "checked" : "") + "> קראתי</label>"),
+      // בתפילות קצרות (תפילת הדרך, לחש החיד״א, תפילת השל״ה...) – בלי ריבוע "קראתי"
+      shortPr(+((/^v(\d+)/.exec(t.id) || [])[1])) || (i += '<label class="rd-ck"><input type="checkbox" data-rd="' + t.id + '" ' + (tt.read[t.id] ? "checked" : "") + "> קראתי</label>"),
       tt.notes[t.id] && (i += '<div class="note-badge"><b>📝 הערה שלי:</b> ' + o(tt.notes[t.id].t) + "</div>"),
       (i += "</div>"),
       i
@@ -7285,6 +7301,7 @@ function MAIN(t) {
     const c = chIds(t, e);
     if (!c.length) return "";
     const l = c.every((t) => tt.read[t]);
+    if (shortPr(+String(n[t].g || "").slice(1))) return '<div class="ch-tools' + (i ? " top" : "") + '"><span></span><button type="button" class="ch-more" data-chm="' + t + ":" + e + '" aria-label="אפשרויות">⋮</button></div>';
     return (
       '<div class="ch-tools' +
       (i ? " top" : "") +
@@ -22177,8 +22194,10 @@ function doGet(e){
     } catch (t) {}
   }, 4200);
   const rr = {
-    v: "2026-11-16b",
+    v: "2026-11-16c",
     items: [
+      ["2026-11-17", "🔴", "הווידג׳ט מתריע לפני כל זמן", "דקות ספורות לפני סוף זמן ק״ש, תפילה, שקיעה וכו׳ – שורת הזמן בווידג׳ט נצבעת באדום ומהבהבת. בוחרים כמה דקות לפני (5/10/15/30 או כבוי) בהגדרות הווידג׳ט."],
+      ["2026-11-17", "⬆️", "קפיצה לרשימת הספרים", "בוחרים לשונית בספרייה (למשל ספרי רבי נתן) – והמסך עולה מיד לרשימת הספרים שלה. אפשר לכבות בהגדרות ← כללי."],
       ["2026-11-16", "🚗", "תזכורת לתפילת הדרך", "באנדרואיד: מדליקים בהגדרות ← כללי \"🚗 תזכורת לתפילת הדרך\". אחרי חצי שעה בנסיעה קופצת התראה: \"היי צדיק! יצאת מהעיר?\" – ולחיצה פותחת את ההלכה בגדול ואת נוסח תפילת הדרך. אפשר גם לבחור את הבלוטות׳ של הרכב."],
       ["2026-11-16", "📖", "תהילים מחולק", "כל אחד לוקח פרק פנוי, קורא ומסמן – וביחד מסיימים ספר תהילים שלם. משותף עם אפליקציית \"אשריכם ישראל\". אפשר גם לפתוח ספר להקדשה (לרפואה, לעילוי נשמת, להצלחה). נכנסים מ־✦ ← \"תהילים מחולק\"."],
       ["2026-11-15", "🎯", "יעדים: סדר יומי או חד-פעמי", "כשמוסיפים יעד בוחרים: 🔁 סדר יומי שמתקדם איתכם (תהלים, זוהר, שולחן ערוך, שמו\"ת, כל ספר – למחרת מחכה ההמשך), או ✅ חד-פעמי – מסמנים בוצע והוא יורד מהרשימה. אפשר להחליף ב\"סידור ומחיקה\"."],
@@ -22843,15 +22862,39 @@ function doGet(e){
     const v = VOLS.findIndex((t) => "תפילת הדרך" === String((t && t.title) || t || "").trim()),
       si = v >= 0 ? n.findIndex((t) => t.g === "V" + v) : -1;
     si >= 0 && We(si, 0);
-    setTimeout(
-      () =>
-        Ut(
+    setTimeout(hdLaw, si >= 0 ? 350 : 0);
+  }
+  function hdLaw() {
+    (Ut(
           '<div class="hd-box"><div class="hd-ic">🚗</div><h3 style="text-align:center;margin:0 0 8px">תפילת הדרך</h3><div class="hd-t">אח יקר, כדי לומר תפילת הדרך <b>בברכה</b>:</div><div class="hd-r"><b>לפי מנהג הספרדים</b> – אם נוסעים לפחות <b>72 דקות</b> בין עיר לעיר, צריך לברך תפילת הדרך. הנסיעה הלוך וחזור מצטרפת יחד.</div><div class="hd-r"><b>לפי מנהג האשכנזים</b> – החיוב נמדד במרחק ולא בזמן: אם נוסעים לפחות <b>3.840 ק״מ</b> בין עיר לעיר, צריך לברך תפילת הדרך.</div><div class="hd-t">ואם אין את התנאים האלה – תאמר את נוסח תפילת הדרך <b>בלא ברכה</b>.</div><button class="btn pri" id="hdGo" style="width:100%;margin-top:12px">📖 לנוסח תפילת הדרך</button><div style="text-align:center;margin-top:8px;font-size:14px">נסיעה טובה ובטוחה! 🙏</div></div>',
-        ) && (l("#hdGo").onclick = () => Wt()),
-      si >= 0 ? 350 : 0,
-    );
+        ),
+      (l("#hdGo").onclick = () => Wt()));
   }
   window.__hdOpen = hdOpen;
+  // בראש עמוד תפילת הדרך: ההלכה + הפעלת התזכורת בנסיעות
+  function hdVolId() {
+    const v = VOLS.findIndex((t) => "תפילת הדרך" === String((t && t.title) || t || "").trim()),
+      x = v >= 0 ? n.find((t) => t.g === "V" + v) : null;
+    return x ? x.id : "";
+  }
+  function hdCard() {
+    const on = !!s.get("trvOn", !1);
+    return (
+      '<div class="hd-card"><button type="button" class="btn sm" data-hd="law">📜 מתי מברכים? – ההלכה</button>' +
+      (NAT.on ? '<button type="button" class="btn sm' + (on ? "" : " pri") + '" data-hd="trv">' + (on ? "🚗 תזכורת בנסיעות: פעילה ✓" : "🚗 תזכורת לתפילת הדרך בנסיעות – הפעלה") + "</button>" : '<span class="hd-note">🚗 תזכורת אוטומטית בנסיעות – באפליקציה לאנדרואיד</span>') +
+      "</div>"
+    );
+  }
+  document.addEventListener("click", (t) => {
+    const e = t.target.closest && t.target.closest("[data-hd]");
+    if (!e) return;
+    if ((t.preventDefault(), "law" === e.dataset.hd)) return void hdLaw();
+    s.get("trvOn", !1)
+      ? It("settings")
+      : trvToggle(!0).then(() => {
+          s.get("trvOn", !1) && ((e.textContent = "🚗 תזכורת בנסיעות: פעילה ✓"), e.classList.remove("pri"));
+        });
+  });
   async function trvToggle(on, el) {
     const P = TRV();
     if (!P) return;
@@ -26640,6 +26683,7 @@ function doGet(e){
             ("1" === localStorage.getItem(SPFX + "introOff") ? "" : "checked") +
             "'></div>" +
             (NAT.on ? '<div class="sw"><span>🚗 תזכורת לתפילת הדרך<small style="display:block;color:var(--muted);font-size:12px">אחרי חצי שעה בנסיעה – התראה אחת ביום</small></span><input type="checkbox" id="trvC" ' + (s.get("trvOn", !1) ? "checked" : "") + '></div><div id="trvX"></div>' : "") +
+            '<div class="sw"><span>⬆️ בבחירת לשונית בספרייה – לקפוץ לרשימת הספרים</span><input type="checkbox" id="libJC" ' + (!1 !== s.get("libJump", !0) ? "checked" : "") + "></div>" +
             '<div class="sw"><span>🎵 מנגינה קצרה בפתיחה</span><input type="checkbox" id="introMC" ' +
             ("1" === localStorage.getItem(SPFX + "introMusicOn") ? "checked" : "") +
             '></div><div class="sw"><span>ברכה בכניסה לאפליקציה</span><input type="checkbox" id="grC" ' +
@@ -27236,6 +27280,8 @@ function doGet(e){
             } catch (t) {}
             st(t.checked ? "סרטון הפתיחה יוצג בכניסה" : "סרטון הפתיחה כובה");
           });
+        const lj = l("#libJC");
+        lj && (lj.onchange = () => (s.set("libJump", lj.checked), st(lj.checked ? "⬆️ בבחירת לשונית המסך יקפוץ לרשימת הספרים" : "הקפיצה כובתה", 2500)));
         const tv = l("#trvC");
         tv && ((tv.onchange = () => trvToggle(tv.checked, tv)), trvExtra());
         const mc = l("#introMC");
@@ -28810,7 +28856,7 @@ function doGet(e){
     } catch (t) {}
     return { v: 2, ts: t, days: e, zm: i.slice(0, 30), rem: c.slice(0, 12), cont: l, dir: a, cfg: wdgCfg(), quotes: q, yt: ht(), goals: gl };
   }
-  const WDG_DEF = { tGoals: !0, tHal: !0, yt: !0, quote: !0, quoteMed: !1, aly: !0, cont: !0, dir: !0, row1: !0, row2: !0, tHil: !0, tRem: !0, tAly: !0, tEv: !0, tZm: !0, qmin: 10, qv: null };
+  const WDG_DEF = { tGoals: !0, tHal: !0, yt: !0, quote: !0, quoteMed: !1, aly: !0, cont: !0, dir: !0, row1: !0, row2: !0, tHil: !0, tRem: !0, tAly: !0, tEv: !0, tZm: !0, qmin: 10, zwarn: 10, qv: null };
   function wdgCfg() {
     return Object.assign({}, WDG_DEF, s.get("wdgCfg", {}) || {});
   }
@@ -28846,6 +28892,9 @@ function doGet(e){
       e = (e, i) => '<div class="sw"><span>' + i + '</span><input type="checkbox" data-wc="' + e + '"' + (t[e] ? " checked" : "") + "></div>";
     return (
       '<div style="font-size:13.5px;color:var(--ink2);line-height:1.65;margin-bottom:8px">כאן בוחרים מה יופיע בווידג\'ט של מסך הבית (באפליקציית אנדרואיד). <b>גודל:</b> לחיצה ארוכה על הווידג\'ט וגרירת הפינות – קטן, בינוני או גדול. ככל שהוא גבוה יותר, נכנס בו יותר.</div>' +
+      '<div class="field"><label>🔴 הבהוב אדום לפני כל זמן (סוף זמן ק״ש, תפילה, שקיעה...)</label><div class="seg" id="wcWarn">' +
+      [0, 5, 10, 15, 30].map((e) => '<button data-v="' + e + '"' + (+t.zwarn === e ? ' class="on"' : "") + ">" + (e ? e + " דק׳ לפני" : "כבוי") + "</button>").join("") +
+      "</div></div>" +
       e("yt", "לוגו ערוץ גאולה וישועה (לחיצה פותחת את הערוץ)") +
       e("quote", "דיבור מתחלף מהספרים שבחרתי (בווידג\'ט הגדול)") +
       e("quoteMed", "להציג דיבור מתחלף גם בגודל הבינוני") +
@@ -28884,6 +28933,12 @@ function doGet(e){
         (i) =>
           (i.onclick = () => {
             (e({ qmin: +i.dataset.v }), a("#wcMin button", t).forEach((t) => t.classList.toggle("on", t === i)));
+          }),
+      ),
+      a("#wcWarn button", t).forEach(
+        (i) =>
+          (i.onclick = () => {
+            (e({ zwarn: +i.dataset.v }), a("#wcWarn button", t).forEach((t) => t.classList.toggle("on", t === i)), st("הווידג'ט עודכן ✓", 1200));
           }),
       ));
     const i = l("#wcBooks", t);

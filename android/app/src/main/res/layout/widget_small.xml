@@ -6,6 +6,11 @@
             <TextView android:id="@+id/w_zl" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:textColor="#FFF6EFDC" android:textSize="12sp" android:maxLines="1" android:ellipsize="end" />
             <Chronometer android:id="@+id/w_cd" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="#FFF3D78E" android:textSize="12sp" android:textStyle="bold" android:layout_marginStart="4dp" />
         </LinearLayout>
+        <!-- 🔴 הבהוב לפני הזמן (מוצג רק בדקות שלפני) -->
+        <ViewFlipper android:id="@+id/w_zwarn" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:autoStart="true" android:flipInterval="700" android:visibility="gone">
+            <TextView android:id="@+id/w_zw1" android:layout_width="match_parent" android:layout_height="wrap_content" android:background="@drawable/widget_red" android:gravity="center" android:paddingTop="4dp" android:paddingBottom="4dp" android:textColor="#FFFFFFFF" android:textSize="13sp" android:textStyle="bold" android:maxLines="1" android:ellipsize="end" android:textDirection="rtl" />
+            <TextView android:id="@+id/w_zw2" android:layout_width="match_parent" android:layout_height="wrap_content" android:background="@drawable/widget_red_dim" android:gravity="center" android:paddingTop="4dp" android:paddingBottom="4dp" android:textColor="#FFFFCDD2" android:textSize="13sp" android:textStyle="bold" android:maxLines="1" android:ellipsize="end" android:textDirection="rtl" />
+        </ViewFlipper>
         <ViewFlipper android:id="@+id/w_flip" android:layout_width="match_parent" android:layout_height="20dp" android:autoStart="true" android:flipInterval="4500" android:inAnimation="@android:anim/fade_in" android:outAnimation="@android:anim/fade_out" />
     </LinearLayout>
     <ImageView android:id="@+id/w_yt" android:layout_width="24dp" android:layout_height="24dp" android:layout_marginStart="8dp" android:src="@drawable/widget_yt" android:contentDescription="ערוץ גאולה וישועה" android:scaleType="fitCenter" />
