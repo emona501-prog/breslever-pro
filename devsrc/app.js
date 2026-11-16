@@ -22160,8 +22160,9 @@ function doGet(e){
     } catch (t) {}
   }, 4200);
   const rr = {
-    v: "2026-11-15g",
+    v: "2026-11-16a",
     items: [
+      ["2026-11-16", "📖", "תהילים מחולק", "כל אחד לוקח פרק פנוי, קורא ומסמן – וביחד מסיימים ספר תהילים שלם. משותף עם אפליקציית \"אשריכם ישראל\". אפשר גם לפתוח ספר להקדשה (לרפואה, לעילוי נשמת, להצלחה). נכנסים מ־✦ ← \"תהילים מחולק\"."],
       ["2026-11-15", "🎯", "יעדים: סדר יומי או חד-פעמי", "כשמוסיפים יעד בוחרים: 🔁 סדר יומי שמתקדם איתכם (תהלים, זוהר, שולחן ערוך, שמו\"ת, כל ספר – למחרת מחכה ההמשך), או ✅ חד-פעמי – מסמנים בוצע והוא יורד מהרשימה. אפשר להחליף ב\"סידור ומחיקה\"."],
       ["2026-11-15", "📖", "שיתוף עם המקור בספרים", "כל קטע ששולחים כולל \"📖 מקור:\" – הספר, החלק, התורה/הסימן והאות/הסעיף/הפסוק. בסיפורים המלוקטים מופיע הספר המקורי שהסיפור לקוח ממנו."],
       ["2026-11-15", "🧠", "הבוט מבין יותר", "שאלות ארוכות כמו \"תחפש לי איפה רבי נחמן סיפר את המעשיות על המהרש\"א\" – הבוט מסנן את המילים המיותרות, ואם לא מצא עם כל המילים הוא מנסה שוב עם החשובות שבהן."],
@@ -22817,6 +22818,245 @@ function doGet(e){
           else NAT.openUrl("https://wa.me/?text=" + encodeURIComponent(t));
         }),
     );
+  }
+  // ===== 📖 תהילים מחולק – משותף עם "אשריכם ישראל" (אותו שרת Firebase, אותם ספרים) =====
+  const THM = {
+    cfg: { apiKey: "AIzaSyDAMPlr-lqaEUjAtGMhw4qEE9wwpuOuINk", authDomain: "ashreichem-israel.firebaseapp.com", projectId: "ashreichem-israel", storageBucket: "ashreichem-israel.firebasestorage.app", messagingSenderId: "183608605179", appId: "1:183608605179:web:11dbaf9797b9181e68735e" },
+    FBV: "10.14.1",
+    RES: 30,
+    ok: !1,
+    busy: null,
+    F: null,
+    fs: null,
+    books: [],
+    total: 0,
+    loaded: !1,
+    err: "",
+    dev() {
+      let d = s.get("thmDev", "");
+      return d || ((d = "bp" + Math.random().toString(36).slice(2, 10) + Date.now().toString(36)), s.set("thmDev", d)), d;
+    },
+    init() {
+      if (this.busy) return this.busy;
+      return (this.busy = (async () => {
+        const b = "https://www.gstatic.com/firebasejs/" + this.FBV + "/",
+          [A, Au, F] = await Promise.all([import(b + "firebase-app.js"), import(b + "firebase-auth.js"), import(b + "firebase-firestore.js")]),
+          app = A.getApps().find((t) => "thm" === t.name) || A.initializeApp(this.cfg, "thm");
+        ((this.F = F), (this.fs = F.getFirestore(app)));
+        const au = Au.getAuth(app);
+        this.authP = new Promise((res) => {
+          Au.onAuthStateChanged(au, (u) => (u ? res(u) : Au.signInAnonymously(au).catch((e) => ((this.err = String((e && e.code) || e)), res(null)))));
+        });
+        F.onSnapshot(
+          F.collection(this.fs, "th2"),
+          (q) => {
+            ((this.books = q.docs.map((d) => Object.assign({}, d.data(), { id: d.id }))), (this.loaded = !0), this.ensure(), thmRender());
+          },
+          (e) => ((this.err = String((e && e.code) || e)), thmRender()),
+        );
+        F.onSnapshot(F.doc(this.fs, "pub", "th2"), (d) => ((this.total = (d.exists() && d.data().total) || 0), thmRender()), () => {});
+        this.ok = !0;
+      })().catch((e) => {
+        ((this.busy = null), (this.err = "net"), thmRender());
+      }));
+    },
+    st(b, n) {
+      const c = (b.ch || {})[n];
+      return c ? ("d" === c.st ? "done" : Date.now() - c.at < this.RES * 6e4 ? (c.by === this.dev() ? "mine" : "taken") : "free") : "free";
+    },
+    doneCnt: (b) => Object.values(b.ch || {}).filter((c) => "d" === c.st).length,
+    next(b) {
+      for (let n = 1; n <= 150; n++) if ("free" === this.st(b, n)) return n;
+      return 0;
+    },
+    active() {
+      return this.books.filter((b) => !b.doneAt).sort((a, b) => (a.created || 0) - (b.created || 0));
+    },
+    async ensure() {
+      if (!this.loaded || this.active().length || this._eb) return;
+      this._eb = 1;
+      try {
+        (await this.authP, await this.F.addDoc(this.F.collection(this.fs, "th2"), { title: "ספר תהילים קהילתי", ded: "", auto: !0, deadline: "", sid: "", created: Date.now(), doneAt: null, ch: {} }));
+      } catch (e) {
+        this._eb = 0;
+      }
+    },
+  };
+  let thmEl = null,
+    thmView = null;
+  function thmBar(b) {
+    const d = THM.doneCnt(b);
+    return '<div class="thm-bar"><i style="width:' + d / 1.5 + '%"></i></div><div class="thm-sub">' + d + " מתוך 150 פרקים נקראו</div>";
+  }
+  function thmRender() {
+    if (!thmEl || !thmEl.isConnected) return;
+    const B = THM.books.find((b) => b.id === thmView);
+    if (!THM.ok || !THM.loaded) {
+      thmEl.innerHTML = THM.err ? '<div class="thm-sub" style="padding:18px 0;text-align:center">📡 אין חיבור לאינטרנט כרגע.<br>תהילים מחולק צריך אינטרנט כדי שכולם יראו מי לוקח איזה פרק.<br><button class="btn" id="thmRetry" style="margin-top:10px">🔄 לנסות שוב</button></div>' : '<div class="thm-sub" style="padding:18px 0;text-align:center">⏳ מתחבר…</div>';
+      const r = l("#thmRetry", thmEl);
+      r && (r.onclick = () => ((THM.err = ""), thmRender(), THM.init()));
+      return;
+    }
+    if (B && !B.doneAt) {
+      const mine = Object.keys(B.ch || {}).filter((n) => "mine" === THM.st(B, n));
+      thmEl.innerHTML =
+        '<button class="btn sm" id="thmBack">→ כל הספרים</button><div class="thm-card thm-hl"><b class="thm-t">' + o(B.title) + "</b>" + (B.ded ? '<div class="thm-ded">' + o(B.ded) + "</div>" : "") + thmBar(B) + "</div>" +
+        (mine.length ? '<div class="thm-sub"><b>הפרקים שלקחת:</b> ' + mine.map((n) => '<button class="btn sm" data-thm-open="' + n + '">פרק ' + k(+n) + "</button>").join(" ") + "</div>" : "") +
+        '<button class="btn pri" id="thmNext" style="width:100%;margin:10px 0">📖 תנו לי פרק פנוי</button><div class="thm-sub">או בחרו פרק פנוי:</div><div class="thm-grid">' +
+        Array.from({ length: 150 }, (_, i) => {
+          const n = i + 1,
+            x = THM.st(B, n);
+          return '<button class="thm-' + x + '" data-thm-n="' + n + '"' + ("done" === x || "taken" === x ? " disabled" : "") + ">" + k(n) + "</button>";
+        }).join("") +
+        '</div><div class="thm-leg"><span><i class="thm-free"></i>פנוי</span><span><i class="thm-taken"></i>בקריאה עכשיו</span><span><i class="thm-mine"></i>שלך</span><span><i class="thm-done"></i>נקרא</span></div>';
+      ((l("#thmBack", thmEl).onclick = () => ((thmView = null), thmRender())),
+        (l("#thmNext", thmEl).onclick = () => thmTake(B.id, THM.next(B))),
+        a("[data-thm-n]", thmEl).forEach((e) => (e.onclick = () => ("mine" === THM.st(B, +e.dataset.thmN) ? thmRead(B.id, +e.dataset.thmN) : thmTake(B.id, +e.dataset.thmN)))),
+        a("[data-thm-open]", thmEl).forEach((e) => (e.onclick = () => thmRead(B.id, +e.dataset.thmOpen))));
+      return;
+    }
+    const act = THM.active();
+    thmEl.innerHTML =
+      '<div class="thm-sub">כל אחד לוקח פרק פנוי, קורא ומסמן – וביחד מסיימים ספר תהילים שלם. משותף לכל מי שקורא בברסלב PRO ובאפליקציית "אשריכם ישראל".</div><div class="thm-stat"><div><b>' + THM.total + "</b>ספרים שסיימנו</div><div><b>" + act.length + "</b>ספרים פתוחים</div><div><b>" + (s.get("thmMine", 0) || 0) + "</b>פרקים שקראתם</div></div>" +
+      act
+        .map((b) => '<div class="thm-card" data-thm-b="' + b.id + '"><b class="thm-t">' + o(b.title) + "</b>" + (b.ded ? '<div class="thm-ded">' + o(b.ded) + "</div>" : "") + thmBar(b) + '<button class="btn pri sm" data-thm-take="' + b.id + '" style="width:100%;margin-top:8px">📖 תנו לי פרק פנוי</button></div>')
+        .join("") +
+      '<button class="btn" id="thmNew" style="width:100%;margin-top:10px">➕ פתיחת ספר תהילים להקדשה (לרפואה, לעילוי נשמת, להצלחה)</button>';
+    (a("[data-thm-b]", thmEl).forEach((e) => (e.onclick = (t) => (t.target.closest("[data-thm-take]") || ((thmView = e.dataset.thmB), thmRender())))),
+      a("[data-thm-take]", thmEl).forEach((e) => (e.onclick = () => {
+        const b = THM.books.find((b) => b.id === e.dataset.thmTake);
+        b && thmTake(b.id, THM.next(b));
+      })),
+      (l("#thmNew", thmEl).onclick = () => thmTzedaka()));
+  }
+  function thmOpen(bid) {
+    ((thmView = bid || null), (thmEl = l(".thm-box", Ut('<h3>📖 תהילים מחולק</h3><div class="thm-box"></div>'))), thmRender(), THM.init());
+  }
+  window.__thmOpen = thmOpen;
+  window.__THM = THM;
+  window.__thmRead = (b, n) => thmRead(b, n);
+  async function thmTake(bid, n) {
+    if (!n) return st("כל הפרקים כבר נלקחו – נסו שוב בעוד כמה דקות", 4e3);
+    const F = THM.F;
+    try {
+      await THM.authP;
+      const ok = await F.runTransaction(THM.fs, async (tx) => {
+        const r = F.doc(THM.fs, "th2", bid),
+          d = await tx.get(r);
+        if (!d.exists()) return !1;
+        const x = THM.st(Object.assign({}, d.data()), n);
+        if ("done" === x || "taken" === x) return !1;
+        return "free" === x && tx.update(r, { ["ch." + n]: { st: "r", by: THM.dev(), at: Date.now() } }), !0;
+      });
+      if (!ok) return st("הפרק הזה כבר לא פנוי – נסו פרק אחר", 4e3);
+      thmRead(bid, n);
+    } catch (e) {
+      st("⚠️ לא הצלחנו לקחת את הפרק – בדקו את החיבור לאינטרנט", 5e3);
+    }
+  }
+  // קוראים את הפרק בקורא הרגיל (עם הקראה וכל הכלים), ופס קטן למטה: סיימתי / החזרה
+  function thmRead(bid, n) {
+    const S = goalSeqC["teh:"] || (goalSeqC["teh:"] = goalSeq({ k: "teh" })),
+      c = S[n - 1];
+    (Wt(), c && setTimeout(() => We(c.si, c.ci), 150));
+    let bar = l("#thmRd");
+    (bar && bar.remove(), (bar = document.createElement("div")), (bar.id = "thmRd"));
+    bar.innerHTML = '<span>📖 תהילים מחולק · פרק ' + k(n) + '</span><button type="button" class="thm-ok">✅ סיימתי</button><button type="button" class="thm-rel">החזרה</button>';
+    (document.body.appendChild(bar),
+      (bar.querySelector(".thm-ok").onclick = () => thmDone(bid, n)),
+      (bar.querySelector(".thm-rel").onclick = async () => {
+        bar.remove();
+        try {
+          const b = THM.books.find((b) => b.id === bid);
+          b && "mine" === THM.st(b, n) && (await THM.F.updateDoc(THM.F.doc(THM.fs, "th2", bid), { ["ch." + n]: THM.F.deleteField() }));
+        } catch (e) {}
+        st("הפרק הוחזר והוא פנוי לאחרים", 3500);
+      }));
+  }
+  async function thmDone(bid, n) {
+    const F = THM.F;
+    let fin = null;
+    try {
+      (await THM.authP,
+        (fin = await F.runTransaction(THM.fs, async (tx) => {
+          const r = F.doc(THM.fs, "th2", bid),
+            d = await tx.get(r);
+          if (!d.exists()) return null;
+          const b = d.data(),
+            ch = Object.assign({}, b.ch, { [n]: { st: "d", by: THM.dev(), at: Date.now() } }),
+            up = { ["ch." + n]: ch[n] };
+          let done = !1;
+          Object.values(ch).filter((c) => "d" === c.st).length >= 150 && !b.doneAt && ((up.doneAt = Date.now()), (done = !0));
+          return tx.update(r, up), { done, b: Object.assign({}, b, { id: bid, ch }) };
+        })));
+    } catch (e) {
+      return st("⚠️ הסימון לא נשמר – בדקו את החיבור לאינטרנט ונסו שוב", 5e3);
+    }
+    const bar = l("#thmRd");
+    (bar && bar.remove(), s.set("thmMine", (s.get("thmMine", 0) || 0) + 1));
+    if (fin && fin.done) {
+      try {
+        (await F.setDoc(F.doc(THM.fs, "pub", "th2"), { total: F.increment(1) }, { merge: !0 }),
+          fin.b.auto && !fin.b.once && (await F.addDoc(F.collection(THM.fs, "th2"), { title: fin.b.title, ded: fin.b.ded || "", auto: !0, deadline: "", sid: "", created: Date.now(), doneAt: null, ch: {} })));
+      } catch (e) {}
+      return void Ut('<div style="text-align:center;font-size:3rem">🎉</div><h3 style="text-align:center">סיימנו ספר תהילים שלם!</h3><div class="thm-sub" style="text-align:center">' + o(fin.b.title) + (fin.b.ded ? "<br>" + o(fin.b.ded) : "") + '<br>תודה שהשתתפתם – תזכו למצוות! 🙏</div><button class="btn pri" style="width:100%;margin-top:12px" id="thmAgain">📖 לעוד ספר</button>', null), (l("#thmAgain").onclick = () => thmOpen());
+    }
+    const b = fin ? fin.b : THM.books.find((b) => b.id === bid),
+      nx = b ? THM.next(b) : 0,
+      w = Ut('<div style="text-align:center;font-size:3rem">✅</div><h3 style="text-align:center">תזכו למצוות! פרק ' + k(n) + " סומן</h3>" + (b ? thmBar(b) : "") + '<div class="row2" style="margin-top:12px">' + (nx ? '<button class="btn pri" id="thmMore">📖 עוד פרק</button>' : "") + '<button class="btn" id="thmFin">סיום</button></div>');
+    (nx && (l("#thmMore", w).onclick = () => thmTake(bid, nx)), (l("#thmFin", w).onclick = () => Wt()));
+  }
+  // ➕ ספר להקדשה – קודם כמה מילים על מעלת הצדקה ובחירת סכום (ביט / פייבוקס), ואז פרטי ההקדשה
+  function thmTzedaka() {
+    const D = Cr(),
+      w = Ut(
+        '<h3>💝 פתיחת ספר תהילים להקדשה</h3><div class="thm-q">"צְדָקָה תַּצִּיל מִמָּוֶת" <small>(משלי י, ב)</small></div><div class="thm-q">"גְּדוֹלָה צְדָקָה שֶׁמְּקָרֶבֶת אֶת הַגְּאֻלָּה" <small>(בבא בתרא י.)</small></div><div class="thm-q">"עַשֵּׂר תְּעַשֵּׂר – עַשֵּׂר בִּשְׁבִיל שֶׁתִּתְעַשֵּׁר" <small>(תענית ט.)</small></div><div class="thm-sub" style="margin:10px 0 6px">כדי לפתוח ספר להקדשה – בחרו סכום צדקה, לזיכוי הרבים ולהחזקת האפליקציה:</div><div class="seg" id="thmAmt"><button data-v="10">10 ₪</button><button data-v="18" class="on">18 ₪</button><button data-v="26">26 ₪</button><button data-v="x">סכום אחר</button></div><input id="thmAmtX" type="number" inputmode="numeric" placeholder="סכום בשקלים" style="display:none;width:100%;margin-top:8px"><div class="thm-sub" id="thmAmtL" style="margin-top:8px"></div><div class="row2" style="margin-top:10px">' +
+          (D.bit ? '<button class="btn pri" id="thmBit">💳 ביט</button>' : "") +
+          (D.paybox ? '<button class="btn pri" id="thmPb">💳 PayBox</button>' : "") +
+          '</div><button class="btn" id="thmPaid" style="width:100%;margin-top:10px" disabled>✅ תרמתי – להמשך פתיחת הספר</button>',
+      );
+    let amt = "18";
+    const lbl = () => (l("#thmAmtL", w).innerHTML = "הסכום שבחרתם: <b>" + o(amt || "…") + " ₪</b> – הקלידו אותו באפליקציית התשלום.");
+    (a("#thmAmt button", w).forEach(
+      (e) =>
+        (e.onclick = () => {
+          (a("#thmAmt button", w).forEach((t) => t.classList.toggle("on", t === e)), (l("#thmAmtX", w).style.display = "x" === e.dataset.v ? "" : "none"), (amt = "x" === e.dataset.v ? l("#thmAmtX", w).value : e.dataset.v), lbl());
+        }),
+    ),
+      (l("#thmAmtX", w).oninput = (e) => ((amt = e.target.value.replace(/\D/g, "")), lbl())),
+      lbl());
+    const go = () => (l("#thmPaid", w).disabled = !1),
+      bt_ = l("#thmBit", w),
+      pb = l("#thmPb", w);
+    (bt_ &&
+      (bt_.onclick = () => {
+        /^https?:/.test(D.bit) ? NAT.openUrl(D.bit) : (nt(D.bit), st("מספר הביט " + D.bit + " הועתק – פתחו את ביט, העבירו " + (amt || "") + ' ₪ ובסיבה כתבו "' + D.note + '"', 8e3));
+        go();
+      }),
+      pb && (pb.onclick = () => (NAT.openUrl(D.paybox), go())),
+      (l("#thmPaid", w).onclick = () => {
+        (s.set("thmPaidAt", Date.now()), Wt(), setTimeout(thmNewForm, 200));
+      }));
+  }
+  function thmNewForm() {
+    const w = Ut(
+      '<h3>📖 ספר תהילים להקדשה</h3><div class="thm-sub">תודה רבה! תזכו למצוות 🙏 עכשיו כתבו למי מוקדש הספר:</div><div class="seg" id="thmK" style="margin:10px 0"><button data-v="לרפואת" class="on">לרפואת</button><button data-v="לעילוי נשמת">לעילוי נשמת</button><button data-v="להצלחת">להצלחת</button><button data-v="לזיווג הגון ל">לזיווג</button></div><div class="field"><label>שם (למשל: פלוני בן פלונית)</label><input id="thmName" maxlength="60"></div><div class="field"><label>שם הספר (לא חובה)</label><input id="thmTitle" maxlength="50" placeholder="ספר תהילים"></div><button class="btn pri" id="thmGo" style="width:100%">📖 פתיחת הספר</button>',
+    );
+    let k = "לרפואת";
+    (a("#thmK button", w).forEach((e) => (e.onclick = () => (a("#thmK button", w).forEach((t) => t.classList.toggle("on", t === e)), (k = e.dataset.v)))),
+      (l("#thmGo", w).onclick = async () => {
+        const nm = l("#thmName", w).value.trim().slice(0, 60);
+        if (!nm) return st("כתבו את השם להקדשה", 3e3);
+        const t = l("#thmTitle", w).value.trim().slice(0, 50) || "ספר תהילים",
+          ded = (k.endsWith(" ל") ? k : k + " ") + nm;
+        try {
+          (await THM.init(), await THM.authP);
+          const r = await THM.F.addDoc(THM.F.collection(THM.fs, "th2"), { title: t, ded, auto: !0, once: !0, src: "bp", deadline: "", sid: "", created: Date.now(), doneAt: null, ch: {} });
+          (st("הספר נפתח 📖 שתפו את הקישור כדי שעוד אנשים ישתתפו", 5e3), thmOpen(r.id));
+        } catch (e) {
+          st("⚠️ לא הצלחנו לפתוח את הספר – בדקו את החיבור לאינטרנט", 5e3);
+        }
+      }));
   }
   function Mr(t) {
     const e = Cr();
@@ -27932,6 +28172,7 @@ function doGet(e){
   }),
     (l("#toolNotes").onclick = () => It("mine", { tab: "notes" })),
     (l("#toolShareApp").onclick = () => Lr()),
+    l("#toolThm") && (l("#toolThm").onclick = () => (Wt(), setTimeout(() => thmOpen(), 150))),
     (l("#helpBn").onclick = () => {
       Ut(
         '<h3>❓ מדריך לברסלב PRO</h3><button class="btn pri" id="helpBot" style="width:100%;margin:4px 0 8px"><span class="bot-av sm"></span> שאלו את העוזר – הוא מכיר כל פינה באפליקציה</button><div class="sh-sub">🎬 בקרוב: סרטון הסבר מפורט על כל האפליקציה.</div><button class="btn" id="helpWn" style="width:100%;margin-bottom:10px">🆕 מה חדש בעדכון האחרון</button><div class="help-l">' +
