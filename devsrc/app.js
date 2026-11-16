@@ -22850,7 +22850,7 @@ function doGet(e){
         F.onSnapshot(
           F.collection(this.fs, "th2"),
           (q) => {
-            ((this.books = q.docs.map((d) => Object.assign({}, d.data(), { id: d.id }))), (this.loaded = !0), this.ensure(), thmRender());
+            ((this.books = q.docs.map((d) => Object.assign({}, d.data(), { id: d.id }))), (this.loaded = !0), this.ensure(), thmRender(), thmHome());
           },
           (e) => ((this.err = String((e && e.code) || e)), thmRender()),
         );
@@ -22908,20 +22908,20 @@ function doGet(e){
             x = THM.st(B, n);
           return '<button class="thm-' + x + '" data-thm-n="' + n + '"' + ("done" === x || "taken" === x ? " disabled" : "") + ">" + k(n) + "</button>";
         }).join("") +
-        '</div><div class="thm-leg"><span><i class="thm-free"></i>פנוי</span><span><i class="thm-taken"></i>בקריאה עכשיו</span><span><i class="thm-mine"></i>שלך</span><span><i class="thm-done"></i>נקרא</span></div>';
+        '</div><div class="thm-leg"><span><i class="thm-free"></i>פנוי</span><span><i class="thm-taken"></i>בקריאה עכשיו</span><span><i class="thm-mine"></i>שלך</span><span><i class="thm-done"></i>נקרא</span></div><button class="btn thm-ded-btn" id="thmNew2" style="margin-top:12px">💝 להקדיש ספר תהילים משלכם</button>';
       ((l("#thmBack", thmEl).onclick = () => ((thmView = null), thmRender())),
         (l("#thmNext", thmEl).onclick = () => thmTake(B.id, THM.next(B))),
         a("[data-thm-n]", thmEl).forEach((e) => (e.onclick = () => ("mine" === THM.st(B, +e.dataset.thmN) ? thmRead(B.id, +e.dataset.thmN) : thmTake(B.id, +e.dataset.thmN)))),
-        a("[data-thm-open]", thmEl).forEach((e) => (e.onclick = () => thmRead(B.id, +e.dataset.thmOpen))));
+        a("[data-thm-open]", thmEl).forEach((e) => (e.onclick = () => thmRead(B.id, +e.dataset.thmOpen))),
+        (l("#thmNew2", thmEl).onclick = () => thmTzedaka()));
       return;
     }
     const act = THM.active();
     thmEl.innerHTML =
-      '<div class="thm-sub">כל אחד לוקח פרק פנוי, קורא ומסמן – וביחד מסיימים ספר תהילים שלם. משותף לכל מי שקורא בברסלב PRO ובאפליקציית "אשריכם ישראל".</div><div class="thm-stat"><div><b>' + THM.total + "</b>ספרים שסיימנו</div><div><b>" + act.length + "</b>ספרים פתוחים</div><div><b>" + (s.get("thmMine", 0) || 0) + "</b>פרקים שקראתם</div></div>" +
+      '<button class="btn pri thm-ded-btn" id="thmNew">💝 להקדיש ספר תהילים – לרפואה, לעילוי נשמת, להצלחה</button><div class="thm-sub">כל אחד לוקח פרק פנוי, קורא ומסמן – וביחד מסיימים ספר תהילים שלם. משותף לכל מי שקורא בברסלב PRO ובאפליקציית "אשריכם ישראל".</div><div class="thm-stat"><div><b>' + THM.total + "</b>ספרים שסיימנו</div><div><b>" + act.length + "</b>ספרים פתוחים</div><div><b>" + (s.get("thmMine", 0) || 0) + "</b>פרקים שקראתם</div></div>" +
       act
         .map((b) => '<div class="thm-card" data-thm-b="' + b.id + '"><b class="thm-t">' + o(b.title) + "</b>" + (b.ded ? '<div class="thm-ded">' + o(b.ded) + "</div>" : "") + thmBar(b) + '<button class="btn pri sm" data-thm-take="' + b.id + '" style="width:100%;margin-top:8px">📖 תנו לי פרק פנוי</button></div>')
-        .join("") +
-      '<button class="btn" id="thmNew" style="width:100%;margin-top:10px">➕ פתיחת ספר תהילים להקדשה (לרפואה, לעילוי נשמת, להצלחה)</button>';
+        .join("");
     (a("[data-thm-b]", thmEl).forEach((e) => (e.onclick = (t) => (t.target.closest("[data-thm-take]") || ((thmView = e.dataset.thmB), thmRender())))),
       a("[data-thm-take]", thmEl).forEach((e) => (e.onclick = () => {
         const b = THM.books.find((b) => b.id === e.dataset.thmTake);
@@ -22929,6 +22929,18 @@ function doGet(e){
       })),
       (l("#thmNew", thmEl).onclick = () => thmTzedaka()));
   }
+  // כרטיס בולט בראש מסך הבית
+  function thmHome() {
+    const el = l("#thmHome");
+    if (!el) return;
+    const b = THM.loaded ? THM.active()[0] : null;
+    ((el.innerHTML =
+      '<button class="thm-home" type="button"><span class="thm-hi">📖</span><span class="thm-hm"><b>תהילים מחולק</b><small>' +
+      (b ? THM.doneCnt(b) + " מתוך 150 פרקים · " + (b.ded ? o(b.ded) : "כל אחד פרק אחד – ביחד ספר שלם") : "כל אחד לוקח פרק אחד – וביחד מסיימים ספר שלם") +
+      '</small></span><span class="thm-hg">לקחת פרק ‹</span></button>'),
+      (l(".thm-home", el).onclick = () => thmOpen()));
+  }
+  setTimeout(thmHome, 0);
   function thmOpen(bid) {
     ((thmView = bid || null), (thmEl = l(".thm-box", Ut('<h3>📖 תהילים מחולק</h3><div class="thm-box"></div>'))), thmRender(), THM.init());
   }
@@ -22960,12 +22972,12 @@ function doGet(e){
       c = S[n - 1];
     (Wt(), c && setTimeout(() => We(c.si, c.ci), 150));
     let bar = l("#thmRd");
-    (bar && bar.remove(), (bar = document.createElement("div")), (bar.id = "thmRd"));
+    (bar && bar.remove(), (bar = document.createElement("div")), (bar.id = "thmRd"), document.body.classList.add("thm-mode"));
     bar.innerHTML = '<span>📖 תהילים מחולק · פרק ' + k(n) + '</span><button type="button" class="thm-ok">✅ סיימתי</button><button type="button" class="thm-rel">החזרה</button>';
     (document.body.appendChild(bar),
       (bar.querySelector(".thm-ok").onclick = () => thmDone(bid, n)),
       (bar.querySelector(".thm-rel").onclick = async () => {
-        bar.remove();
+        (bar.remove(), document.body.classList.remove("thm-mode"));
         try {
           const b = THM.books.find((b) => b.id === bid);
           b && "mine" === THM.st(b, n) && (await THM.F.updateDoc(THM.F.doc(THM.fs, "th2", bid), { ["ch." + n]: THM.F.deleteField() }));
@@ -22993,7 +23005,7 @@ function doGet(e){
       return st("⚠️ הסימון לא נשמר – בדקו את החיבור לאינטרנט ונסו שוב", 5e3);
     }
     const bar = l("#thmRd");
-    (bar && bar.remove(), s.set("thmMine", (s.get("thmMine", 0) || 0) + 1));
+    (bar && bar.remove(), document.body.classList.remove("thm-mode"), s.set("thmMine", (s.get("thmMine", 0) || 0) + 1), thmHome());
     if (fin && fin.done) {
       try {
         (await F.setDoc(F.doc(THM.fs, "pub", "th2"), { total: F.increment(1) }, { merge: !0 }),
