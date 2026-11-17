@@ -22194,8 +22194,9 @@ function doGet(e){
     } catch (t) {}
   }, 4200);
   const rr = {
-    v: "2026-11-17a",
+    v: "2026-11-17b",
     items: [
+      ["2026-11-17", "💎", "פס הדיבורים – למעלה", "פס הדיבורים הרץ עבר לראש המסך. דיבור משך את העין? לחיצה פותחת אותו במקומו בספר, והמשפט מסומן. לחיצה ארוכה – הדיבור בגדול עם שיתוף ושמירה."],
       ["2026-11-17", "💎", "דיבורים יפים – פס רץ", "במסך הבית רץ פס של דיבורים קצרים ומחזקים – משפטים שלמים שהמערכת ליקטה מספרי רבנו ותלמידיו (על שמחה, אמונה, תפילה, \"אין שום יאוש\"...). לחיצה פותחת את הדיבור בגדול עם המקור. אפשר להוסיף דיבורים משלכם: מסמנים טקסט בספר ← 💎 לדיבורים. וגם הווידג׳ט מציג עכשיו את הדיבורים האלה."],
       ["2026-11-17", "🔴", "הווידג׳ט מתריע לפני כל זמן", "דקות ספורות לפני סוף זמן ק״ש, תפילה, שקיעה וכו׳ – שורת הזמן בווידג׳ט נצבעת באדום ומהבהבת. בוחרים כמה דקות לפני (5/10/15/30 או כבוי) בהגדרות הווידג׳ט."],
       ["2026-11-17", "⬆️", "קפיצה לרשימת הספרים", "בוחרים לשונית בספרייה (למשל ספרי רבי נתן) – והמסך עולה מיד לרשימת הספרים שלה. אפשר לכבות בהגדרות ← כללי."],
@@ -22914,14 +22915,32 @@ function doGet(e){
       dur = Math.max(9, Math.round((txt.length + src.length) / [0, 7, 10, 14][c.sp || 2]));
     ((el.style.display = ""),
       (el.innerHTML = '<span class="prl-ic">💎</span><div class="prl-win"><div class="prl-run" style="animation-duration:' + dur + 's"><b>' + o(txt) + "</b>" + (src ? '<small> · ' + o(src) + "</small>" : "") + "</div></div>"));
-    const r = l(".prl-run", el);
+    const r = l(".prl-run", el),
+      wn = l(".prl-win", el);
+    // מתחיל מיד מקצה המסך: הטקסט נכנס משמאל ונע ימינה (ראש המשפט ראשון)
+    try {
+      const W = wn.clientWidth || 300,
+        RW = r.scrollWidth || 600;
+      (r.style.setProperty("--a", -RW + "px"), r.style.setProperty("--b", W + "px"), (r.style.animationDuration = Math.max(6, (W + RW) / [0, 45, 65, 90][c.sp || 2]).toFixed(1) + "s"));
+    } catch (t) {}
     r.addEventListener("animationend", () => {
       (clearTimeout(prlT), (prlT = setTimeout(prlTick, 1200)));
     });
   }
   function prlHome() {
     const el = l("#prlTick");
-    el && !el._b && ((el._b = 1), (el.onclick = () => prlCur && prlCard(prlCur)));
+    // לחיצה: פותח את הדיבור במקומו בספר (ומסמן אותו). לחיצה ארוכה: הדיבור בגדול + אפשרויות
+    if (el && !el._b) {
+      el._b = 1;
+      let lp = null,
+        long = !1;
+      (el.addEventListener("pointerdown", () => ((long = !1), (lp = setTimeout(() => ((long = !0), prlCur && prlCard(prlCur)), 550)))),
+        ["pointerup", "pointerleave", "pointercancel"].forEach((e) => el.addEventListener(e, () => clearTimeout(lp))),
+        (el.onclick = () => {
+          if (long || !prlCur) return;
+          prlCur.id && y[prlCur.id] ? prlGo(prlCur) : prlCard(prlCur);
+        }));
+    }
     PRL.cfg().on && PRL.load().then(() => (clearTimeout(prlT), prlTick()));
   }
   setTimeout(prlHome, 1500);
@@ -22950,6 +22969,40 @@ function doGet(e){
         }),
       (l("#prlMng", w).onclick = () => (Wt(), setTimeout(prlManage, 200))));
   }
+  function prlGo(p) {
+    Ye(p.id);
+    // מסמנים את המשפט עצמו בתוך הקטע
+    const key = String(p.t).replace(/[\u0591-\u05c7]/g, "").replace(/\s+/g, " ").trim().slice(0, 24);
+    let n = 0;
+    const tr = () => {
+      const it = document.querySelector('#reader .item[data-id="' + p.id + '"]');
+      if (!it) return void (++n < 30 && setTimeout(tr, 200));
+      (it.classList.add("prl-hit"), setTimeout(() => it.classList.remove("prl-hit"), 6e3));
+      try {
+        const w = document.createTreeWalker(it, NodeFilter.SHOW_TEXT);
+        for (let x; (x = w.nextNode()); ) {
+          // מפת מיקומים בלי ניקוד → מיקום אמיתי, כדי לסמן בדיוק את המשפט
+          const raw = x.nodeValue,
+            pos = [];
+          let pl = "";
+          for (let i = 0; i < raw.length; i++) /[\u0591-\u05c7]/.test(raw[i]) || ((pl += raw[i]), pos.push(i));
+          const k = pl.replace(/\s+/g, " ").indexOf(key.slice(0, 12)) >= 0 ? pl.indexOf(key.slice(0, 6)) : -1;
+          if (k < 0) continue;
+          let e = pl.slice(k).search(/[.:!?]/);
+          e = e < 0 ? pl.length : k + e + 1;
+          const a0 = pos[k],
+            a1 = e >= pos.length ? raw.length : pos[e];
+          const mid = x.splitText(a0);
+          mid.splitText(a1 - a0);
+          const m = document.createElement("mark");
+          ((m.className = "prl-mark"), mid.parentNode.insertBefore(m, mid), m.appendChild(mid), m.scrollIntoView({ block: "center", behavior: "smooth" }));
+          break;
+        }
+      } catch (t) {}
+    };
+    setTimeout(tr, 300);
+  }
+  window.__prlGo = prlGo;
   window.__prlCard = (i) => PRL.load().then(() => prlCard(i != null ? PRL.list()[i] : prlPick()));
   function prlAddForm(txt, id) {
     const src = id && y[id] ? Msrc(y[id]) : "",

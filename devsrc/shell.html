@@ -1065,10 +1065,12 @@ html.lite #spVid{display:none!important}
 .thm-hi{font-size:28px}.thm-hm{flex:1;display:flex;flex-direction:column}.thm-hm b{font-size:17px;color:#f3d78e}.thm-hm small{font-size:13px;opacity:.9;line-height:1.4}
 .thm-hg{background:#f3d78e;color:#1d2b45;border-radius:999px;padding:6px 12px;font-weight:700;font-size:13.5px;white-space:nowrap}
 body.thm-mode #reader .marks,body.thm-mode #reader .rbx,body.thm-mode #reader .rd-ck{display:none!important}
-.prl-tick{margin:8px 14px 0;display:flex;align-items:center;gap:8px;background:linear-gradient(90deg,rgba(176,138,58,.14),rgba(176,138,58,.06));border:1px solid rgba(176,138,58,.35);border-radius:14px;padding:7px 10px;cursor:pointer;overflow:hidden}
+.prl-tick{margin:8px 14px 0;user-select:none;-webkit-user-select:none;display:flex;align-items:center;gap:8px;background:linear-gradient(90deg,rgba(176,138,58,.14),rgba(176,138,58,.06));border:1px solid rgba(176,138,58,.35);border-radius:14px;padding:7px 10px;cursor:pointer;overflow:hidden}
+.prl-top{margin:calc(6px + var(--safe-t,0px)) 10px 0;border-radius:12px;background:linear-gradient(90deg,#1d2b45,#2c4370);border-color:rgba(243,215,142,.5)}.prl-top .prl-run{color:#f6efdc}.prl-top .prl-run small{color:#f3d78e}
 .prl-ic{flex:0 0 auto;font-size:18px}.prl-win{flex:1;overflow:hidden;white-space:nowrap;mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent);-webkit-mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent)}
-.prl-run{display:inline-block;padding-inline-start:100%;animation:prlRun 18s linear 1;font-size:15px;color:var(--ink)}.prl-run b{font-weight:600}.prl-run small{color:var(--muted);font-size:13px}
-@keyframes prlRun{from{transform:translateX(-100%)}to{transform:translateX(100%)}}
+.prl-win{position:relative;height:24px}.prl-run{position:absolute;left:0;top:1px;white-space:nowrap;animation:prlRun 18s linear 1;font-size:15px;color:var(--ink);will-change:transform}.prl-run b{font-weight:600}.prl-run small{color:var(--muted);font-size:13px}
+@keyframes prlRun{from{transform:translateX(var(--a,-100%))}to{transform:translateX(var(--b,100%))}}
+.prl-hit{box-shadow:0 0 0 3px rgba(176,138,58,.55);border-radius:12px;transition:box-shadow .4s}mark.prl-mark{background:rgba(243,215,142,.55);color:inherit;border-radius:4px}
 .prl-card{background:rgba(176,138,58,.08);border-radius:16px;padding:16px;margin-bottom:10px;text-align:center}.prl-big{font-size:20px;line-height:1.7;font-weight:600}.prl-src{margin-top:8px;color:var(--muted);font-size:14px}
 .prl-mine{display:flex;gap:8px;align-items:flex-start;border-bottom:1px dashed var(--line,#e8dfcc);padding:6px 0;font-size:14px}.prl-mine span{flex:1}
 @media (prefers-reduced-motion:reduce){.prl-run{animation-duration:30s!important}}
@@ -1091,9 +1093,9 @@ body.thm-mode #reader .marks,body.thm-mode #reader .rbx,body.thm-mode #reader .r
 
 <!-- ===== HOME ===== -->
 <section class="view active" id="homeView">
+  <div id="prlTick" class="prl-tick prl-top" style="display:none"></div>
   <div class="datebar"><span class="db-r"><button class="hb-back" id="homeBack" data-back aria-label="חזרה צעד אחד"><svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>חזרה</button><span id="hebDate"></span></span><span id="gregDate"></span></div>
   <div id="hilBox"></div>
-  <div id="prlTick" class="prl-tick" style="display:none"></div>
   <div id="thmHome"></div>
   <div id="zmBox"></div>
   <div id="libBack"></div>
