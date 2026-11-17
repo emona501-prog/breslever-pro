@@ -13,7 +13,7 @@ if (WEB) self.addEventListener('fetch', e => {
   if (u.origin !== location.origin) return;
   const p = u.pathname;
   // קבצי ספרים / ספריות / תמונות – השם כולל חתימה, לא משתנים: קודם מהמכשיר
-  if (/\/(data|lib)\/|\.(png|mp3|json)$/.test(p) && !/version\.json$/.test(p)) {
+  if (/\/(data|lib)\/|\.(png|webp|jpg|mp3|json)$/.test(p) && !/version\.json$/.test(p)) {
     e.respondWith(caches.open(C).then(async c => {
       const hit = await c.match(r);
       if (hit) return hit;

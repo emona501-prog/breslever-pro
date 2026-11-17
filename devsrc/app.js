@@ -655,6 +655,17 @@ const MYB = {
     });
   },
 };
+// מספור עברי לקטעים בספר פרטי (א, ב ... טו, טז ... קכג)
+function myHebNum(n) {
+  const U = ["", "א", "ב", "ג", "ד", "ה", "ו", "ז", "ח", "ט"],
+    T = ["", "י", "כ", "ל", "מ", "נ", "ס", "ע", "פ", "צ"],
+    H = ["", "ק", "ר", "ש", "ת"];
+  let r = "";
+  for (n = Math.floor(n); n >= 400; n -= 400) r += "ת";
+  r += H[Math.floor(n / 100)];
+  n %= 100;
+  return r + (15 === n ? "טו" : 16 === n ? "טז" : T[Math.floor(n / 10)] + U[n % 10]);
+}
 async function myBooksInject(t) {
   let e = [];
   try {
@@ -698,7 +709,7 @@ async function myBooksInject(t) {
           g: "V" + i,
           vol: e.title,
           priv: e.key,
-          c: e.c.map((t, i) => ({ t: t.t, hi: i, i: t.i.map((t, i) => ({ n: e.noNum ? "" : t.n || (e.addNum ? gem(i + 1) : ""), b: t.b, x: i })) })),
+          c: e.c.map((t, i) => ({ t: t.t, hi: i, i: t.i.map((t, i) => ({ n: e.noNum ? "" : t.n || (e.addNum ? myHebNum(i + 1) : ""), b: t.b, x: i })) })),
         };
         ((c.c0 = c.c.slice()), t.push(c));
       }));
@@ -1129,7 +1140,7 @@ function MAIN(t) {
       asSpeed: 30,
       contBox: !1,
     },
-    O = Object.assign({}, A, s.get("settings", {})),
+    O = ((t) => (null == t.itMore && (t.itMore = !!t.readCk), t))(Object.assign({}, A, s.get("settings", {}))),
     Z = { frank: "'Frank Ruhl Libre',serif", david: "'David Libre',serif", noto: "'Noto Serif Hebrew',serif" };
   function D() {
     const t = document.documentElement;
@@ -1140,6 +1151,7 @@ function MAIN(t) {
       t.setAttribute("data-theme", O.theme),
       document.body.classList.toggle("nogloss", !O.gloss),
       document.body.classList.toggle("readck", !!O.readCk),
+      document.body.classList.toggle("itmore", !!O.itMore),
       l("#fab").classList.toggle("hide", !O.fab));
     const e = document.querySelector("meta[name=theme-color]");
     e && (e.content = "night" === O.theme ? "#0f1524" : "sepia" === O.theme ? "#f1e6cf" : "#f7f2e7");
@@ -5811,6 +5823,8 @@ function MAIN(t) {
     }));
   let Ue = { si: 0, ci: 0 };
   function We(t, e, i, c) {
+    // התיקון הכללי נפתח רק במסך שלו (פתיחתו בקורא הרגיל תוקעת את המסך)
+    if (n[t] && "tikkun" === n[t].id) return It("tikkun", {});
     It("reader", { si: t, ci: e, focus: i || null, terms: c || null });
   }
   function Ye(t, e) {
@@ -6518,7 +6532,9 @@ function MAIN(t) {
           l.filter((t) => "p" !== t[0]).map(Xe).join("") +
           ("std" === mgv ? '<button class="mg-btn mg-b" type="button" data-mgk="' + t.id + '">מפרשים <i>▾</i></button>' : "") +
           ("all" === mgv ? '<div class="mg-box open" data-mgall="' + t.id + '"></div>' : '<div class="mg-box"></div>') +
-          "</div></div>"),
+          "</div>" +
+          ("clean" === mgv ? "" : '<label class="rd-ck"><input type="checkbox" data-rd="' + t.id + '" ' + (tt.read[t.id] ? "checked" : "") + "> קראתי</label>") +
+          "</div>"),
         "all" === mgv && mgFillSoon(),
         i
       );
@@ -7366,7 +7382,11 @@ function MAIN(t) {
             '</h3><div class="acts"><button class="act" data-cm="copy"><span class="ic">📋</span>העתק את הכול</button><button class="act" data-cm="share"><span class="ic">📤</span>שתף כטקסט</button><button class="act" data-cm="room"><span class="ic">🚪</span>לחדר הפרטי</button><button class="act" data-cm="rem"><span class="ic">⏰</span>תזכורת לדף</button><button class="act' +
             (O.readCk ? " on" : "") +
             '" data-cm="unit"><span class="ic">☑️</span>' +
-            (O.readCk ? "להסתיר סימון ו-⋮ ליד כל קטע" : "להציג סימון ו-⋮ ליד כל קטע") +
+            (O.readCk ? 'להסתיר "קראתי" ליד כל קטע' : 'להציג "קראתי" ליד כל קטע') +
+            '</button><button class="act' +
+            (O.itMore ? " on" : "") +
+            '" data-cm="unit3"><span class="ic">⋮</span>' +
+            (O.itMore ? "להסתיר ⋮ ליד כל קטע" : "להציג ⋮ ליד כל קטע") +
             '</button></div><div class="sh-sub" style="margin-top:8px">ברירת המחדל: סימון "קראתי" ואפשרויות לכל הפרק. לאפשרויות של קטע אחד (העתקה, שיתוף, סימנייה, הערה) – לחצו על המספר או האות שבראש הקטע.</div>',
         );
       a("[data-cm]", u).forEach(
@@ -7380,7 +7400,11 @@ function MAIN(t) {
             "rem" === e && setTimeout(() => Xl(), 80);
             if ("unit" === e) {
               ((O.readCk = !O.readCk), j(), D());
-              st(O.readCk ? "מעכשיו: סימון ו-⋮ ליד כל קטע" : "מעכשיו: סימון ואפשרויות לפי פרק", 2200);
+              st(O.readCk ? 'מעכשיו: ריבוע "קראתי" ליד כל קטע' : 'מעכשיו: סימון "קראתי" לפי פרק', 2200);
+            }
+            if ("unit3" === e) {
+              ((O.itMore = !O.itMore), j(), D());
+              st(O.itMore ? "מעכשיו: ⋮ (שיתוף, העתקה, הערה) ליד כל קטע" : "ה-⋮ ליד כל קטע הוסתר – לוחצים על המספר שבראש הקטע", 2600);
             }
           }),
       );
@@ -12064,9 +12088,6 @@ function MAIN(t) {
     try {
       Jd();
     } catch (t) {}
-    try {
-      halSeqC = halSeqC;
-    } catch (t) {}
   }
   function halSheet() {
     const t = halPlan(),
@@ -12311,7 +12332,7 @@ function MAIN(t) {
     { id: "siddur", ic: "🙏", t: "סידור ותפילות", a: "בספרייה יש סידור (נוסח עדות המזרח) עם שחרית, מנחה, ערבית, ברכות ותפילות מיוחדות.", w: "סידור סדור תפילה תפילות שחרית מנחה ערבית מעריב עמידה שמונה עשרה ברכות ברכה ברכת קריאת שמע", go: () => sfOpen() },
     { id: "birkat", ic: "🍞", t: "ברכת המזון", a: "ברכת המזון בנוסחים השונים.", w: "ברכת המזון בהמז מזון אכלתי אחרי אוכל זימון", go: () => It("birkat") },
     { id: "plan", ic: "📖", t: "תוכנית לימוד וסדר יומי", a: "\"רוצה לקבוע סדר בספר זה?\" בראש כל ספר מחלק אותו ללימוד יומי – בחודש, בשנה או עד תאריך שתבחרו. הכול נכנס ל\"סדר היום שלי\".", w: "תוכנית תכנית סדר סדרים קביעות לקבוע קובע יומי לסיים סיום מסלול לוח זמנים חלוקה", go: () => It("day") },
-    { id: "readmark", ic: "☑️", t: "סימון \"קראתי\"", a: "בראש ובסוף כל פרק יש \"קראתי את כל הפרק\" ושלוש נקודות ⋮ לאפשרויות של הפרק. מי שרוצה סימון ליד כל קטע – בהגדרות או ב־⋮ של הפרק.", w: "קראתי קראנו נקרא סימון לסמן מעקב התקדמות סיימתי", go: () => botSettings(() => botCard("קראתי")) },
+    { id: "readmark", ic: "☑️", t: "סימון \"קראתי\"", a: "בראש ובסוף כל פרק יש \"קראתי את כל הפרק\" ושלוש נקודות ⋮ לאפשרויות של הפרק. מי שרוצה ריבוע \"קראתי\" ליד כל קטע, או ⋮ ליד כל קטע – שתי הגדרות נפרדות, בהגדרות או ב־⋮ של הפרק.", w: "קראתי קראנו נקרא סימון לסמן מעקב התקדמות סיימתי", go: () => botSettings(() => botCard("קראתי")) },
     { id: "nav", ic: "🧭", t: "דפדוף ומעבר בין פרקים", a: "בראש כל דף יש שורה עם שם הספר, הפרק והקטע, וחצים לפרק הקודם והבא. בהגדרות אפשר להפעיל \"דפדוף ספר\" תלת־ממדי עם החלקה לצדדים.", w: "דפדוף לדפדף מדפדף מדפדפים דף דפים הבא הקודם להחליק החלקה תלת מימד ממד", go: () => botSettings(() => botCard("כללי")) },
     { id: "clean", ic: "🧘", t: "תצוגה נקייה וקריאה ברצף", a: "בכפתור הצף ✦: \"תצוגה נקייה\" מסתירה את כל הכפתורים, \"קריאה ברצף\" מציגה את הטקסט כמו בספר, ו\"גלילה אוטומטית\" גוללת לבד.", w: "נקייה נקי נקיה בלי כפתורים מסך מלא ברצף רציף גלילה אוטומטית לגלול" },
     { id: "update", ic: "📲", t: "עדכון גרסה", a: "האפליקציה בודקת עדכונים בכל פתיחה. אפשר גם בכפתור הצף ✦ ← \"בדיקת עדכון גרסה\".", w: "עדכון עדכונים לעדכן מעדכן גרסה גירסה חדשה ישנה להוריד הורדה להתקין התקנה אפליקציה" },
@@ -13887,7 +13908,6 @@ function MAIN(t) {
         return { stay: 1, say: "✅ קבעתי לך תזכורת: <b>" + o(lbl) + "</b> – " + botRemDesc(w) + (w.z ? " (לפי זמני היום בעיר שלך)" : "") + ". תקבל התראה בזמן 🔔", undo: t.id };
       }
       return { stay: 1, ask: { lbl, nav }, say: "⏰ בשמחה! מתי להזכיר לך «" + o(lbl) + "»?" };
-      return { say: "⏰ פותח לך תזכורת" + (e ? " – «" + o(e) + "»" : "") + ". בוחרים שעה וימים, וזה יקפוץ כהתראה.", run: () => Xl({ nav: { v: "home", p: i >= 0 ? { b: i } : {} }, lbl: e || "תזכורת", free: 1 }) };
     }
     // 📖 "ספר לי סיפור על…", "תקריא לי מעשה", "יש לך משל על…", "עוד סיפור"
     {
@@ -14933,6 +14953,7 @@ function MAIN(t) {
   window.__botOpen = botOpen;
   window.__It = It;
   window.__We = We;
+  window.__secs = (x) => n.map((t) => (x ? t.id + " " + t.g + " " + (t.name || t.short || "") : t.c.length));
   // 📦 כשספר נטען – מנקים את המטמונים שנבנו מהטקסט
   LZ.cb.push(() => {
     (($i = null), (gc = null), (Lc = null), (botQA = null), (botStoryS = null));
@@ -22196,6 +22217,7 @@ function doGet(e){
   const rr = {
     v: "2026-11-17b",
     items: [
+      ["2026-11-18", "☑️", "\"קראתי\" ושלוש נקודות – שתי הגדרות נפרדות", "מעכשיו בוחרים בנפרד: ריבוע \"קראתי\" ליד כל קטע (כל הלכה, סעיף, פסוק או אות), ושלוש נקודות ⋮ ליד כל קטע לשיתוף, העתקה, סימנייה והערה. בהגדרות ← כללי, או ב־⋮ של הפרק. וגם: בשולחן ערוך ובתנ\"ך עם מפרשים מופיע עכשיו ריבוע \"קראתי\" ליד כל סעיף ופסוק."],
       ["2026-11-17", "🔊", "הקראה: \"הַשֵּׁם\" במקום ה", "בפסוקים שכתוב בהם ה לבד (\"וַיֹּאמֶר ה אֶל מֹשֶׁה\") – ההקראה אומרת עכשיו \"הַשֵּׁם\", וגם בַּה׳, לַה׳, וְלַה׳ נקראים נכון. כשה היא מספר (הלכה ה, אות ה, משלי ה) – נשארת מספר."],
       ["2026-11-17", "💎", "יהלום חדש לפס הדיבורים", "בראש פס הדיבורים – יהלום אמיתי שמסתובב בעדינות ומנצנץ. האנימציה קלה מאוד על הסוללה, ובגרסת הלייט ובמכשירים שביקשו \"הפחתת תנועה\" היהלום עומד במקום."],
       ["2026-11-17", "💎", "פס הדיבורים – למעלה", "פס הדיבורים הרץ עבר לראש המסך. דיבור משך את העין? לחיצה פותחת אותו במקומו בספר, והמשפט מסומן. לחיצה ארוכה – הדיבור בגדול עם שיתוף ושמירה."],
@@ -22921,6 +22943,7 @@ function doGet(e){
       wn = l(".prl-win", el);
     // מתחיל מיד מקצה המסך: הטקסט נכנס משמאל ונע ימינה (ראש המשפט ראשון)
     try {
+      if (!wn.clientWidth) return void (clearTimeout(prlT), (prlT = setTimeout(prlTick, 2500)));
       const W = wn.clientWidth || 300,
         RW = r.scrollWidth || 600;
       (r.style.setProperty("--a", -RW + "px"), r.style.setProperty("--b", W + "px"), (r.style.animationDuration = Math.max(6, (W + RW) / [0, 45, 65, 90][c.sp || 2]).toFixed(1) + "s"));
@@ -23243,7 +23266,7 @@ function doGet(e){
     thmEl.innerHTML =
       '<button class="btn pri thm-ded-btn" id="thmNew">💝 להקדיש ספר תהילים – לרפואה, לעילוי נשמת, להצלחה</button><div class="thm-sub">כל אחד לוקח פרק פנוי, קורא ומסמן – וביחד מסיימים ספר תהילים שלם. משותף לכל מי שקורא בברסלב PRO ובאפליקציית "אשריכם ישראל".</div><div class="thm-stat"><div><b>' + THM.total + "</b>ספרים שסיימנו</div><div><b>" + act.length + "</b>ספרים פתוחים</div><div><b>" + (s.get("thmMine", 0) || 0) + "</b>פרקים שקראתם</div></div>" +
       act
-        .map((b) => '<div class="thm-card" data-thm-b="' + b.id + '"><b class="thm-t">' + o(b.title) + "</b>" + (b.ded ? '<div class="thm-ded">' + o(b.ded) + "</div>" : "") + thmBar(b) + '<button class="btn pri sm" data-thm-take="' + b.id + '" style="width:100%;margin-top:8px">📖 תנו לי פרק פנוי</button></div>')
+        .map((b) => '<div class="thm-card" data-thm-b="' + o(b.id) + '"><b class="thm-t">' + o(b.title) + "</b>" + (b.ded ? '<div class="thm-ded">' + o(b.ded) + "</div>" : "") + thmBar(b) + '<button class="btn pri sm" data-thm-take="' + o(b.id) + '" style="width:100%;margin-top:8px">📖 תנו לי פרק פנוי</button></div>')
         .join("");
     (a("[data-thm-b]", thmEl).forEach((e) => (e.onclick = (t) => (t.target.closest("[data-thm-take]") || ((thmView = e.dataset.thmB), thmRender())))),
       a("[data-thm-take]", thmEl).forEach((e) => (e.onclick = () => {
@@ -26910,8 +26933,10 @@ function doGet(e){
             ("1" === localStorage.getItem(SPFX + "introMusicOn") ? "checked" : "") +
             '></div><div class="sw"><span>ברכה בכניסה לאפליקציה</span><input type="checkbox" id="grC" ' +
             (O.greet ? "checked" : "") +
-            '></div><div class="sw"><span>דפדוף ספר – מעבר תלת־ממדי בין פרקים (החלקה לצדדים)</span><input type="checkbox" id="flipC" ' + (s.get("flip3d", !1) ? "checked" : "") + '></div><div class="sw"><span>סימון "קראתי" ושלוש נקודות (⋮) ליד כל קטע ופסוק (ברירת המחדל: לפי פרק)</span><input type="checkbox" id="rdC" ' +
+            '></div><div class="sw"><span>דפדוף ספר – מעבר תלת־ממדי בין פרקים (החלקה לצדדים)</span><input type="checkbox" id="flipC" ' + (s.get("flip3d", !1) ? "checked" : "") + '></div><div class="sw"><span>ריבוע "קראתי" ליד כל קטע – כל הלכה, סעיף, פסוק או אות (ברירת המחדל: לפי פרק)</span><input type="checkbox" id="rdC" ' +
             (O.readCk ? "checked" : "") +
+            '></div><div class="sw"><span>שלוש נקודות (⋮) ליד כל קטע – שיתוף, העתקה, סימנייה והערה</span><input type="checkbox" id="imC" ' +
+            (O.itMore ? "checked" : "") +
             '></div><div class="sw"><span>מהירות גלילה אוטומטית</span><input type="range" id="asS" min="5" max="150" step="1" value="' +
             O.asSpeed +
             '" style="width:120px"></div><div class="sw"><span>סימון טקסט פותח מיד את עיצוב הסטטוס</span><input type="checkbox" id="selC" ' +
@@ -27530,6 +27555,9 @@ function doGet(e){
         }),
         (l("#rdC").onchange = (t) => {
           ((O.readCk = t.target.checked), j());
+        }),
+        (l("#imC").onchange = (t) => {
+          ((O.itMore = t.target.checked), j());
         }),
         (l("#asS").oninput = (t) => {
           ((O.asSpeed = +t.target.value), j());
