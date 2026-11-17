@@ -22194,8 +22194,9 @@ function doGet(e){
     } catch (t) {}
   }, 4200);
   const rr = {
-    v: "2026-11-16c",
+    v: "2026-11-17a",
     items: [
+      ["2026-11-17", "💎", "דיבורים יפים – פס רץ", "במסך הבית רץ פס של דיבורים קצרים ומחזקים – משפטים שלמים שהמערכת ליקטה מספרי רבנו ותלמידיו (על שמחה, אמונה, תפילה, \"אין שום יאוש\"...). לחיצה פותחת את הדיבור בגדול עם המקור. אפשר להוסיף דיבורים משלכם: מסמנים טקסט בספר ← 💎 לדיבורים. וגם הווידג׳ט מציג עכשיו את הדיבורים האלה."],
       ["2026-11-17", "🔴", "הווידג׳ט מתריע לפני כל זמן", "דקות ספורות לפני סוף זמן ק״ש, תפילה, שקיעה וכו׳ – שורת הזמן בווידג׳ט נצבעת באדום ומהבהבת. בוחרים כמה דקות לפני (5/10/15/30 או כבוי) בהגדרות הווידג׳ט."],
       ["2026-11-17", "⬆️", "קפיצה לרשימת הספרים", "בוחרים לשונית בספרייה (למשל ספרי רבי נתן) – והמסך עולה מיד לרשימת הספרים שלה. אפשר לכבות בהגדרות ← כללי."],
       ["2026-11-16", "🚗", "תזכורת לתפילת הדרך", "באנדרואיד: מדליקים בהגדרות ← כללי \"🚗 תזכורת לתפילת הדרך\". אחרי חצי שעה בנסיעה קופצת התראה: \"היי צדיק! יצאת מהעיר?\" – ולחיצה פותחת את ההלכה בגדול ואת נוסח תפילת הדרך. אפשר גם לבחור את הבלוטות׳ של הרכב."],
@@ -22856,6 +22857,144 @@ function doGet(e){
         }),
     );
   }
+  // ===== 💎 דיבורים יפים קצרים – מאגר אוטומטי (משפטים שלמים מספרי רבנו ותלמידיו) + הדיבורים שלי, ופס רץ במסך הבית =====
+  const PRL = {
+    auto: null,
+    busy: null,
+    load() {
+      return (
+        this.busy ||
+        (this.busy = fetch(window.BOOK_PEARLS || "")
+          .then((r) => (r.ok ? r.json() : []))
+          .then((d) => (this.auto = Array.isArray(d) ? d : []))
+          .catch(() => (this.auto = [])))
+      );
+    },
+    mine: () => s.get("prlMine", []) || [],
+    hide: () => s.get("prlHide", {}) || {},
+    key: (t) => String(t).replace(/[֑-ׇ\W]/g, "").slice(0, 50),
+    cfg: () => Object.assign({ on: !0, src: "all", sp: 2 }, s.get("prlCfg", {}) || {}),
+    // רשימה מעורבבת לפי ההגדרות
+    list() {
+      const c = this.cfg(),
+        H = this.hide(),
+        M = this.mine().map((t) => ({ t: t.t, src: t.src || "", id: t.id || "", mine: 1 })),
+        A = (this.auto || []).filter((t) => !H[this.key(t[0])]).map((t) => ({ t: t[0], id: t[1], src: "" }));
+      return "mine" === c.src ? M : "auto" === c.src ? A : M.concat(A);
+    },
+    srcOf(t) {
+      if (t.src) return t.src;
+      try {
+        return t.id && y[t.id] ? Msrc(y[t.id]) : "";
+      } catch (e) {
+        return "";
+      }
+    },
+  };
+  window.__PRL = PRL;
+  let prlCur = null,
+    prlT = null;
+  function prlPick() {
+    const L = PRL.list();
+    if (!L.length) return null;
+    // הדיבורים שלי מופיעים יותר
+    const M = L.filter((t) => t.mine);
+    return M.length && Math.random() < 0.4 ? M[Math.floor(Math.random() * M.length)] : L[Math.floor(Math.random() * L.length)];
+  }
+  function prlTick() {
+    const el = l("#prlTick"),
+      c = PRL.cfg();
+    if (!el) return;
+    if (!c.on) return void ((el.innerHTML = ""), (el.style.display = "none"));
+    const p = prlPick();
+    if (!p) return void (el.style.display = "none");
+    prlCur = p;
+    const txt = String(p.t).replace(/\s+/g, " ").trim(),
+      src = PRL.srcOf(p),
+      dur = Math.max(9, Math.round((txt.length + src.length) / [0, 7, 10, 14][c.sp || 2]));
+    ((el.style.display = ""),
+      (el.innerHTML = '<span class="prl-ic">💎</span><div class="prl-win"><div class="prl-run" style="animation-duration:' + dur + 's"><b>' + o(txt) + "</b>" + (src ? '<small> · ' + o(src) + "</small>" : "") + "</div></div>"));
+    const r = l(".prl-run", el);
+    r.addEventListener("animationend", () => {
+      (clearTimeout(prlT), (prlT = setTimeout(prlTick, 1200)));
+    });
+  }
+  function prlHome() {
+    const el = l("#prlTick");
+    el && !el._b && ((el._b = 1), (el.onclick = () => prlCur && prlCard(prlCur)));
+    PRL.cfg().on && PRL.load().then(() => (clearTimeout(prlT), prlTick()));
+  }
+  setTimeout(prlHome, 1500);
+  function prlCard(p) {
+    const src = PRL.srcOf(p),
+      w = Ut(
+        '<div class="prl-card"><div class="prl-big">' + o(p.t) + "</div>" + (src ? '<div class="prl-src">' + o(src) + "</div>" : "") + "</div>" +
+          '<div class="row2">' + (p.id && y[p.id] ? '<button class="btn pri" id="prlOpen">📖 פתיחה במקור</button>' : "") + '<button class="btn" id="prlNext">💎 עוד דיבור</button></div>' +
+          '<div class="row2"><button class="btn sm" id="prlShare">📤 שיתוף</button>' + (p.mine ? "" : '<button class="btn sm" id="prlKeep">⭐ לדיבורים שלי</button><button class="btn sm" id="prlBad">👎 לא מתאים</button>') + '</div><button class="btn sm" id="prlMng" style="width:100%;margin-top:8px">⚙️ הדיבורים שלי והגדרות הפס הרץ</button>',
+      );
+    (l("#prlOpen", w) && (l("#prlOpen", w).onclick = () => (Wt(), setTimeout(() => Ye(p.id), 150))),
+      (l("#prlNext", w).onclick = () => {
+        const n = prlPick();
+        n && (Wt(), setTimeout(() => prlCard(n), 200));
+      }),
+      (l("#prlShare", w).onclick = () => At(p.t + (src ? "\n📖 מקור: " + src : "") + ut())),
+      l("#prlKeep", w) &&
+        (l("#prlKeep", w).onclick = () => {
+          const M = PRL.mine();
+          (M.some((t) => t.t === p.t) || (M.unshift({ t: p.t, src: src, id: p.id || "" }), s.set("prlMine", M)), st("⭐ נוסף לדיבורים שלי", 2500));
+        }),
+      l("#prlBad", w) &&
+        (l("#prlBad", w).onclick = () => {
+          const H = PRL.hide();
+          ((H[PRL.key(p.t)] = 1), s.set("prlHide", H), Wt(), st("הדיבור הזה לא יופיע יותר", 2500), prlTick());
+        }),
+      (l("#prlMng", w).onclick = () => (Wt(), setTimeout(prlManage, 200))));
+  }
+  window.__prlCard = (i) => PRL.load().then(() => prlCard(i != null ? PRL.list()[i] : prlPick()));
+  function prlAddForm(txt, id) {
+    const src = id && y[id] ? Msrc(y[id]) : "",
+      w = Ut(
+        '<h3>💎 הוספת דיבור יפה</h3><div class="sh-sub">דיבור קצר ומחזק שירוץ בפס במסך הבית ויופיע בווידג׳ט.</div><div class="field"><label>הדיבור</label><textarea id="prlTx" rows="4" maxlength="400" style="width:100%">' + o(txt || "") + '</textarea></div><div class="field"><label>המקור (לא חובה)</label><input id="prlSrc" maxlength="80" value="' + o(src) + '" placeholder="למשל: ליקוטי מוהר״ן ח״ב תורה כד"></div><button class="btn pri" id="prlSave" style="width:100%">⭐ שמירה לדיבורים שלי</button>',
+      );
+    l("#prlSave", w).onclick = () => {
+      const t = l("#prlTx", w).value.replace(/\s+/g, " ").trim();
+      if (t.length < 4) return st("כתבו את הדיבור", 2500);
+      const M = PRL.mine();
+      (M.unshift({ t, src: l("#prlSrc", w).value.trim(), id: id || "" }), s.set("prlMine", M), Wt(), st("⭐ הדיבור נשמר – הוא יופיע בפס הרץ", 3e3), prlHome());
+    };
+  }
+  function prlManage() {
+    const c = PRL.cfg(),
+      M = PRL.mine(),
+      seg = (id, v, opts) => '<div class="seg" id="' + id + '">' + opts.map((t) => '<button data-v="' + t[0] + '"' + (String(v) === String(t[0]) ? ' class="on"' : "") + ">" + t[1] + "</button>").join("") + "</div>",
+      w = Ut(
+        '<h3>💎 דיבורים יפים</h3><div class="sw"><span>פס רץ של דיבורים במסך הבית</span><input type="checkbox" id="prlOn" ' + (c.on ? "checked" : "") + '></div><div class="field"><label>מאיפה הדיבורים</label>' + seg("prlSrcS", c.src, [["all", "הכל"], ["auto", "מהספרים"], ["mine", "רק שלי"]]) + '</div><div class="field"><label>מהירות הפס</label>' + seg("prlSp", c.sp, [[1, "איטי"], [2, "רגיל"], [3, "מהיר"]]) + "</div>" +
+          '<div class="sh-sub">' + (PRL.auto ? PRL.auto.length + " דיבורים שהמערכת ליקטה מספרי רבנו ותלמידיו · " : "") + "סמנו טקסט בכל ספר ← 💎 לדיבורים, כדי להוסיף משלכם.</div>" +
+          '<button class="btn pri sm" id="prlNew" style="width:100%;margin:6px 0">➕ הוספת דיבור משלי</button>' +
+          (M.length ? '<div class="sh-sub"><b>הדיבורים שלי (' + M.length + ")</b></div>" + M.map((t, i) => '<div class="prl-mine"><span>' + o(t.t) + (t.src ? "<small> · " + o(t.src) + "</small>" : "") + '</span><button class="btn sm" data-prd="' + i + '">🗑️</button></div>').join("") : "") +
+          (Object.keys(PRL.hide()).length ? '<button class="btn sm" id="prlUnhide" style="margin-top:8px">↺ להחזיר ' + Object.keys(PRL.hide()).length + " דיבורים שסימנתי \"לא מתאים\"</button>" : ""),
+      ),
+      up = (o) => (s.set("prlCfg", Object.assign(PRL.cfg(), o)), prlHome());
+    ((l("#prlOn", w).onchange = (e) => up({ on: e.target.checked })),
+      [["#prlSrcS", "src"], ["#prlSp", "sp"]].forEach(([id, k]) =>
+        a(id + " button", w).forEach(
+          (b) =>
+            (b.onclick = () => {
+              (a(id + " button", w).forEach((t) => t.classList.toggle("on", t === b)), up({ [k]: "sp" === k ? +b.dataset.v : b.dataset.v }));
+            }),
+        ),
+      ),
+      (l("#prlNew", w).onclick = () => (Wt(), setTimeout(() => prlAddForm("", ""), 200))),
+      a("[data-prd]", w).forEach(
+        (b) =>
+          (b.onclick = () => {
+            const M = PRL.mine();
+            (M.splice(+b.dataset.prd, 1), s.set("prlMine", M), Wt(), setTimeout(prlManage, 150));
+          }),
+      ),
+      l("#prlUnhide", w) && (l("#prlUnhide", w).onclick = () => (s.set("prlHide", {}), Wt(), st("הדיבורים חזרו", 2e3))));
+  }
+  window.__prlManage = prlManage;
   // ===== 🚗 תפילת הדרך: תזכורת בנסיעה (אנדרואיד) + ההלכה בגדול לפני הנוסח =====
   const TRV = () => (NAT.on ? NAT.P("Travel") : null);
   function hdOpen() {
@@ -25631,7 +25770,7 @@ function doGet(e){
       (c.style.cssText =
         "position:fixed;left:50%;transform:translateX(-50%);bottom:calc(80px + var(--safe-b));z-index:150;display:none;gap:6px;background:var(--navy);padding:6px;border-radius:14px;box-shadow:0 6px 18px rgba(0,0,0,.3)"),
       (c.innerHTML =
-        '<button class="btn sm gold" data-s="img">🖼️ עיצוב לסטטוס</button><button class="btn sm" data-s="copy">📋 העתק</button><button class="btn sm" data-s="more">⋮ אפשרויות</button>'),
+        '<button class="btn sm gold" data-s="img">🖼️ עיצוב לסטטוס</button><button class="btn sm" data-s="copy">📋 העתק</button><button class="btn sm" data-s="prl">💎 לדיבורים</button><button class="btn sm" data-s="more">⋮ אפשרויות</button>'),
       document.body.appendChild(c));
     const l = () => {
         const t = window.getSelection();
@@ -25687,7 +25826,13 @@ function doGet(e){
           o = l();
         if (e && o)
           if ("img" === e.dataset.s) a(o);
-          else if ("more" === e.dataset.s) {
+          else if ("prl" === e.dataset.s) {
+            c.style.display = "none";
+            try {
+              window.getSelection().removeAllRanges();
+            } catch (t) {}
+            ((i = ""), prlAddForm(o.txt, o.id));
+          } else if ("more" === e.dataset.s) {
             c.style.display = "none";
             try {
               window.getSelection().removeAllRanges();
@@ -28871,6 +29016,16 @@ function doGet(e){
   }
   function wdgQuotes() {
     if (!wdgCfg().quote) return [];
+    // 💎 קודם הדיבורים היפים (שלמים, לא אמצע מהלך)
+    if (PRL.auto || PRL.mine().length) {
+      const L = PRL.list().slice(),
+        Q = [];
+      for (; L.length && Q.length < 30; ) {
+        const p = L.splice(Math.floor(Math.random() * L.length), 1)[0];
+        String(p.t).replace(/[\u0591-\u05c7]/g, "").length <= 190 && Q.push({ t: p.t, s: PRL.srcOf(p), id: p.id || "" });
+      }
+      if (Q.length) return Q;
+    }
     const t = wdgVols(),
       e = [];
     for (const i of h) {
