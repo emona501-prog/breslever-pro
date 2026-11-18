@@ -15178,7 +15178,7 @@ function doGet(e){
   // 🎯 יעדים: רושמים יעדים קבועים, והאפליקציה מרכיבה מהם סדר יום עם המקום המדויק של כל יעד
   const GOAL_T = {
     tikkun: { ic: "📜", n: "תיקון הכללי", d: "עשרת המזמורים" },
-    smt: { ic: "📖", n: "שניים מקרא ואחד תרגום", d: "עלייה אחר עלייה – מתחילים מהעלייה של היום, וממשיכים מהמקום שעצרתם" },
+    smt: { ic: "📖", n: "שניים מקרא ואחד תרגום", d: "עלייה בכל יום – בקצב שלכם, או בקצב העדכני לפי פרשת השבוע" },
     teh: { ic: "📖", n: "פרקי תהלים", d: "ממשיכים מהמקום שעצרתם", q: [1, 3, 5, 10, 20] },
     zohar: { ic: "✨", n: "זוהר הקדוש", d: "קטעים לפי הסדר מתחילת הזוהר", q: [1, 2, 3, 5, 10] },
     hal: { ic: "⚖️", n: "שולחן ערוך", d: "סעיפים לפי הסדר", q: [1, 2, 3, 5, 10] },
@@ -15206,7 +15206,8 @@ function doGet(e){
         (D[String(d)] || {})[g.id] && "smt" !== g.k && ((g.pos = Math.max(0, (g.pos || 0) - (g.q || 1))), (g.dd = d));
       }
       // יום חדש אחרי שסימנו – מתקדמים למנה הבאה
-      null != g.dd && g.dd !== d && ((g.pos = (g.pos || 0) + ("smt" === g.k ? 1 : g.q || 1)), delete g.dd, (ch = !0));
+      // (שמו"ת "בקצב העדכני" לא מתקדם לבד – הוא תמיד העלייה של היום לפי פרשת השבוע)
+      null != g.dd && g.dd !== d && ("smt" === g.k && g.cur ? 0 : (g.pos = (g.pos || 0) + ("smt" === g.k ? 1 : g.q || 1)), delete g.dd, (ch = !0));
     });
     ch && s.set("goals", t);
     return t;
@@ -15269,7 +15270,14 @@ function doGet(e){
       if ("smt" === t.k) {
         const S = goalSeqC.smt || (goalSeqC.smt = goalSeq(t));
         if (!S.length) return { lbl: "שניים מקרא ואחד תרגום", go: () => (s.set("libTab", "tanach"), It("home")) };
-        // פעם ראשונה – מתחילים מהעלייה של היום לפי הלוח
+        // 🗓️ בקצב העדכני: תמיד העלייה של היום לפי פרשת השבוע (לא תלוי במה שסומן)
+        if (t.cur) {
+          const k = Kd(0),
+            a = k && S.find((e) => e.si === k.si && e.aly === k.k);
+          if (a) return { lbl: 'שמו"ת · ' + a.l, go: () => It("reader", { si: a.si, aly: a.aly }) };
+          if (k && k.si >= 0) return { lbl: 'שמו"ת · ' + k.lbl.replace(/^חומש היום:\s*/, ""), go: () => It("reader", { si: k.si }) };
+        }
+        // 🔁 הקצב שלי: פעם ראשונה – מתחילים מהעלייה של היום לפי הלוח
         if (null == t.pos) {
           const k = Kd(0),
             i = k ? S.findIndex((e) => e.si === k.si && e.aly === k.k) : -1,
@@ -15350,13 +15358,14 @@ function doGet(e){
         .map((t, e) => {
           const i = goalToday(t),
             c = goalDone(t.id);
-          return '<div class="gl-it' + (c ? " done" : "") + '"><label class="gl-ck"><input type="checkbox" data-gck="' + t.id + '"' + (c ? " checked" : "") + '></label><button type="button" class="gl-go" data-ggo="' + e + '"><span class="gl-ic">' + (GOAL_T[t.k] || {}).ic + "</span><span><b>" + o(i.lbl) + "</b>" + '<small class="gl-md">' + (goalOnce(t) ? "✅ חד-פעמי" : GOAL_SEQ.includes(t.k) ? "🔁 מתקדם איתי" : "🔁 כל יום") + "</small>" + (i.go ? "<small>לחצו לפתיחה ←</small>" : "") + "</span></button></div>";
+          return '<div class="gl-it' + (c ? " done" : "") + '"><label class="gl-ck"><input type="checkbox" data-gck="' + t.id + '"' + (c ? " checked" : "") + '></label><button type="button" class="gl-go" data-ggo="' + e + '"><span class="gl-ic">' + (GOAL_T[t.k] || {}).ic + "</span><span><b>" + o(i.lbl) + "</b>" + '<small class="gl-md">' + (goalOnce(t) ? "✅ חד-פעמי" : "smt" === t.k ? (t.cur ? "🗓️ בקצב העדכני – לפי פרשת השבוע" : "🔁 הקצב שלי – נשאר עד שמסמנים") : GOAL_SEQ.includes(t.k) ? "🔁 מתקדם איתי" : "🔁 כל יום") + "</small>" + (i.go ? "<small>לחצו לפתיחה ←</small>" : "") + "</span></button>" + ("smt" !== t.k || goalOnce(t) ? "" : '<button type="button" class="gl-sw" data-gsw="' + t.id + '">' + (t.cur ? "🔁 לקצב שלי" : "🗓️ לקצב העדכני") + "</button>") + "</div>";
         })
         .join("")
     );
   }
   function goalsBind(t) {
     (a("[data-gck]", t).forEach((t) => (t.onchange = () => goalMark(t.dataset.gck, t.checked))),
+      a("[data-gsw]", t).forEach((t) => (t.onclick = () => smtSwitch(t.dataset.gsw))),
       a("[data-ggo]", t).forEach(
         (t) =>
           (t.onclick = () => {
@@ -15364,6 +15373,16 @@ function doGet(e){
             e.go ? (Wt(), setTimeout(e.go, 200)) : st("סמנו ✓ כשתסיימו");
           }),
       ));
+  }
+  // שמו"ת: מעבר בין "הקצב שלי" (נשאר במקום עד שמסמנים) ל"בקצב העדכני" (העלייה של היום לפי פרשת השבוע)
+  function smtSwitch(id, to) {
+    const L = goals(),
+      g = L.find((t) => String(t.id) === String(id));
+    if (!g) return;
+    null == to ? (g.cur ? delete g.cur : (g.cur = 1)) : to ? (g.cur = 1) : delete g.cur;
+    delete g.once;
+    goalsSave(L);
+    st(g.cur ? "🗓️ מעכשיו: בכל יום – העלייה של היום לפי פרשת השבוע" : "🔁 מעכשיו: הקצב שלי – העלייה נשארת עד שמסמנים שקראתם", 3200);
   }
   function goalsRefresh() {
     a(".gl-list").forEach((t) => {
@@ -15450,13 +15469,14 @@ function doGet(e){
       e = GOAL_T[t.k],
       i = Ut(
         "<h3>" + e.ic + " " + e.n + '</h3><div class="sh-sub">איזה סוג יעד?</div><div class="gl-types">' +
-          '<button type="button" data-gm="0"><span>🔁</span><b>' + (seq ? "סדר יומי – מתקדם איתי" : "סדר יומי – כל יום") + "</b><small>" + (seq ? "מסמנים שסיימתם – ולמחרת מחכה ההמשך. לא סימנתם? היעד מחכה לכם" : "חוזר בכל יום מחדש") + "</small></button>" +
+          '<button type="button" data-gm="0"><span>🔁</span><b>' + ("smt" === t.k ? "הקצב שלי" : seq ? "סדר יומי – מתקדם איתי" : "סדר יומי – כל יום") + "</b><small>" + (seq ? "מסמנים שסיימתם – ולמחרת מחכה ההמשך. לא סימנתם? היעד מחכה לכם" : "חוזר בכל יום מחדש") + "</small></button>" +
+          ("smt" === t.k ? '<button type="button" data-gm="2"><span>🗓️</span><b>בקצב העדכני</b><small>בכל יום – העלייה של היום לפי פרשת השבוע, גם אם לא סימנתם אתמול</small></button>' : "") +
           '<button type="button" data-gm="1"><span>✅</span><b>חד-פעמי</b><small>מסמנים "בוצע" – והיעד יורד מהרשימה</small></button></div>',
       );
     a("[data-gm]", i).forEach(
       (e) =>
         (e.onclick = () => {
-          ("1" === e.dataset.gm ? (t.once = 1) : delete t.once, goalsSave(goals().concat([t])), Wt(), st("🎯 היעד נוסף"), setTimeout(goalsOpen, 260));
+          ("1" === e.dataset.gm ? (t.once = 1) : delete t.once, "2" === e.dataset.gm ? (t.cur = 1) : delete t.cur, goalsSave(goals().concat([t])), Wt(), st("🎯 היעד נוסף"), setTimeout(goalsOpen, 260));
         }),
     );
   }
@@ -22354,6 +22374,7 @@ function doGet(e){
   const rr = {
     v: "2026-11-17b",
     items: [
+      ["2026-11-19", "📖", "שניים מקרא ביעדים: הקצב שלי או הקצב העדכני", "ביעד \"שניים מקרא ואחד תרגום\" בוחרים עכשיו: 🔁 הקצב שלי – העלייה נשארת עד שמסמנים שקראתם, ואז מתקדמים לבאה; או 🗓️ בקצב העדכני – בכל יום העלייה של אותו יום לפי פרשת השבוע. מחליפים בלחיצה על הכפתור שמתחת ליעד."],
       ["2026-11-18", "🔬", "סריקת עומק – עוד 8 תיקונים", "סורק אוטומטי לחץ כ־25 אלף לחיצות בכל המסכים (שלוש רמות עומק), ותוקנו: קריאת סדר היום ברצף (קטעים בלי טקסט), סדר היום לפי עמודים (מנה ענקית), הזמן המשוער בסדר היום, מפתח נושאים בתוך ספר (0 נושאים) ושורת התצוגה המקדימה שלו, הדפסה של ספר שלא נפתח (דפים ריקים), חיפוש בתוך החוברות, וקריאה ברצף קרוב לסוף ספר."],
       ["2026-11-18", "🛠️", "סריקה ותיקון: מקומות שהציגו ריק לפני שהספר נטען", "אחרי התיקון של \"פסוק לשם\" נסרקה כל האפליקציה לבאגים מאותו סוג, ותוקנו: בניית סדר היום לפי זמן (הערכת הזמן וחלוקת הזמן בין הספרים), הזמן המשוער בסדר היום, הטקסט מתחת לסימניות, להערות ולחוברת שלי, סטטוס מהעוזר, והדיבור המפורסם בתשובות החיזוק."],
       ["2026-11-18", "🔤", "פסוק לשם – חזר לעבוד", "\"פסוק לשם\", \"לפי אותיות מילה\" ו\"א־ב\" בתהלים מחולק לא מצאו שום פסוק, כי ספר תהלים עוד לא נטען לזיכרון. מעכשיו התהלים נטען לפני החיפוש, וכל הפסוקים מופיעים."],
