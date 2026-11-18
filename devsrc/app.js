@@ -424,6 +424,10 @@ const LZ = {
   readyAll(vs) {
     return !this.on || vs.every((v) => this.ok[v]);
   },
+  // ספרים מהרשימה שאפשר וצריך לטעון (ספר פרטי / ספר בלי קובץ – לא נחשב חסר, כדי שלא נחכה לו לנצח)
+  miss(vs) {
+    return this.on ? [].concat(vs).filter((v) => null != v && v >= 0 && null != this.url[v] && !this.ok[v]) : [];
+  },
   // טוען ספר (וכל ספר שהוא תלוי בו). מחזיר Promise
   load(v) {
     if (!this.on || this.ok[v] || null == this.url[v]) return Promise.resolve();
@@ -1107,8 +1111,10 @@ function MAIN(t) {
   }
   // 📖 המקור בספרים: קטע שמלוקט מספר אחר (סיפורים, קונטרסים) – המקור המקורי ולא התיקייה באפליקציה
   function Msrc(t) {
-    const b = t && t.it && t.it.b && t.it.b[0],
-      o = b && "go" === b[0] && b[2] && y[b[2]];
+    // קטע שמובא מספר אחר – המקור הוא הספר המקורי (גם כשהספר עוד לא נטען לזיכרון: לפי ההפניה ir)
+    const ir = t && t.it && t.it.ir,
+      b = !ir && t && t.it && t.it.b && t.it.b[0],
+      o = (ir && ir[3] && y[ir[3]]) || (b && "go" === b[0] && b[2] && y[b[2]]);
     const x = o && o !== t ? o : t,
       cat = (($t[+String(x.s.g || "").slice(1)] || {}).cat || ""),
       sh = m(String(x.s.short || "")).trim();
@@ -10958,9 +10964,11 @@ function MAIN(t) {
       ((t.b || []).forEach((t) => {
         "string" == typeof t[1] && "img" !== t[0] && (e += " " + t[1]);
       }),
-        (t._w = m(g(e)).split(/\s+/).filter(Boolean).length));
+        (t._w = m(g(e)).split(/\s+/).filter(Boolean).length),
+        // 📦 קטע שהספר שלו עוד לא נטען – לא שומרים 0, סופרים שוב אחרי הטעינה
+        t._w || (t.b && t.b.length) || delete t._w);
     }
-    return t._w;
+    return t._w || 0;
   }
   function gl(t) {
     if ((t = Math.max(1, Math.round(t))) < 60) return t + " דק׳";
@@ -11044,6 +11052,17 @@ function MAIN(t) {
     return { tot: e / c, left: i / c, words: e };
   }
   function Ml(t) {
+    const nd = mlNeed(t);
+    if (LZ.miss(nd).length) {
+      const id = "mlw" + ++mlN;
+      LZ.ensure(nd)
+        .then(() => {
+          const e = document.getElementById(id);
+          e && (e.outerHTML = Ml(t));
+        })
+        .catch(() => {});
+      return '<span id="' + id + '"></span>';
+    }
     const e = Ll(t);
     return e.words
       ? "⏱️ זמן משוער להיום: <b>" +
@@ -11260,8 +11279,19 @@ function MAIN(t) {
         (i += m(g(s)).length));
     });
     const a = { page: i ? (el * e) / i : 400, ot: c ? e / c : 100, siman: l.size ? e / l.size : 1e3 };
-    return ((Sl[t] = a), a);
+    return (LZ.miss([t]).length || (Sl[t] = a), a);
   }
+  // 📦 הספרים שהערכת הזמן של סדר היום צריכה (לפי מספר המילים) – טוענים אותם לפני שמחשבים
+  const tkVol = () => {
+    const t = n.find((t) => "tikkun" === t.id);
+    return t ? +String(t.g || "").slice(1) : -1;
+  };
+  function mlNeed(t) {
+    const e = new Set();
+    ((t.rows || []).forEach((t) => (t.b || []).forEach((t) => y[t] && e.add(+String(y[t].s.g || "").slice(1)))), t.th && e.add(md()), t.tk && e.add(tkVol()));
+    return [...e].filter((t) => t >= 0);
+  }
+  let mlN = 0;
   function Al(t) {
     const e = l("#dayBody"),
       i = () => Math.max(20, parseInt(l("#dsSpdN").value) || 100),
@@ -11279,7 +11309,16 @@ function MAIN(t) {
         const e = l('[data-du="' + t + '"] button.on');
         return e ? e.dataset.v : "siman";
       },
+      nd = () => o().map(Number).concat(l("#dsTeh").checked ? [md()] : [], l("#dsTk").checked ? [tkVol()] : []).filter((t) => t >= 0),
+      wait = (again) =>
+        !!LZ.miss(nd()).length &&
+        ((l("#dsEst").innerHTML = '<div class="pl-h">⏱️ טוען את הספרים שסימנת כדי לחשב את הזמן…</div>'),
+        LZ.ensure(nd())
+          .then(again)
+          .catch(() => st("לא הצלחתי לטעון את הספרים – נסו שוב")),
+        !0),
       n = () => {
+        if (wait(n)) return;
         let t = c();
         o().forEach((e) => {
           const i = Math.max(1, parseInt(l('[data-dp="' + e + '"]').value) || 1);
@@ -11348,7 +11387,8 @@ function MAIN(t) {
       e.addEventListener("click", (t) => {
         t.target.closest("[data-du] button") && setTimeout(n, 0);
       }),
-      (l("#dsAuto").onclick = () => {
+      (l("#dsAuto").onclick = function dsAuto() {
+        if (wait(dsAuto)) return;
         const t = o(),
           e = Math.max(5, parseInt(l("#dsMin").value) || 30),
           r = c() / i();
@@ -13958,8 +13998,10 @@ function MAIN(t) {
         .trim();
       return {
         say: "🖼️ מכין לך סטטוס" + (e ? " על «" + o(e) + "»" : " עם דיבור חיזוק מרבנו") + " – עם דיבור קצר מהספרים…",
-        run: () => {
+        run: function runSt() {
           if (!e) return botStatus();
+          const nd = BOT_PACKV();
+          if (LZ.miss(nd).length) return (st("📚 טוען את הספרים…", 2500), void LZ.ensure(nd).then(runSt).catch(() => botStatus()));
           try {
             const t = botQAget().ask("איפה רבנו מדבר על " + e),
               i = t && t.S ? t.S.list.slice(0, 25) : [],
@@ -14116,6 +14158,7 @@ function MAIN(t) {
     return L.find((t) => (D[t[0]] || "") !== new Date().toDateString()) || G.sort((t, e) => (D[t[0]] || 0) - (D[e[0]] || 0))[0];
   }
   function botStatus() {
+    if (LZ.miss([0, 8, 3]).length) return (st("📖 מחפש דיבור יפה…", 2500), void LZ.ensure([0, 8, 3]).then(botStatus).catch(() => st("לא הצלחתי לטעון – נסו שוב")));
     const P = (t) => t.it.b.reduce((t, e) => t + ("p" === e[0] ? e[1].length : 0), 0),
       t = h.filter((t) => [0, 8, 3].includes(+String(t.s.g).slice(1)) && t.it && t.it.b && P(t) > 120 && P(t) < 520);
     t.length ? kf(t[Math.floor(Math.random() * t.length)].id) : st("לא מצאתי דיבור קצר");
@@ -14272,7 +14315,7 @@ function MAIN(t) {
       '">📒 חוברת חיזוק על ' +
       o(T.c[0]) +
       "</button></div>";
-    return { html: x, acts };
+    return { html: x, acts, need: [...new Set([11].concat(T.f.filter((t) => y[t[0]]).map((t) => +String(y[t[0]].s.g || "").slice(1))))] };
   }
   window.__botChz = (t) => {
     const e = botChizuk(t);
@@ -14781,6 +14824,8 @@ function MAIN(t) {
         if (!T.hits.some((t) => "distress" === t.k)) {
           const e = botChizuk(t);
           if (e) {
+            // 📦 הדיבורים (ליקוטי עצות + הדיבור המפורסם) – טוענים את הספרים לפני שמציגים, אחרת יוצא ציטוט ריק
+            if (LZ.miss(e.need).length && GATE(e.need, "טוען דיבורי חיזוק…")) return;
             const i = (e) => {
               ((c.innerHTML = e.html),
                 a("[data-cz]", c).forEach((t) => (t.onclick = () => (Wt(), setTimeout(e.acts[+t.dataset.cz], 230)))),
@@ -16546,6 +16591,8 @@ function doGet(e){
     const i = JSON.stringify({ type: "breslev-pro-mybooks", v: 1, ts: Date.now(), books: t });
     await NAT.saveFile(e + ".json", new Blob([i], { type: "application/json" }), "application/json", "הקובץ נשמר ✓");
   }
+  let mineLz = null,
+    mineT = 0;
   Ft.mine = function (t) {
     (t && t.tab && (qa = t.tab),
       a("#mTabs .pill").forEach((t) => {
@@ -16558,6 +16605,20 @@ function doGet(e){
     let i = "";
     const c = (t, e) => {
         const i = y[t];
+        // 📦 סימנייה / הערה / קטע בחוברת מספר שעוד לא נטען – טוענים ברקע ומציגים שוב (אחרת הטקסט מתחת לכותרת ריק)
+        if (i) {
+          const kv = +String(i.s.g || "").slice(1);
+          LZ.miss([kv]).length &&
+            ((mineLz = mineLz || new Set()).add(kv),
+            mineT ||
+              (mineT = setTimeout(() => {
+                const vs = [...mineLz];
+                ((mineLz = null), (mineT = 0));
+                LZ.ensure(vs)
+                  .then(() => "mine" === Bt.v && Ft.mine())
+                  .catch(() => {});
+              }, 0)));
+        }
         return i
           ? '<div class="pcard" data-id="' +
               t +
@@ -22218,6 +22279,7 @@ function doGet(e){
   const rr = {
     v: "2026-11-17b",
     items: [
+      ["2026-11-18", "🛠️", "סריקה ותיקון: מקומות שהציגו ריק לפני שהספר נטען", "אחרי התיקון של \"פסוק לשם\" נסרקה כל האפליקציה לבאגים מאותו סוג, ותוקנו: בניית סדר היום לפי זמן (הערכת הזמן וחלוקת הזמן בין הספרים), הזמן המשוער בסדר היום, הטקסט מתחת לסימניות, להערות ולחוברת שלי, סטטוס מהעוזר, והדיבור המפורסם בתשובות החיזוק."],
       ["2026-11-18", "🔤", "פסוק לשם – חזר לעבוד", "\"פסוק לשם\", \"לפי אותיות מילה\" ו\"א־ב\" בתהלים מחולק לא מצאו שום פסוק, כי ספר תהלים עוד לא נטען לזיכרון. מעכשיו התהלים נטען לפני החיפוש, וכל הפסוקים מופיעים."],
       ["2026-11-18", "🔴", "המספר על האייקון נעלם כשנכנסים", "המספר האדום על אייקון האפליקציה מראה תזכורת שנשארה במגירת ההתראות (יעדים, הלכה יומית וכדומה). מעכשיו – ברגע שנכנסים לאפליקציה ההתראות נמחקות מהמגירה והמספר נעלם."],
       ["2026-11-18", "☑️", "\"קראתי\" ושלוש נקודות – שתי הגדרות נפרדות", "מעכשיו בוחרים בנפרד: ריבוע \"קראתי\" ליד כל קטע (כל הלכה, סעיף, פסוק או אות), ושלוש נקודות ⋮ ליד כל קטע לשיתוף, העתקה, סימנייה והערה. בהגדרות ← כללי, או ב־⋮ של הפרק. וגם: בשולחן ערוך ובתנ\"ך עם מפרשים מופיע עכשיו ריבוע \"קראתי\" ליד כל סעיף ופסוק."],
@@ -25644,6 +25706,10 @@ function doGet(e){
   let Cf = { tpl: 0, fs: 0, text: "", id: null, fmt: s.get("shfmt", "status"), u: "", al: s.get("shAl", "c"), font: s.get("shFont", ""), lh: s.get("shLh", 1.62) };
   function kf(t, i) {
     const c = y[t];
+    if (!c) return;
+    // 📦 הספר של הקטע עוד לא נטען – טוענים, ואז פותחים את העיצוב (אחרת יוצא סטטוס ריק)
+    const kv = +String(c.s.g || "").slice(1);
+    if (!i && LZ.miss([kv]).length) return (st("📖 טוען את הקטע…", 2500), void LZ.ensure([kv]).then(() => kf(t)).catch(() => st("לא הצלחתי לטעון – נסו שוב")));
     Cf.id = t;
     let n = i ? i.replace(/\s+/g, " ").trim() : x(c.it, { noNiqud: !O.niqud }).replace(/\n+/g, " ");
     (!i && n.length > 700 && (n = n.slice(0, 700).replace(/\s\S*$/, "") + " …"), (Cf.text = n), (Cf.fs = 0));
@@ -28100,7 +28166,7 @@ function doGet(e){
     if (!fd || !fd.length) {
       const t = md();
       // לא שומרים תוצאה ריקה – אם התהלים עוד לא נטען, ננסה שוב אחרי הטעינה
-      fd = t >= 0 && LZ.ready(t) ? pd(t) : [];
+      fd = t >= 0 && !LZ.miss([t]).length ? pd(t) : [];
     }
     return fd;
   }
@@ -28152,7 +28218,7 @@ function doGet(e){
   function gd(t) {
     // באפליקציה הספרים נטענים לפי הצורך – קודם טוענים את תהלים ושיר השירים
     const need = [md(), shirIdx()].filter((t) => t >= 0);
-    if (LZ.on && !LZ.readyAll(need))
+    if (LZ.miss(need).length)
       return (st("📖 טוען את התהלים…", 2500), void LZ.ensure(need).then(() => gd(t)).catch(() => st("לא הצלחתי לטעון את התהלים – נסו שוב")));
     let e = t || s.get("tehNT", "name");
     const i = (t, e) =>
@@ -28216,7 +28282,7 @@ function doGet(e){
               a = (function () {
                 if (!yd || !yd.length) {
                   const t = shirIdx();
-                  yd = t >= 0 && LZ.ready(t) ? pd(t) : [];
+                  yd = t >= 0 && !LZ.miss([t]).length ? pd(t) : [];
                 }
                 return yd;
               })().filter((t) => t.f === e && t.l === c);
