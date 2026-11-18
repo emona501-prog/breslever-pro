@@ -1113,7 +1113,7 @@ function MAIN(t) {
   function Msrc(t) {
     // קטע שמובא מספר אחר – המקור הוא הספר המקורי (גם כשהספר עוד לא נטען לזיכרון: לפי ההפניה ir)
     const ir = t && t.it && t.it.ir,
-      b = !ir && t && t.it && t.it.b && t.it.b[0],
+      b = !ir && t && t.it && t.s && !LZ.miss([+String(t.s.g || "").slice(1)]).length && t.it.b && t.it.b[0],
       o = (ir && ir[3] && y[ir[3]]) || (b && "go" === b[0] && b[2] && y[b[2]]);
     const x = o && o !== t ? o : t,
       cat = (($t[+String(x.s.g || "").slice(1)] || {}).cat || ""),
@@ -1858,7 +1858,11 @@ function MAIN(t) {
     if (LZ.on && "reader" === t && e) {
       let need = [];
       try {
-        null != e.si && n[e.si] ? (need = [lzVol(e.si)]) : (e.tbk || e.tbkm) && (need = lzBy((b) => "tanach" === b.cat || "teh" === b.cat));
+        null != e.si && n[e.si]
+          ? (need = [lzVol(e.si)])
+          : e.tbk || e.tbkm
+            ? (need = lzBy((b) => "tanach" === b.cat || "teh" === b.cat))
+            : e.day && (need = mlNeed(jl())); // סדר היום ברצף – הספרים של המנות של היום
       } catch (t) {}
       const el = document.getElementById(jt[t]);
       if (need.length && lzGate(need, el && (el.querySelector("#reader") || el), () => Bt.v === t && Bt.p === e && Pt(t, e, i), "טוען את הספר…")) return;
@@ -6714,7 +6718,7 @@ function MAIN(t) {
           },
           { rootMargin: "1600px 0px" },
         );
-        (p.observe(l("#tbkMore")), (Aa._io = p), Xt("opens"), t.focus && za(t.focus));
+        (l("#tbkMore") && p.observe(l("#tbkMore")), (Aa._io = p), Xt("opens"), t.focus && za(t.focus));
       })(t);
     if (t && t.tbkm) return Ba(t);
     if ((Aa && Aa._io && Aa._io.disconnect(), (Aa = null), t && t.day))
@@ -6982,7 +6986,7 @@ function MAIN(t) {
           },
           { rootMargin: "1600px 0px" },
         );
-        (d.observe(l("#flowMore")),
+        (l("#flowMore") && d.observe(l("#flowMore")),
           (Ei._io = d),
           window.scrollTo(0, 0),
           Xt("opens"),
@@ -9576,6 +9580,24 @@ function MAIN(t) {
     );
   }
   function Gc(t, e) {
+    // 📦 שורת התצוגה המקדימה של כל מקום נלקחת מהטקסט – טוענים את הספרים (עד כמה ספרים; מעבר לזה מציגים בלי תצוגה מקדימה)
+    try {
+      const ms = LZ.miss([...new Set(t.refs.map(([t]) => lzVol(t)))]);
+      if (ms.length && ms.length <= (LITE ? 3 : 10) && !Gc.busy)
+        return (
+          (Gc.busy = 1),
+          st("📖 טוען…", 1500),
+          void LZ.ensure(ms)
+            .catch(() => {})
+            .then(() => {
+              try {
+                Gc(t, e);
+              } finally {
+                Gc.busy = 0;
+              }
+            })
+        );
+    } catch (t) {}
     const i = t.refs
         .map(([t, i]) => {
           const c = n[t],
@@ -10073,8 +10095,13 @@ function MAIN(t) {
     } else {
       e.innerHTML = '<div class="idx-scope">📑 נושאים בתוך <b>' + c + '</b></div><div class="empty">⏳ מחפש את הנושאים בספר…</div>';
       const t = ee;
-      setTimeout(() => {
+      setTimeout(function tpGo() {
         if (ee !== t || "topics" !== Pc) return;
+        // 📦 הספר עוד לא נטען – טוענים ואז סופרים את הנושאים (אחרת יוצא "0 נושאים" ונשמר כך)
+        if (LZ.miss([t]).length)
+          return void LZ.ensure([t])
+            .then(tpGo)
+            .catch(() => (e.innerHTML = '<div class="empty">לא הצלחתי לטעון את הספר – נסו שוב</div>'));
         const i = (function (t) {
           if (Rc[t]) return Rc[t];
           const e = h.filter((e) => e.s.g === "V" + t && !e.s.dup).map((t) => x(t.it, { noNiqud: !0 })),
@@ -10874,6 +10901,7 @@ function MAIN(t) {
   }
   function dl(t, e) {
     const i = rl(t);
+    "page" === e && LZ.miss([t]).length && dayLzKick(t);
     if ("siman" === e) {
       const e = fl(t),
         i = e.filter((t) => t.every((t) => tt.read[t])).length;
@@ -10893,8 +10921,20 @@ function MAIN(t) {
     const c = i.filter((t) => tt.read[t.id]).length;
     return { total: i.length, done: c, left: i.length - c, label: "סעיפים" };
   }
+  function dayLzKick(t) {
+    const dayLzK = dayLzKick.k || (dayLzKick.k = {});
+    dayLzK[t] ||
+      ((dayLzK[t] = 1),
+      LZ.ensure([t])
+        .then(() => {
+          delete dayLzK[t];
+          ("day" === Bt.v || "home" === Bt.v || "plan" === Bt.v) && Pt(Bt.v, Bt.p || {}, !0);
+        })
+        .catch(() => delete dayLzK[t]));
+  }
   function pl(t, e, i) {
     const c = "batch_" + t + "_" + e + "_" + Kt();
+    let prov = 0;
     let l = s.get(c, null);
     return (
       l ||
@@ -10918,13 +10958,15 @@ function MAIN(t) {
               e
             );
           }
+          // 📦 "לפי עמודים" סופר אותיות – אם הספר עוד לא נטען, נותנים מנה זמנית (בלי לשמור), טוענים ומחשבים מחדש
+          if (LZ.miss([t]).length) return ((prov = 1), dayLzKick(t), c.slice(0, Math.max(1, 3 * i)).map((t) => t.id));
           const l = i * el;
           let a = 0;
           const o = [];
           for (const t of c) if ((o.push(t.id), (a += nl(t)), a >= l)) break;
           return o;
         })(t, e, i)),
-        s.set(c, l)),
+        prov || s.set(c, l)),
       l
     );
   }
@@ -11054,7 +11096,7 @@ function MAIN(t) {
   function Ml(t) {
     const nd = mlNeed(t);
     if (LZ.miss(nd).length) {
-      const id = "mlw" + ++mlN;
+      const id = "mlw" + (Ml.n = (Ml.n || 0) + 1);
       LZ.ensure(nd)
         .then(() => {
           const e = document.getElementById(id);
@@ -11282,16 +11324,16 @@ function MAIN(t) {
     return (LZ.miss([t]).length || (Sl[t] = a), a);
   }
   // 📦 הספרים שהערכת הזמן של סדר היום צריכה (לפי מספר המילים) – טוענים אותם לפני שמחשבים
-  const tkVol = () => {
+  function tkVol() {
     const t = n.find((t) => "tikkun" === t.id);
     return t ? +String(t.g || "").slice(1) : -1;
-  };
+  }
   function mlNeed(t) {
     const e = new Set();
     ((t.rows || []).forEach((t) => (t.b || []).forEach((t) => y[t] && e.add(+String(y[t].s.g || "").slice(1)))), t.th && e.add(md()), t.tk && e.add(tkVol()));
     return [...e].filter((t) => t >= 0);
   }
-  let mlN = 0;
+
   function Al(t) {
     const e = l("#dayBody"),
       i = () => Math.max(20, parseInt(l("#dsSpdN").value) || 100),
@@ -11716,6 +11758,15 @@ function MAIN(t) {
       c +
       "%</div>" +
       (function (t) {
+        // 📦 הערכת הזמן צריכה את הטקסט של המנות – טוענים, ואז מציגים את המסך שוב
+        const nd = LZ.miss(mlNeed(t));
+        if (nd.length)
+          return (
+            LZ.ensure(nd)
+              .then(() => "day" === Bt.v && Pt("day", Bt.p || {}, !0))
+              .catch(() => {}),
+            ""
+          );
         const e = Ml(t);
         if (!e) return "";
         const i = Ll(t),
@@ -17772,6 +17823,19 @@ function doGet(e){
               : (t.ids ? t.ids.length : 0) + " קטעים";
   }
   function oo(t) {
+    // 📦 הדפסה של ספר / חוברת שהטקסט שלהם עוד לא נטען – טוענים קודם (אחרת יוצאים דפים ריקים)
+    try {
+      const nd = new Set();
+      lo(t).forEach((t) => (t.items || []).forEach((t) => t && t.id && y[t.id] && nd.add(+String(y[t.id].s.g || "").slice(1))));
+      const ms = LZ.miss([...nd]);
+      if (ms.length)
+        return (
+          st("📚 טוען את הספר להדפסה…", 3e3),
+          void LZ.ensure(ms)
+            .then(() => oo(t))
+            .catch(() => st("לא הצלחתי לטעון – נסו שוב"))
+        );
+    } catch (t) {}
     (Ja !== t && (io = null), (Ja = t));
     const e = (t, e, i) =>
         '<div class="seg" id="' +
@@ -21382,7 +21446,8 @@ function doGet(e){
       .filter((t) => t.length > 0);
     if (!i.length) return { groups: [], n: 0 };
     let c = 0;
-    const l = [];
+    const l = [],
+      lzM = new Set();
     return (
       (function (t) {
         const e = [],
@@ -21413,6 +21478,8 @@ function doGet(e){
         const e = [];
         let a = 0;
         (t.items.forEach((t) => {
+          const kd = y[t.id];
+          kd && LZ.miss([+String(kd.s.g || "").slice(1)]).forEach((t) => lzM.add(t));
           const l = Mn(g((t.it.b || []).map((t) => ("string" == typeof t[1] && "img" !== t[0] ? t[1].replace(/<br\s*\/?>/g, " ") : "")).join(" ")))
             .replace(/&nbsp;/g, " ")
             .replace(/&amp;/g, "&")
@@ -21431,7 +21498,7 @@ function doGet(e){
         }),
           e.length && l.push({ src: t, hits: e, gn: a }));
       }),
-      { groups: l, n: c }
+      { groups: l, n: c, lz: [...lzM] }
     );
   }
   function Tn(t) {
@@ -21452,6 +21519,14 @@ function doGet(e){
       const t = i.value.trim();
       if (t.length < 2) return void (c.innerHTML = "");
       const l = Sn(t, e);
+      // 📦 יש בחוברות קטעים מספרים שעוד לא נטענו – טוענים ומחפשים שוב
+      if (l.lz && l.lz.length)
+        return (
+          (c.innerHTML = '<div class="ub-cnt">📚 טוען את הספרים של החוברת…</div>'),
+          void LZ.ensure(l.lz)
+            .then(n)
+            .catch(() => (c.innerHTML = '<div class="ub-cnt">לא הצלחתי לטעון – נסו שוב</div>'))
+        );
       l.n
         ? ((c.innerHTML =
             '<div class="ub-cnt">' +
@@ -22279,6 +22354,7 @@ function doGet(e){
   const rr = {
     v: "2026-11-17b",
     items: [
+      ["2026-11-18", "🔬", "סריקת עומק – עוד 8 תיקונים", "סורק אוטומטי לחץ כ־25 אלף לחיצות בכל המסכים (שלוש רמות עומק), ותוקנו: קריאת סדר היום ברצף (קטעים בלי טקסט), סדר היום לפי עמודים (מנה ענקית), הזמן המשוער בסדר היום, מפתח נושאים בתוך ספר (0 נושאים) ושורת התצוגה המקדימה שלו, הדפסה של ספר שלא נפתח (דפים ריקים), חיפוש בתוך החוברות, וקריאה ברצף קרוב לסוף ספר."],
       ["2026-11-18", "🛠️", "סריקה ותיקון: מקומות שהציגו ריק לפני שהספר נטען", "אחרי התיקון של \"פסוק לשם\" נסרקה כל האפליקציה לבאגים מאותו סוג, ותוקנו: בניית סדר היום לפי זמן (הערכת הזמן וחלוקת הזמן בין הספרים), הזמן המשוער בסדר היום, הטקסט מתחת לסימניות, להערות ולחוברת שלי, סטטוס מהעוזר, והדיבור המפורסם בתשובות החיזוק."],
       ["2026-11-18", "🔤", "פסוק לשם – חזר לעבוד", "\"פסוק לשם\", \"לפי אותיות מילה\" ו\"א־ב\" בתהלים מחולק לא מצאו שום פסוק, כי ספר תהלים עוד לא נטען לזיכרון. מעכשיו התהלים נטען לפני החיפוש, וכל הפסוקים מופיעים."],
       ["2026-11-18", "🔴", "המספר על האייקון נעלם כשנכנסים", "המספר האדום על אייקון האפליקציה מראה תזכורת שנשארה במגירת ההתראות (יעדים, הלכה יומית וכדומה). מעכשיו – ברגע שנכנסים לאפליקציה ההתראות נמחקות מהמגירה והמספר נעלם."],
