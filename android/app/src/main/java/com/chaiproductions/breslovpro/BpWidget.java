@@ -53,7 +53,8 @@ public class BpWidget extends AppWidgetProvider {
             } catch (Exception e) { }
             updateAll(ctx);
         }
-        if (TICK.equals(a) || Intent.ACTION_TIME_CHANGED.equals(a) || Intent.ACTION_TIMEZONE_CHANGED.equals(a)) updateAll(ctx);
+        // אחרי שינוי שעה, הפעלה מחדש של הטלפון או עדכון האפליקציה – אנדרואיד מוחק את הרענון המתוזמן, אז מרעננים מיד
+        if (TICK.equals(a) || Intent.ACTION_TIME_CHANGED.equals(a) || Intent.ACTION_TIMEZONE_CHANGED.equals(a) || Intent.ACTION_BOOT_COMPLETED.equals(a) || Intent.ACTION_MY_PACKAGE_REPLACED.equals(a)) updateAll(ctx);
     }
 
     public static void updateAll(Context ctx) {
@@ -230,7 +231,8 @@ public class BpWidget extends AppWidgetProvider {
                 int warn = cfg == null ? 10 : cfg.optInt("zwarn", 10);
                 if (zm != null) for (int k = 0; k < zm.length(); k++) {
                     long t = zm.getJSONObject(k).optLong("t", 0);
-                    if (t > now + 5000) {
+                    // אותו זמן שהווידג'ט מציג עכשיו (גם אם נשארו רק שניות) – אחרת הרענון מדלג עליו והספירה נהיית שלילית
+                    if (t > now) {
                         next = Math.min(next, t + 3000);
                         // רענון כשמתחילות דקות האזהרה, ואחר כך כל דקה (לעדכון "בעוד X דקות")
                         if (warn > 0) { long w = t - warn * 60000L; next = Math.min(next, w > now + 5000 ? w + 500 : now + 60000L); }
