@@ -2516,17 +2516,8 @@ function MAIN(t) {
               '</span></div><div class="bar"><i style="width:' +
               l.pct +
               '%"></i></div></div>'),
-            (s.onclick = () => {
-              if ("birkat" === a.special) return (It("birkat", {}), void window.scrollTo(0, 0));
-              const e = n.filter((e) => e.g === "V" + t && !e.dup && "tikkun" !== e.id);
-              if (1 === e.length && 1 === e[0].c.length && !a.intro && !Tf.on) {
-                try {
-                  history.replaceState({ v: "home", p: { b: null } }, "");
-                } catch (t) {}
-                return (le(t), void We(e[0].si, 0));
-              }
-              (It("home", { b: t }), window.scrollTo(0, 0));
-            }),
+            (s.onclick = () => bkOpen(t)),
+            lp3(s, () => shareBook(t)),
             i.appendChild(s));
         }),
           ((BOOK.libSoon || {})[Ge()] || []).forEach((t) => {
@@ -5632,6 +5623,7 @@ function MAIN(t) {
           );
         })
         .join("")),
+      a("#libTabs [data-lt]").forEach((t) => lp3(t, () => shareTab(t.dataset.lt))),
       a("#libTabs [data-lt]").forEach(
         (t) =>
           (t.onclick = () => {
@@ -5670,6 +5662,62 @@ function MAIN(t) {
             (s.set("libSub_" + i, t.dataset.ls), Ft.home({}));
           }),
       ));
+  }
+  // פתיחת ספר מהספרייה (כרטיס / קישור ששותף)
+  function bkOpen(t) {
+    const a = $t[t] || {};
+    if ("birkat" === a.special) return (It("birkat", {}), void window.scrollTo(0, 0));
+    const e = n.filter((e) => e.g === "V" + t && !e.dup && "tikkun" !== e.id);
+    if (1 === e.length && 1 === e[0].c.length && !a.intro && !Tf.on) {
+      try {
+        history.replaceState({ v: "home", p: { b: null } }, "");
+      } catch (t) {}
+      return (le(t), void We(e[0].si, 0));
+    }
+    (It("home", { b: t }), window.scrollTo(0, 0));
+  }
+  // 🔗 לחיצה ארוכה (3 שניות) על לשונית או על ספר – שיתוף קישור שמוביל ישר לשם
+  function lp3(el, fn) {
+    let T = 0,
+      x = 0,
+      y = 0;
+    const stop = () => (clearTimeout(T), (T = 0), el.classList.remove("lp-on"));
+    (el.addEventListener("pointerdown", (e) => {
+      ((x = e.clientX), (y = e.clientY), stop(), el.classList.add("lp-on"));
+      T = setTimeout(() => {
+        (stop(), (el._lp3 = 1));
+        try {
+          navigator.vibrate && navigator.vibrate(40);
+        } catch (t) {}
+        fn();
+      }, 3e3);
+    }),
+      el.addEventListener("pointermove", (e) => T && Math.hypot(e.clientX - x, e.clientY - y) > 10 && stop()),
+      ["pointerup", "pointercancel", "pointerleave"].forEach((t) => el.addEventListener(t, stop)),
+      el.addEventListener(
+        "click",
+        (e) => {
+          el._lp3 && ((el._lp3 = 0), e.preventDefault(), e.stopImmediatePropagation());
+        },
+        !0,
+      ),
+      el.addEventListener("contextmenu", (e) => e.preventDefault()));
+  }
+  function shareTab(id) {
+    const t = we.find((t) => t.id === id);
+    if (!t) return;
+    const c = "room" === id ? 0 : "stories" === id ? ve.length : VOLS.filter((t, e) => Re(e) === id).length,
+      u = "room" === id || "mybooks" === id ? "" : dt("tab=" + encodeURIComponent(id));
+    if (!u) return void st("אי אפשר לשתף את הלשונית הזאת");
+    At("📚 *" + m(t.t).trim() + "*" + (c ? " · " + ("stories" === id ? c + " סיפורים" : 1 === c ? "ספר אחד" : c + " ספרים") : "") + "\nבאפליקציית ספרי רבנו – ברסלב PRO" + xt(u), m(t.t));
+  }
+  function shareBook(v) {
+    const a = $t[v] || {},
+      t = m(VOLS[v] || a.title || ""),
+      u = dt("bk=" + v);
+    if (!t || !u) return;
+    const l = ye(v);
+    At("📖 *" + t + "*" + (a.author ? "\n" + m(a.author) : "") + (a.tag ? "\n" + m(a.tag) : "") + (l && l.chs ? "\n" + (l.secs > 1 ? l.secs + " " + ((a.words && a.words.sections) || te.sections) + " · " : "") + l.chs + " " + ((a.words && a.words.chapters) || te.chapters) : "") + xt(u), t);
   }
   function Qe() {
     const t = Ge(),
@@ -22374,6 +22422,7 @@ function doGet(e){
   const rr = {
     v: "2026-11-17b",
     items: [
+      ["2026-11-19", "🔗", "שיתוף לשונית או ספר בלחיצה ארוכה", "לוחצים לחיצה ארוכה (3 שניות) על לשונית בספרייה (למשל \"קונטרסים וחוברות\") או על כרטיס של ספר – ונפתח שיתוף עם קישור. מי שלוחץ על הקישור מגיע ישר ללשונית או לספר. פס זהב קטן בתחתית הכפתור מראה כמה זמן נשאר להחזיק."],
       ["2026-11-19", "📚", "6 ספרים חדשים בקונטרסים וחוברות", "נוספו ללשונית \"קונטרסים וחוברות\": משלים קטנים עם מסרים גדולים (הרב אברהם ידידיה) · כולנו יודעי שמך · עולם חדש – שיחות הרב אשר עבאדי · דרכי ראיית הלב · עיני השם · אורח צדיקים. הטקסט נאמן למקור המודפס, כולל הניקוד, והכול נכנס גם לחיפוש. בעמוד \"על הספר\" – פרטים לרכישת הספרים המודפסים."],
       ["2026-11-19", "📖", "שניים מקרא ביעדים: הקצב שלי או הקצב העדכני", "ביעד \"שניים מקרא ואחד תרגום\" בוחרים עכשיו: 🔁 הקצב שלי – העלייה נשארת עד שמסמנים שקראתם, ואז מתקדמים לבאה; או 🗓️ בקצב העדכני – בכל יום העלייה של אותו יום לפי פרשת השבוע. מחליפים בלחיצה על הכפתור שמתחת ליעד."],
       ["2026-11-18", "🔬", "סריקת עומק – עוד 8 תיקונים", "סורק אוטומטי לחץ כ־25 אלף לחיצות בכל המסכים (שלוש רמות עומק), ותוקנו: קריאת סדר היום ברצף (קטעים בלי טקסט), סדר היום לפי עמודים (מנה ענקית), הזמן המשוער בסדר היום, מפתח נושאים בתוך ספר (0 נושאים) ושורת התצוגה המקדימה שלו, הדפסה של ספר שלא נפתח (דפים ריקים), חיפוש בתוך החוברות, וקריאה ברצף קרוב לסוף ספר."],
@@ -28819,7 +28868,21 @@ function doGet(e){
         const t = new URLSearchParams(location.search),
           e = t.get("i"),
           i = t.get("cal"),
-          c = t.get("zm");
+          c = t.get("zm"),
+          LT = t.get("tab"),
+          BK = t.get("bk");
+        // 🔗 קישור ששותף ללשונית / לספר
+        LT &&
+          we.some((t) => t.id === LT) &&
+          (s.set("libTab", LT),
+          setTimeout(() => {
+            (It("home", { b: null }),
+              setTimeout(() => {
+                const t = document.getElementById("libTabs");
+                t && t.scrollIntoView({ behavior: "smooth", block: "start" });
+              }, 250));
+          }, 300));
+        BK && /^\d+$/.test(BK) && VOLS[+BK] && !($t[+BK] || {}).hidden && "hidden" !== ($t[+BK] || {}).cat && (s.set("libTab", Re(+BK)), setTimeout(() => bkOpen(+BK), 300));
         if (c && /^\d{4}-\d{2}-\d{2}$/.test(c)) {
           const t = c.split("-").map(Number),
             e = hs(0);
@@ -28837,7 +28900,7 @@ function doGet(e){
           const e = xn(t).days.findIndex((e) => e.g.toDateString() === t.toDateString());
           ((vn.sel = e >= 0 ? e : null), setTimeout(() => It("calendar"), 300));
         }
-        (e || i || c) && history.replaceState(history.state, "", location.pathname);
+        (e || i || c || LT || BK) && history.replaceState(history.state, "", location.pathname);
       } catch (t) {}
     })());
   try {
