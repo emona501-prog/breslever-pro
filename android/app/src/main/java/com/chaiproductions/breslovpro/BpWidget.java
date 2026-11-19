@@ -248,7 +248,12 @@ public class BpWidget extends AppWidgetProvider {
             Intent i = new Intent(ctx, BpWidget.class); i.setAction(TICK);
             PendingIntent pi = PendingIntent.getBroadcast(ctx, 77, i, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
             AlarmManager am = (AlarmManager) ctx.getSystemService(Context.ALARM_SERVICE);
-            if (am != null) am.setAndAllowWhileIdle(AlarmManager.RTC, next, pi);
+            if (am != null) {
+                // רענון מדויק: אחרת אנדרואיד דוחה את הרענון (חיסכון בסוללה) והספירה לאחור עוברת את הזמן ונהיית שלילית
+                boolean exact = android.os.Build.VERSION.SDK_INT < 31 || am.canScheduleExactAlarms();
+                if (exact) am.setExactAndAllowWhileIdle(AlarmManager.RTC, next, pi);
+                else am.setWindow(AlarmManager.RTC, next, 60000L, pi);
+            }
         } catch (Exception e) { }
     }
 }
