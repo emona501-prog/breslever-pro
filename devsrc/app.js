@@ -1840,6 +1840,7 @@ function MAIN(t) {
       "reader" === t ? (br.rs = 0) : mr(t);
     } catch (t) {}
     a(".view").forEach((t) => t.classList.remove("active"));
+    document.body.dataset.v = t;
     (document.getElementById(jt[t]).classList.add("active"),
       a("#tabbar button").forEach((e) => e.classList.toggle("on", e.dataset.tab === Nt[t])),
       "reader" !== t && (document.body.classList.remove("clean"), (l("#progressLine").style.width = "0")));
@@ -22464,6 +22465,7 @@ function doGet(e){
   const rr = {
     v: "2026-11-17b",
     items: [
+      ["2026-11-22", "🕯️", "הקדשת הלימוד באפליקציה", "פס חדש בתחתית המסך עם הקדשות – לרפואה, לעילוי נשמת, להצלחה, לזיווג ועוד. לוחצים על הפס, כותבים את השמות, בוחרים יום / שבוע / חודש – והשמות ירוצו אצל כל הלומדים. אפשר לכבות את ההזמנה להקדשה בהגדרות הדיבורים 💎."],
       ["2026-11-21", "📜", "ליקוטי פסוקים לפי סדר התורות – בראש הספר", "בספר \"תנ\"ך ליקוטי מוהר\"ן\" החלק \"לפי סדר התורות\" (כל הפסוקים שרבנו מבאר בכל תורה, חלק א׳ וחלק ב׳) עבר לראש הספר עם כותרת, במקום להיות בסוף אחרי כל הפרשיות."],
       ["2026-11-20", "🕯️", "הדלקת נרות: 20 או 40 דקות", "ברירת המחדל היא עכשיו 20 דקות לפני השקיעה בכל הערים. בירושלים מוצג גם הזמן של מנהג ירושלים (40 דקות). מי שנוהג להחמיר בוחר 40 דקות בזמני היום ← ⚙️ ← \"הדלקת נרות – דקות לפני השקיעה\"."],
       ["2026-11-20", "🔗", "שיתוף פרשה / חלק מתוך ספר", "לחיצה ארוכה (3 שניות) על כרטיס של פרשה או חלק בתוך ספר פותחת שיתוף – מי שלוחץ על הקישור מגיע ישר לאותה פרשה."],
@@ -23314,7 +23316,7 @@ function doGet(e){
       M = PRL.mine(),
       seg = (id, v, opts) => '<div class="seg" id="' + id + '">' + opts.map((t) => '<button data-v="' + t[0] + '"' + (String(v) === String(t[0]) ? ' class="on"' : "") + ">" + t[1] + "</button>").join("") + "</div>",
       w = Ut(
-        '<h3>💎 דיבורים יפים</h3><div class="sw"><span>פס רץ של דיבורים במסך הבית</span><input type="checkbox" id="prlOn" ' + (c.on ? "checked" : "") + '></div><div class="field"><label>מאיפה הדיבורים</label>' + seg("prlSrcS", c.src, [["all", "הכל"], ["auto", "מהספרים"], ["mine", "רק שלי"]]) + '</div><div class="field"><label>מהירות הפס</label>' + seg("prlSp", c.sp, [[1, "איטי"], [2, "רגיל"], [3, "מהיר"]]) + "</div>" +
+        '<h3>💎 דיבורים יפים</h3><div class="sw"><span>פס רץ של דיבורים במסך הבית</span><input type="checkbox" id="prlOn" ' + (c.on ? "checked" : "") + '></div><div class="sw"><span>🕯️ פס ההקדשות בתחתית: להציג הזמנה להקדשה גם כשאין הקדשות פעילות</span><input type="checkbox" id="hkCtaS" ' + (s.get("hkCta", !0) ? "checked" : "") + '></div><div class="field"><label>מאיפה הדיבורים</label>' + seg("prlSrcS", c.src, [["all", "הכל"], ["auto", "מהספרים"], ["mine", "רק שלי"]]) + '</div><div class="field"><label>מהירות הפס</label>' + seg("prlSp", c.sp, [[1, "איטי"], [2, "רגיל"], [3, "מהיר"]]) + "</div>" +
           '<div class="sh-sub">' + (PRL.auto ? PRL.auto.length + " דיבורים שהמערכת ליקטה מספרי רבנו ותלמידיו · " : "") + "סמנו טקסט בכל ספר ← 💎 לדיבורים, כדי להוסיף משלכם.</div>" +
           '<button class="btn pri sm" id="prlNew" style="width:100%;margin:6px 0">➕ הוספת דיבור משלי</button>' +
           (M.length ? '<div class="sh-sub"><b>הדיבורים שלי (' + M.length + ")</b></div>" + M.map((t, i) => '<div class="prl-mine"><span>' + o(t.t) + (t.src ? "<small> · " + o(t.src) + "</small>" : "") + '</span><button class="btn sm" data-prd="' + i + '">🗑️</button></div>').join("") : "") +
@@ -23322,6 +23324,7 @@ function doGet(e){
       ),
       up = (o) => (s.set("prlCfg", Object.assign(PRL.cfg(), o)), prlHome());
     ((l("#prlOn", w).onchange = (e) => up({ on: e.target.checked })),
+      (l("#hkCtaS", w).onchange = (e) => (s.set("hkCta", e.target.checked), hkTick())),
       [["#prlSrcS", "src"], ["#prlSp", "sp"]].forEach(([id, k]) =>
         a(id + " button", w).forEach(
           (b) =>
@@ -23341,6 +23344,339 @@ function doGet(e){
       l("#prlUnhide", w) && (l("#prlUnhide", w).onclick = () => (s.set("prlHide", {}), Wt(), st("הדיבורים חזרו", 2e3))));
   }
   window.__prlManage = prlManage;
+  // ===== 🕯️ הקדשות: פס רץ בתחתית המסך + טופס הקדשה חכם + ניהול (רק אצל העורך) =====
+  // 🕯️ ניתוח שמות להקדשה: כל "בן/בת" = אדם; "בני/בנות" = כל השמות שלפניו; שמות בלי "בן" – שואלים
+  const HK_TITLE = /^(ה?רב|ה?ר'|רבי|ר"?|מוה?ר"ר|הרה"ח|הרה"צ|הצדיק|מרת|מרן|ה?ילד(ה)?|התינוק(ת)?|הבחור|העלמה|האשה|החתן|הכלה|ז"ל|זצ"ל|זצוק"ל|זי"ע|ע"ה|הי"ד|נ"ע|נ"י|שליט"א|שיחי'?|תחי'?|הי"ו|ת"ו|זיע"א)$/;
+  const HK_TYPEW = /^(ל?רפואת|ל?רפואה|שלמה|לע"נ|לעילוי|נשמת|ל?הצלחת|ל?ישועת|לזיווג|הגון|לזש"ק|לזרע|של|קיימא|לפרנסה|טובה|עבור|ל?זכות|ל?שמירת|ול?רפואת|ולע"נ)$/;
+  const HK_GROUP = [/כלל ישראל/, /עם ישראל/, /חיילי צה"?ל/, /חיילי צבא/, /הפצועים/, /החטופים/, /השבויים/, /חולי ישראל/];
+  const HK_FAM = /\s(ו?כל\s)?(ו?משפחת[וה]|ומשפחותיהם|ו?ב"ב|ובני\sבית[וה]|וכל\sבני\sבית[וה]|וכל\sיוצאי\sחלציו|וצאצאי[והם]+)(?=\s|$)/g;
+  function hkParse(txt, ans) {
+    ans = ans || {};
+    const P = [],
+      Q = [],
+      bad = [];
+    let fam = 0;
+    const famW = [];
+    String(txt || "")
+      .replace(/[״“”]/g, '"')
+      .replace(/[׳‘’`]/g, "'")
+      .split(/\n|;/)
+      .forEach((line, li) => {
+        line = " " + line.replace(/[,.()\-–:!?]/g, " ").replace(/\s+/g, " ").trim() + " ";
+        line = line.replace(HK_FAM, (m) => (fam++, famW.push(m.trim()), " "));
+        HK_GROUP.forEach((g) => {
+          line = line.replace(g, (m) => (P.push({ n: m.replace(/"/g, '"'), grp: 1 }), " "));
+        });
+        if (/[a-zA-Z0-9@\/]/.test(line)) bad.push(line.trim());
+        let T = line.trim().split(" ").filter((t) => t && !HK_TITLE.test(t));
+        // מילות ההקדשה בתחילת השורה ("לרפואת", "לע"נ" ...)
+        while (T.length && HK_TYPEW.test(T[0])) T.shift();
+        T = T.filter((t) => !HK_TYPEW.test(t) || /^(בן|בת)$/.test(t));
+        let cur = [],
+          gi = 0;
+        const flush = (mo, plural) => {
+          if (!cur.length) return;
+          const key = li + ":" + gi++ + ":" + cur.join(" ");
+          if (plural) cur.forEach((n) => P.push({ n: n.replace(/^ו(?=..)/, "") + (mo ? " " + (plural === "בנות" ? "בת" : "בן") + " " + mo : "") }));
+          else if (cur.length > 1) {
+            // כמה שמות לפני "בן" אחד – אדם אחד עם כמה שמות, או כמה אנשים?
+            const q = { key, names: cur.slice(), mo, conn: plural };
+            if (ans[key] === "many") cur.forEach((n) => P.push({ n: n.replace(/^ו(?=..)/, "") + (mo ? " " + mo : "") }));
+            else (ans[key] !== "one" && Q.push(q), P.push({ n: cur.join(" ") + (mo ? " " + mo : ""), q: ans[key] !== "one" ? key : null }));
+          } else P.push({ n: cur[0].replace(/^ו(?=..)/, "") + (mo ? " " + mo : "") });
+          cur = [];
+        };
+        for (let i = 0; i < T.length; i++) {
+          const t = T[i];
+          if (/^(בן|בת|ובן|ובת)$/.test(t) && cur.length && i + 1 < T.length) {
+            // "בן X" – שם האם/האב הוא המילה הבאה
+            flush(t.replace(/^ו/, "") + " " + T[i + 1], null);
+            i++;
+          } else if (/^(בני|בנות)$/.test(t) && cur.length && i + 1 < T.length) {
+            flush(T[i + 1], t);
+            i++;
+          } else cur.push(t);
+        }
+        // שמות בסוף השורה בלי "בן" אחרי אדם קודם: אולי המשך של שם האם ("בן שרה רבקה")
+        if (cur.length && gi > 0 && P.length) {
+          const key = li + ":t:" + cur.join(" "),
+            last = P[P.length - 1];
+          if (ans[key] === "cont") ((last.n += " " + cur.join(" ")), (cur = []));
+          else if (ans[key] !== "sep") (Q.push({ key, tail: 1, names: cur.slice(), prev: last.n }), (last.q = key), (last.n += " " + cur.join(" ")), (cur = []));
+        }
+        flush("", null);
+      });
+    // כפילויות
+    const seen = {},
+      U = [];
+    let dup = 0;
+    P.forEach((p) => {
+      const k = p.n.replace(/["'\s]/g, "");
+      seen[k] ? dup++ : ((seen[k] = 1), U.push(p));
+    });
+    fam && U.push({ n: famW.join(" ").replace(/^ו?(כל\s)?/, "ו$1"), fam: fam });
+    const units = U.reduce((s, p) => s + (p.fam || 1), 0);
+    return { P: U, Q, units, dup, bad };
+  }
+
+  const HK_TY = [
+    ["rf", "לרפואת", "🙏", "לרפואה שלמה"],
+    ["ln", "לעילוי נשמת", "🕯️", "לעילוי נשמת"],
+    ["hz", "להצלחת", "🌟", "להצלחה"],
+    ["ys", "לישועת", "✨", "לישועה"],
+    ["zv", "לזיווג הגון ל", "💍", "לזיווג הגון"],
+    ["zk", "לזרע של קיימא ל", "👶", "לזרע של קיימא"],
+    ["pr", "לפרנסה טובה ל", "💰", "לפרנסה"],
+  ];
+  // מחיר לכל שם
+  const HK_PER = [
+    ["d", "יום אחד", 18, 1, "24 שעות"],
+    ["w", "שבוע", 101, 7, "7 ימים"],
+    ["m", "חודש", 360, 30, "30 יום – כמניין רבי נחמן"],
+  ];
+  const HK_WA = "972546137202";
+  const hkLive = () => s.get("live", {}) || {};
+  const hkActive = () => {
+    const now = Date.now();
+    return (hkLive().hk || []).filter((h) => h && h.u > now && (h.s || 0) <= now + 6e4 && Array.isArray(h.n) && h.n.length);
+  };
+  function hkLine(h) {
+    const T = HK_TY.find((t) => t[0] === h.t) || HK_TY[0],
+      j = h.n.join(", ");
+    return T[1] + (/ ל$/.test(T[1]) ? "" : " ") + j;
+  }
+  let hkT = null;
+  function hkTick() {
+    const el = l("#hkTick");
+    if (!el) return;
+    const A = hkActive(),
+      show = A.length || s.get("hkCta", !0);
+    if ((document.body.classList.toggle("hk-on", !!show), !show)) return void ((el.innerHTML = ""), clearTimeout(hkT));
+    const txt = A.length
+      ? '<span class="hk-l">🕯️ הלימוד היום מוקדש</span>' + A.map((h) => "<b>" + o(hkLine(h)) + "</b>").join("<i>✦</i>")
+      : "<b>🕯️ הקדישו את הלימוד באפליקציה – לרפואה, לעילוי נשמת, להצלחה ולישועה</b><i>✦</i><span>לחצו כאן להקדשה</span>";
+    el.innerHTML = '<div class="prl-win"><div class="prl-run">' + txt + "</div></div>";
+    const r = l(".prl-run", el),
+      wn = l(".prl-win", el);
+    if (!wn.clientWidth) return void (clearTimeout(hkT), (hkT = setTimeout(hkTick, 3e3)));
+    const W = wn.clientWidth,
+      RW = r.scrollWidth || 600;
+    (r.style.setProperty("--a", -RW + "px"), r.style.setProperty("--b", W + "px"), (r.style.animationDuration = Math.max(8, (W + RW) / 60).toFixed(1) + "s"));
+    r.addEventListener("animationend", () => (clearTimeout(hkT), (hkT = setTimeout(hkTick, 900))));
+  }
+  setTimeout(() => {
+    const el = l("#hkTick");
+    el && ((el.onclick = () => hkForm()), hkTick());
+  }, 2e3);
+  window.__hkParse = hkParse;
+  window.__hkTick = hkTick;
+  const HK_INTRO =
+    '<div class="hk-intro"><b>אַשְׁרֶיךָ אָח יָקָר!</b> בחרת להקדיש את הלימוד באפליקציה עבור יקיריך. כל תורה, כל הלכה וכל תפילה שנלמדות כאן – עולות לזכותם.<br><br>' +
+    "אחזקת \"ספרי רבנו\" היא צדקה גדולה: היא מחזיקה את דעת רבנו הקדוש בעולם, ומביאה את ספריו – ליקוטי מוהר\"ן, ליקוטי הלכות, ליקוטי תפילות ועוד – לכל יהודי, בכל מקום ובכל שעה, בחינם. השמות יופיעו בפס בתחתית המסך אצל כל הלומדים.</div>";
+  const HK_BLESS = (t) =>
+    '<div class="hk-bless">' +
+    ("ln" === t
+      ? "יהי רצון שבזכות לימוד ספרי רבנו הקדוש תתעלה נשמת יקיריכם מעלה מעלה, ותזכו אתם וכל בני ביתכם לשמחה, לבריאות ולכל הישועות – אמן!"
+      : "יהי רצון שבזכות לימוד ספרי רבנו הקדוש תזכו אתם וכל יקיריכם לרפואה שלמה, לשמחה, לפרנסה בהרחבה ולכל הישועות – אמן!") +
+    "</div>";
+  function hkForm() {
+    const S = { t: "rf", p: "d", ans: {} },
+      w = Ut(
+        '<div class="hk-f"><div class="hk-hd">🕯️</div><h3 style="text-align:center">הקדשת הלימוד באפליקציה</h3>' +
+          HK_INTRO +
+          '<div class="field"><label>מטרת ההקדשה</label><div class="hk-chips" id="hkTy">' +
+          HK_TY.map((t) => '<button data-v="' + t[0] + '"' + ("rf" === t[0] ? ' class="on"' : "") + ">" + t[2] + " " + t[3] + "</button>").join("") +
+          "</div></div>" +
+          '<div class="field"><label>השמות</label><textarea id="hkN" rows="3" maxlength="300" placeholder="לדוגמה:&#10;יצחק בן שרה&#10;רחל בת לאה"></textarea><div class="sh-sub">שם + בן/בת + שם האם. כל שם בשורה נפרדת. ל"עילוי נשמת" נהוג לכתוב את שם האב.</div></div>' +
+          '<div id="hkAn"></div>' +
+          '<div class="field"><label>משך ההקדשה</label><div class="hk-chips" id="hkPer">' +
+          HK_PER.map((t) => '<button data-v="' + t[0] + '"' + ("d" === t[0] ? ' class="on"' : "") + "><b>" + t[1] + "</b><small>" + t[2] + " ₪ לשם · " + t[4] + "</small></button>").join("") +
+          "</div></div>" +
+          '<div id="hkSum" class="hk-sum"></div>' +
+          '<div class="field"><label>שם המקדיש (לא חובה, לא יוצג בפס)</label><input id="hkBy" maxlength="60" placeholder="לתיאום ולאישור התשלום"></div>' +
+          '<button class="btn pri" id="hkGo" style="width:100%">💳 המשך לתשלום</button>' +
+          HK_BLESS("rf") +
+          "</div>",
+      ),
+      R = () => {
+        const r = hkParse(l("#hkN", w).value, S.ans),
+          per = HK_PER.find((t) => t[0] === S.p),
+          an = l("#hkAn", w);
+        let h = "";
+        (r.P.length &&
+          (h +=
+            '<div class="hk-names">' +
+            r.P.map((p) => '<span class="' + (p.q ? "q" : "") + '">' + o(p.n) + (p.fam ? " <small>(נספר כשם אחד)</small>" : "") + "</span>").join("") +
+            "</div>"),
+          r.Q.forEach((q) => {
+            h += q.tail
+              ? '<div class="hk-q">❓ <b>' + o(q.names.join(" ")) + "</b> – האם זה המשך של שם האם (שם כפול: <b>" + o(q.prev) + '</b>), או אדם נוסף?<div class="row2"><button class="btn sm" data-qa="' + o(q.key) + '" data-qv="cont">כן, שם כפול</button><button class="btn sm" data-qa="' + o(q.key) + '" data-qv="sep">אדם נוסף</button></div></div>'
+              : '<div class="hk-q">❓ <b>' + o(q.names.join(" ") + (q.mo ? " " + q.mo : "")) + "</b> – האם מדובר באדם אחד בעל " + q.names.length + ' שמות?<div class="row2"><button class="btn sm" data-qa="' + o(q.key) + '" data-qv="one">כן, אדם אחד</button><button class="btn sm" data-qa="' + o(q.key) + '" data-qv="many">לא, ' + q.names.length + " אנשים</button></div></div>";
+          }),
+          r.bad.length && (h += '<div class="hk-q bad">✋ כתבו רק שמות בעברית – בלי מספרים, קישורים או אותיות לועזיות.</div>'),
+          r.dup && (h += '<div class="sh-sub">שם שהופיע פעמיים נספר פעם אחת.</div>'),
+          (an.innerHTML = h),
+          a("[data-qa]", an).forEach((b) => (b.onclick = () => ((S.ans[b.dataset.qa] = b.dataset.qv), R()))));
+        const sum = r.units * per[2];
+        ((l("#hkSum", w).innerHTML = r.units
+          ? "<b>" + r.units + (1 === r.units ? " שם" : " שמות") + " × " + per[2] + " ₪ = " + sum.toLocaleString("he-IL") + ' ₪</b><small>הקדשה ל' + per[1] + " (" + per[4] + ")</small>"
+          : ""),
+          (S.r = r),
+          (S.sum = sum));
+      };
+    (l("#hkN", w).addEventListener("input", R),
+      [["#hkTy", "t"], ["#hkPer", "p"]].forEach(([id, k]) =>
+        a(id + " button", w).forEach(
+          (b) =>
+            (b.onclick = () => {
+              (a(id + " button", w).forEach((t) => t.classList.toggle("on", t === b)), (S[k] = b.dataset.v), R());
+              "t" === k && (l(".hk-bless", w).outerHTML = HK_BLESS(S.t));
+            }),
+        ),
+      ),
+      (l("#hkGo", w).onclick = () => {
+        R();
+        const r = S.r;
+        if (!r || !r.units) return st("כתבו את השמות להקדשה", 2500);
+        if (r.bad.length) return st("כתבו רק שמות בעברית", 2500);
+        if (r.Q.length) return (st("ענו על השאלה לגבי השמות 👆", 2500), l(".hk-q", w).scrollIntoView({ block: "center", behavior: "smooth" }));
+        if (r.units > 30) return st("לבקשה גדולה – פנו אלינו בוואטסאפ", 3e3);
+        const req = { t: S.t, p: S.p, n: r.P.map((p) => p.n), u: r.units, sum: S.sum, by: l("#hkBy", w).value.trim().slice(0, 60), ts: Date.now() };
+        (Wt(), setTimeout(() => hkPay(req), 220));
+      }));
+  }
+  function hkReqTxt(q) {
+    const per = HK_PER.find((t) => t[0] === q.p) || HK_PER[0];
+    return "🕯️ " + hkLine(q) + "\n⏱️ " + per[1] + " · " + q.u + (1 === q.u ? " שם" : " שמות") + " · " + q.sum + " ₪" + (q.by ? "\n👤 המקדיש: " + q.by : "");
+  }
+  function hkPay(q) {
+    const P = hkLive().hkPay || {},
+      wa = () => NAT.openUrl("https://wa.me/" + HK_WA + "?text=" + encodeURIComponent("שלום, הקדשה בברסלב PRO:\n" + hkReqTxt(q) + "\n\n✅ שילמתי – מצרף אישור תשלום")),
+      w = Ut(
+        '<div class="hk-f"><div class="hk-hd">💳</div><h3 style="text-align:center">תשלום ההקדשה</h3><div class="hk-sum"><b>' +
+          q.sum.toLocaleString("he-IL") +
+          ' ₪</b><small style="white-space:pre-line">' +
+          o(hkReqTxt(q)) +
+          "</small></div>" +
+          (P.bit || P.pb
+            ? '<div class="row2">' + (P.bit ? '<button class="btn pri" id="hkBit">💙 תשלום בביט</button>' : "") + (P.pb ? '<button class="btn pri" id="hkPb">💚 תשלום בפייבוקס</button>' : "") + "</div>"
+            : "") +
+          '<div class="sh-sub" style="margin:10px 0">' +
+          (P.bit || P.pb ? "אחרי התשלום לחצו על הכפתור למטה ושלחו בוואטסאפ את אישור התשלום." : "לתשלום – שלחו את ההקדשה בוואטסאפ, ונחזור אליכם עם פרטי התשלום.") +
+          " ההקדשה תעלה לפס בתחתית המסך מיד כשהתשלום מאושר, והזמן (" +
+          (HK_PER.find((t) => t[0] === q.p) || HK_PER[0])[4] +
+          ') נספר מרגע העלייה.</div><button class="btn pri" id="hkSend" style="width:100%">📨 שליחת ההקדשה בוואטסאפ</button>' +
+          HK_BLESS(q.t) +
+          "</div>",
+      );
+    (l("#hkBit", w) && (l("#hkBit", w).onclick = () => NAT.openUrl(P.bit)),
+      l("#hkPb", w) && (l("#hkPb", w).onclick = () => NAT.openUrl(P.pb)),
+      (l("#hkSend", w).onclick = () => {
+        // גם לתיבה (אם מוגדרת) – כדי שהבקשה לא תלך לאיבוד
+        try {
+          inboxUrl() && ideaSend("🕯️ בקשת הקדשה\n" + hkReqTxt(q) + "\n#HK" + JSON.stringify(q));
+        } catch (t) {}
+        (wa(), Wt(), setTimeout(() => Ut('<div class="hk-f"><div class="hk-hd">🙏</div><h3 style="text-align:center">תודה רבה!</h3><div class="hk-intro" style="text-align:center">ההקדשה נשלחה. מיד כשהתשלום יאושר, השמות יופיעו בפס בתחתית המסך אצל כל הלומדים.</div>' + HK_BLESS(q.t) + "</div>"), 400));
+      }));
+  }
+  window.__hkForm = hkForm;
+  // ----- ניהול (רק אצל העורך, עם מפתח הגיטהאב) -----
+  async function hkMod(fn, msg) {
+    const e = await Gd("contents/" + Rd),
+      i = JSON.parse(Qd(e.content)),
+      now = Date.now();
+    ((i.hk = (i.hk || []).filter((h) => h && h.u > now)), fn(i), await Gd("contents/" + Rd, { method: "PUT", body: JSON.stringify({ message: msg, content: Vd(JSON.stringify(i)), sha: e.sha }) }));
+    const c = s.get("live", {}) || {};
+    ((c.hk = i.hk), (c.hkPay = i.hkPay), s.set("live", c), hkTick());
+  }
+  const hkNew = (t, n, p) => {
+    const per = HK_PER.find((x) => x[0] === p) || HK_PER[0],
+      now = Date.now();
+    return { id: now.toString(36) + Math.random().toString(36).slice(2, 5), t, n, s: now, u: now + per[3] * 864e5 };
+  };
+  function hkAdmHtml() {
+    const A = hkActive(),
+      P = hkLive().hkPay || {};
+    return (
+      '<div class="sh-sub">ההקדשות רצות בפס בתחתית המסך אצל כולם. בקשות שמשתמשים שולחים מגיעות אליך בוואטסאפ' + (inboxUrl() ? " ובתיבת הרעיונות" : "") + ". אחרי שהתשלום מגיע – מאשרים כאן, וזה עולה לכולם.</div>" +
+      (A.length
+        ? A.map((h) => '<div class="prl-mine"><span>' + o(hkLine(h)) + "<small> · עד " + new Date(h.u).toLocaleString("he-IL", { day: "numeric", month: "numeric", hour: "2-digit", minute: "2-digit" }) + '</small></span><button class="btn sm" data-hkx="' + o(h.id) + '">✕</button></div>').join("")
+        : '<div class="sh-sub">אין עכשיו הקדשות פעילות.</div>') +
+      (inboxUrl() ? '<button class="btn sm" id="hkLoad" style="margin:8px 0">📥 בקשות שממתינות לאישור</button><div id="hkReq"></div>' : "") +
+      '<details style="margin-top:8px"><summary><b>➕ הוספת הקדשה ידנית</b> (למשל כשמישהו שילם בוואטסאפ)</summary>' +
+      '<select id="hkAT" style="width:100%;margin:6px 0">' + HK_TY.map((t) => '<option value="' + t[0] + '">' + t[2] + " " + t[3] + "</option>").join("") + "</select>" +
+      '<textarea id="hkAN" rows="3" style="width:100%" placeholder="שם בן/בת שם האם – כל שם בשורה"></textarea>' +
+      '<select id="hkAP" style="width:100%;margin:6px 0">' + HK_PER.map((t) => '<option value="' + t[0] + '">' + t[1] + " (" + t[4] + ")</option>").join("") + "</select>" +
+      '<button class="btn pri sm" id="hkAdd">📤 פרסום לכולם</button></details>' +
+      '<details style="margin-top:8px"><summary><b>💳 קישורי תשלום</b></summary><div class="sh-sub">קישור תשלום אישי מביט / פייבוקס. בלי קישור – המקדישים פונים אליך בוואטסאפ.</div>' +
+      '<input id="hkBitIn" type="url" dir="ltr" placeholder="קישור ביט (https://…)" value="' + o(P.bit || "") + '" style="width:100%;margin:4px 0">' +
+      '<input id="hkPbIn" type="url" dir="ltr" placeholder="קישור פייבוקס (https://…)" value="' + o(P.pb || "") + '" style="width:100%;margin:4px 0">' +
+      '<button class="btn sm" id="hkPaySave">💾 שמירה ופרסום</button></details>'
+    );
+  }
+  function hkAdmBind(t) {
+    const re = () => {
+        const c = l("#hkCard .cnt") || l("#hkCard");
+        try {
+          Ft.settings();
+        } catch (e) {}
+      },
+      run = async (b, fn, msg, ok) => {
+        b && ((b.disabled = !0), (b.dataset.tx = b.textContent), (b.textContent = "⏳"));
+        try {
+          (await hkMod(fn, msg), st(ok, 2500), re());
+        } catch (e) {
+          (b && ((b.disabled = !1), (b.textContent = b.dataset.tx)), st("❌ " + (e.message || e), 5e3));
+        }
+      };
+    (a("[data-hkx]", t).forEach((b) => (b.onclick = () => confirm("להוריד את ההקדשה מהפס?") && run(b, (i) => (i.hk = i.hk.filter((h) => h.id !== b.dataset.hkx)), "🕯️ הסרת הקדשה", "ההקדשה הוסרה"))),
+      (l("#hkAdd", t).onclick = (e) => {
+        const r = hkParse(l("#hkAN", t).value, {});
+        if (!r.units) return st("כתבו שמות", 2e3);
+        run(e.target, (i) => i.hk.push(hkNew(l("#hkAT", t).value, r.P.map((p) => p.n), l("#hkAP", t).value)), "🕯️ הקדשה חדשה", "✅ ההקדשה עלתה לכולם");
+      }),
+      (l("#hkPaySave", t).onclick = (e) => {
+        const b = l("#hkBitIn", t).value.trim(),
+          p = l("#hkPbIn", t).value.trim();
+        if ((b && !/^https:\/\//.test(b)) || (p && !/^https:\/\//.test(p))) return st("קישור צריך להתחיל ב־https://", 3e3);
+        run(e.target, (i) => (i.hkPay = { bit: b, pb: p }), "💳 קישורי תשלום להקדשות", "✅ נשמר");
+      }));
+    const ld = l("#hkLoad", t);
+    ld &&
+      (ld.onclick = async () => {
+        const c = l("#hkReq", t);
+        c.innerHTML = '<div class="sh-sub">טוען…</div>';
+        try {
+          const k = "?key=" + encodeURIComponent(s.get("inboxKey", "")),
+            j = await (await fetch(inboxUrl() + k + "&_=" + Date.now())).json();
+          if (j.err) return void (c.innerHTML = '<div class="sh-sub">❌ הסיסמה של התיבה לא נכונה</div>');
+          const R = (j.rows || [])
+            .filter((r) => "חדש" === r.st && /#HK\{/.test(r.t))
+            .map((r) => {
+              try {
+                return Object.assign({ row: r.r }, JSON.parse(r.t.slice(r.t.indexOf("#HK") + 3)));
+              } catch (e) {
+                return null;
+              }
+            })
+            .filter(Boolean);
+          ((c.innerHTML = R.length
+            ? R.map((q, i) => '<div class="ib-it"><p style="white-space:pre-line">' + o(hkReqTxt(q)) + '</p><div class="row2"><button class="btn pri sm" data-hka="' + i + '">✅ שולם – לפרסם</button><button class="btn sm" data-hkd="' + i + '">✕ לא לפרסם</button></div></div>').join("")
+            : '<div class="sh-sub">אין בקשות שממתינות.</div>'),
+            a("[data-hka]", c).forEach(
+              (b) =>
+                (b.onclick = async () => {
+                  const q = R[+b.dataset.hka];
+                  (await run(b, (i) => i.hk.push(hkNew(q.t, q.n, q.p)), "🕯️ הקדשה: " + q.n.join(", "), "✅ ההקדשה עלתה לכולם"),
+                    fetch(inboxUrl() + k + "&a=done&r=" + q.row).catch(() => {}));
+                }),
+            ),
+            a("[data-hkd]", c).forEach((b) => (b.onclick = () => confirm("לסמן את הבקשה כטופלה בלי לפרסם?") && (fetch(inboxUrl() + k + "&a=done&r=" + R[+b.dataset.hkd].row).catch(() => {}), b.closest(".ib-it").remove()))));
+        } catch (e) {
+          c.innerHTML = '<div class="sh-sub">❌ לא הצלחתי להתחבר לתיבה</div>';
+        }
+      });
+  }
   // ===== 🚗 תפילת הדרך: תזכורת בנסיעה (אנדרואיד) + ההלכה בגדול לפני הנוסח =====
   const TRV = () => (NAT.on ? NAT.P("Travel") : null);
   function hdOpen() {
@@ -27400,6 +27736,7 @@ function doGet(e){
           '<div class="sw"><span>להציע לי תזכורות וטיפים לפי המדור שאני נמצא בו (למשל: "קראתם שניים מקרא?")</span><input type="checkbox" id="nudgeC" ' + (!1 !== s.get("nudgeOn", !0) ? "checked" : "") + "></div>",
         )),
         Tf.on && s.get("ghTok", "") && (r += '<div id="ibCard">' + n("📥 תיבת הרעיונות (רק אצלך)", inboxHtml()) + "</div>"),
+        Tf.on && s.get("ghTok", "") && (r += '<div id="hkCard">' + n("🕯️ הקדשות (ניהול – רק אצלך)", hkAdmHtml()) + "</div>"),
         (r += n(
           "🤖 העוזר",
           '<div class="sw"><span>כפתור צף של העוזר על המסך – תמיד בהישג יד. אפשר לגרור אותו לכל מקום, ואחרי כמה שניות הוא נהיה כמעט שקוף</span><input type="checkbox" id="botFabS" ' + (s.get("botFab", !1) ? "checked" : "") + '></div><div class="sw"><span>העוזר מציע רעיונות מדי פעם (לפי היום והשעה – חגים, שבת, חצות, יעדים)</span><input type="checkbox" id="botTipS" ' + (s.get("botTips", !0) ? "checked" : "") + "></div>",
@@ -27537,6 +27874,10 @@ function doGet(e){
             try {
               const t = l("#wdgCard");
               t && wdgSettingsBind(t);
+            } catch (t) {}
+            try {
+              const t = l("#hkCard");
+              t && hkAdmBind(t);
             } catch (t) {}
             try {
               const t = l("#ibCard");
@@ -28918,7 +29259,10 @@ function doGet(e){
           c = t.get("zm"),
           LT = t.get("tab"),
           BK = t.get("bk"),
-          SC = t.get("sec");
+          SC = t.get("sec"),
+          HKQ = t.get("hk");
+        // 🕯️ קישור להקדשה
+        HKQ && setTimeout(() => hkForm(), 1800);
         // 🔗 קישור ששותף ללשונית / לספר
         LT &&
           we.some((t) => t.id === LT) &&
@@ -28953,7 +29297,7 @@ function doGet(e){
           const e = xn(t).days.findIndex((e) => e.g.toDateString() === t.toDateString());
           ((vn.sel = e >= 0 ? e : null), setTimeout(() => It("calendar"), 300));
         }
-        (e || i || c || LT || BK || SC) && history.replaceState(history.state, "", location.pathname);
+        (e || i || c || LT || BK || SC || HKQ) && history.replaceState(history.state, "", location.pathname);
       } catch (t) {}
     })());
   try {
@@ -29242,6 +29586,10 @@ function doGet(e){
       if (e && "string" == typeof e.inbox && e.inbox !== ((s.get("live", {}) || {}).inbox || "")) {
         const t = s.get("live", {}) || {};
         ((t.inbox = e.inbox), s.set("live", t), setTimeout(ideaFlush, 1500));
+      }
+      if (e && (Array.isArray(e.hk) || e.hkPay)) {
+        const t = s.get("live", {}) || {};
+        ((t.hk = e.hk || []), (t.hkPay = e.hkPay || {}), s.set("live", t), setTimeout(hkTick, 300));
       }
       if (e && Array.isArray(e.msgs) && e.msgs.length) {
         const t = s.get("live", {}) || {};
