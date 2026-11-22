@@ -16967,7 +16967,7 @@ function doGet(e){
         ? (i = (function () {
             const t = VOLS.map((t, e) => e).filter((t) => ($t[t] || {}).priv);
             let e =
-              '<div class="pv-note" style="margin:10px 14px">📁 כאן מוסיפים <b>ספרים פרטיים משלכם</b> – מדביקים טקסט או בוחרים קובץ (Word, ‏PDF או טקסט). הספר נכנס לספרייה בלשונית "הספרים שלי", ועובדים בו <b>כל האפשרויות</b>: חיפוש, דיבורים נבחרים, קריאה ברצף, סימניות, הערות, נעצים, שיתוף, הדפסה ועימוד קונטרס.<br>🔒 הספרים נשמרים <b>רק במכשיר הזה</b> ואינם נשלחים לשום מקום. מומלץ לשמור גיבוי (כפתור למטה).</div><div style="padding:4px 14px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn pri" id="mbAdd" style="flex:1">➕ הוסף ספר</button></div>';
+              '<div class="pv-note" style="margin:10px 14px">📁 כאן מוסיפים <b>ספרים פרטיים משלכם</b> – מדביקים טקסט, בוחרים קובץ (Word, ‏PDF או טקסט), או <b>מצלמים דפים מודפסים 📷</b>. הספר נכנס לספרייה בלשונית "הספרים שלי", ועובדים בו <b>כל האפשרויות</b>: חיפוש, דיבורים נבחרים, קריאה ברצף, סימניות, הערות, נעצים, שיתוף, הדפסה ועימוד קונטרס.<br>🔒 הספרים נשמרים <b>רק במכשיר הזה</b> ואינם נשלחים לשום מקום. מומלץ לשמור גיבוי (כפתור למטה).</div><div style="padding:4px 14px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn pri" id="mbAdd" style="flex:1">➕ הוסף ספר</button></div>';
             t.length
               ? (e += t
                   .map((t) => {
@@ -17181,7 +17181,7 @@ function doGet(e){
             (e.onclick = () =>
               (function () {
                 const t = Ut(
-                  '<h3>➕ הוספת ספר פרטי</h3><div class="field"><label>שם הספר</label><input id="mbT" type="text" placeholder="למשל: שיחות שרשמתי"></div><div class="field"><label>מחבר / תיאור (לא חובה)</label><input id="mbA" type="text"></div><div class="field"><label>תוכן הספר</label><button class="btn sm" id="mbFile">📄 בחירת קובץ (Word / PDF / טקסט)</button><input type="file" id="mbFileI" accept=".docx,.pdf,.txt,.md,text/plain,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" style="display:none"><div id="mbFileN" class="pv-note" style="display:none;margin:6px 0"></div><textarea id="mbTx" placeholder="או הדביקו כאן את הטקסט…&#10;&#10;טיפ: שורה שמתחילה ב-# היא כותרת פרק." style="min-height:150px"></textarea></div><div class="field"><label>חלוקה לפרקים</label><div class="seg" id="mbCh"><button data-v="auto" class="on">אוטומטית</button><button data-v="hash">רק לפי # / כותרות</button><button data-v="none">בלי פרקים</button></div></div><label class="zm-chk"><input type="checkbox" id="mbNum" checked> מספור קטעים באותיות (א, ב, ג…)</label><div class="pv-note" id="mbPrev" style="margin:8px 0">—</div><div class="row2"><button class="btn pri" id="mbSave">💾 שמור והוסף לספרייה</button><button class="btn" id="mbCancel">ביטול</button></div>',
+                  '<h3>➕ הוספת ספר פרטי</h3><div class="field"><label>שם הספר</label><input id="mbT" type="text" placeholder="למשל: שיחות שרשמתי"></div><div class="field"><label>מחבר / תיאור (לא חובה)</label><input id="mbA" type="text"></div><div class="field"><label>תוכן הספר</label><div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn sm" id="mbFile">📄 בחירת קובץ (Word / PDF / טקסט)</button><button class="btn sm" id="mbScan">📷 צילום / תמונות של דפים</button></div><input type="file" id="mbScanI" accept="image/*" multiple style="display:none"><input type="file" id="mbScanC" accept="image/*" capture="environment" style="display:none"><div id="mbScanBox" style="display:none"></div><input type="file" id="mbFileI" accept=".docx,.pdf,.txt,.md,text/plain,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" style="display:none"><div id="mbFileN" class="pv-note" style="display:none;margin:6px 0"></div><textarea id="mbTx" placeholder="או הדביקו כאן את הטקסט…&#10;&#10;טיפ: שורה שמתחילה ב-# היא כותרת פרק." style="min-height:150px"></textarea></div><div class="field"><label>חלוקה לפרקים</label><div class="seg" id="mbCh"><button data-v="auto" class="on">אוטומטית</button><button data-v="hash">רק לפי # / כותרות</button><button data-v="none">בלי פרקים</button></div></div><label class="zm-chk"><input type="checkbox" id="mbNum" checked> מספור קטעים באותיות (א, ב, ג…)</label><div class="pv-note" id="mbPrev" style="margin:8px 0">—</div><div class="row2"><button class="btn pri" id="mbSave">💾 שמור והוסף לספרייה</button><button class="btn" id="mbCancel">ביטול</button></div>',
                 );
                 let e = null,
                   i = "auto";
@@ -17285,6 +17285,31 @@ function doGet(e){
                       }),
                   ),
                   (l("#mbFile", t).onclick = () => l("#mbFileI", t).click()),
+                  (l("#mbScan", t).onclick = () => {
+                    const B = l("#mbScanBox", t);
+                    if ("none" !== B.style.display) return void (B.style.display = "none");
+                    ((B.innerHTML = ocrIntroHtml()), (B.style.display = ""));
+                    const go = (id) => {
+                      const v = l("#ocrK", B).value.trim();
+                      if (v && !/^[A-Za-z0-9_\-]{20,}$/.test(v)) return st("המפתח לא נראה תקין", 2500);
+                      (s.set("gemKey", v), (B.style.display = "none"), l(id, t).click());
+                    };
+                    ((l("#ocrGo", B).onclick = () => go("#mbScanI")), (l("#ocrCam", B).onclick = () => go("#mbScanC")));
+                  }),
+                  ["#mbScanI", "#mbScanC"].forEach((id) => (l(id, t).onchange = async () => {
+                    const F = [...(l(id, t).files || [])];
+                    if (((l(id, t).value = ""), !F.length)) return;
+                    const c = l("#mbFileN", t),
+                      X = l("#mbTx", t);
+                    c.style.display = "";
+                    try {
+                      const out = await ocrPages(F, (m) => (c.textContent = m));
+                      ((X.value = (X.value.trim() ? X.value.trim() + "\n\n" : "") + out), (e = null), r());
+                      c.innerHTML = (1 === F.length ? "✅ נסרק עמוד אחד" : "✅ נסרקו " + F.length + " עמודים") + " – <b>עברו על הטקסט ותקנו טעויות</b> לפני השמירה" + (ocrKey() ? "" : " (הסריקה בטלפון עלולה להחליף אותיות דומות)");
+                    } catch (x) {
+                      c.textContent = "❌ " + (x.message || x);
+                    }
+                  })),
                   (l("#mbFileI", t).onchange = async () => {
                     const i = l("#mbFileI", t).files[0];
                     if (!i) return;
@@ -22527,6 +22552,7 @@ function doGet(e){
   const rr = {
     v: "2026-11-17b",
     items: [
+      ["2026-11-22", "📷", "סריקת דפים לספרים שלי", "באזור שלי ← הספרים שלי ← ➕ ספר חדש ← \"📷 צילום / תמונות של דפים\": מצלמים דף מודפס והטקסט נכנס לספר. זיהוי בטלפון בחינם, או זיהוי מדויק (כולל ניקוד) עם מפתח Gemini אישי."],
       ["2026-11-22", "🕯️", "ההקדשות גם בתוך הספרים", "פס ההקדשות רץ עכשיו גם בזמן הקריאה בספר – כל זמן שיש הקדשות פעילות (לעילוי נשמת, לרפואה ועוד)."],
       ["2026-11-22", "🔐", "הקדשות – כניסת עורך מהטופס", "לעורך בלבד: 5 נגיעות מהירות על הנר 🕯️ שבראש טופס ההקדשה → קוד → השמות נכנסים מיד לפס, בלי תשלום."],
       ["2026-11-22", "✦", "פסוק ← ליקוטי הלכות", "גם ליקוטי הלכות: ליד כל פסוק בתנ״ך שמוהרנ״ת מבאר יש תגית כחולה \"✦ ליקוטי הלכות\" – נגיעה פותחת את המקור, או רשימה לבחירה כשיש כמה מקומות."],
@@ -23793,6 +23819,94 @@ function doGet(e){
       l("#qtNow", w) && (l("#qtNow", w).onclick = () => (Wt(), qtOff(!0))));
   }
   window.__qtSheet = qtSheet;
+
+  // ===== 📷 סריקת דפים מודפסים מתמונות → טקסט (לספרים שלי) =====
+  // בלי מפתח: זיהוי בטלפון (Tesseract, חינם). עם מפתח Gemini אישי: זיהוי מדויק כולל ניקוד – המשתמש משלם לעצמו
+  const ocrKey = () => s.get("gemKey", "");
+  const ocrIntroHtml = () =>
+    '<div class="pv-note" style="margin:8px 0;line-height:1.7">📷 מצלמים דף מודפס (או בוחרים כמה תמונות), והטקסט נכנס לספר. אחר כך עוברים ומתקנים.<br>💡 אור טוב, הדף ישר וממלא את התמונה, בלי צל.</div>' +
+    '<div class="qt-opts"><div class="qt-o" style="cursor:default"><b>📱 זיהוי בטלפון – חינם</b><small>בלי הרשמה. טוב לטקסט רגיל; בניקוד ובאותיות דומות (ע/נ, ז/ת) יש טעויות. צריך אינטרנט בפעם הראשונה.</small></div>' +
+    '<div class="qt-o" style="cursor:default"><b>✨ זיהוי מדויק עם Gemini – מפתח אישי (לא חובה)</b><small>מדויק מאוד, גם ניקוד ודפים מסובכים. המפתח שלכם – והחיוב (אם יש) אצלכם מול גוגל; לרוב יש מכסה חינמית.</small>' +
+    '<input id="ocrK" dir="ltr" placeholder="מפתח Gemini (AIza…) – השאירו ריק לזיהוי בטלפון" value="' + o(ocrKey()) + '" style="width:100%;margin-top:6px"><small>מקבלים מפתח ב־aistudio.google.com/apikey · נשמר רק במכשיר הזה</small></div></div>' +
+    '<div class="row2"><button class="btn pri" id="ocrCam">📸 צילום עכשיו</button><button class="btn pri" id="ocrGo">🖼️ מהגלריה (כמה דפים)</button></div>';
+  async function ocrImg(f) {
+    // הקטנה ושחור-לבן לפני הזיהוי (מהיר יותר ומדויק יותר)
+    const u = URL.createObjectURL(f);
+    try {
+      const im = await new Promise((ok, no) => {
+        const i = new Image();
+        ((i.onload = () => ok(i)), (i.onerror = () => no(new Error("לא הצלחתי לפתוח את התמונה"))), (i.src = u));
+      });
+      const M = 2400,
+        k = Math.min(1, M / Math.max(im.width, im.height)),
+        c = document.createElement("canvas");
+      ((c.width = Math.round(im.width * k)), (c.height = Math.round(im.height * k)));
+      const x = c.getContext("2d");
+      ((x.filter = "grayscale(1) contrast(1.15)"), x.drawImage(im, 0, 0, c.width, c.height));
+      return c;
+    } finally {
+      URL.revokeObjectURL(u);
+    }
+  }
+  const ocrJoin = (t) =>
+    String(t || "")
+      .replace(/\r/g, "")
+      .split(/\n\s*\n+/)
+      .map((p) => p.split("\n").map((l) => l.trim()).filter(Boolean).join(" ").replace(/-\s+(?=[א-ת])/g, ""))
+      .filter(Boolean)
+      .join("\n\n");
+  let ocrW = null;
+  async function ocrTess(cv, msg) {
+    if (!window.Tesseract)
+      await new Promise((ok, no) => {
+        const sc = document.createElement("script");
+        ((sc.src = "https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js"), (sc.onload = ok), (sc.onerror = () => no(new Error("אין חיבור לאינטרנט – בפעם הראשונה צריך אינטרנט כדי לטעון את מנוע הזיהוי"))), document.head.appendChild(sc));
+      });
+    ocrW ||
+      (msg("⏳ טוען את מנוע הזיהוי העברי (פעם ראשונה – כמה שניות)…"),
+      (ocrW = await window.Tesseract.createWorker("heb", 1, { langPath: "https://cdn.jsdelivr.net/npm/@tesseract.js-data/heb@1.0.0/4.0.0_best_int" })));
+    const r = await ocrW.recognize(cv);
+    return ocrJoin(r.data.text);
+  }
+  async function ocrGem(cv) {
+    const b64 = cv.toDataURL("image/jpeg", 0.9).split(",")[1],
+      body = JSON.stringify({
+        contents: [
+          {
+            parts: [
+              { text: "Transcribe ALL the Hebrew text in this image of a printed page EXACTLY as printed, letter by letter, including niqqud (vowel points) where they appear. Keep the reading order (right column before left column if there are columns). Separate paragraphs with a blank line. Put '# ' before a heading line. Do not translate, summarize, fix or add anything. Omit page numbers and running headers. Output only the text." },
+              { inline_data: { mime_type: "image/jpeg", data: b64 } },
+            ],
+          },
+        ],
+        generationConfig: { temperature: 0 },
+      });
+    let last = "";
+    for (const md of ["gemini-2.5-flash", "gemini-flash-latest"]) {
+      const r = await fetch("https://generativelanguage.googleapis.com/v1beta/models/" + md + ":generateContent?key=" + encodeURIComponent(ocrKey()), { method: "POST", headers: { "Content-Type": "application/json" }, body });
+      if (404 === r.status) continue;
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) {
+        last = (j.error && j.error.message) || "שגיאה " + r.status;
+        if (400 === r.status || 403 === r.status) throw new Error("המפתח של Gemini לא תקין או חסום: " + last);
+        if (429 === r.status) throw new Error("נגמרה המכסה של המפתח לעכשיו – נסו שוב מאוחר יותר");
+        continue;
+      }
+      const t = (((j.candidates || [])[0] || {}).content || {}).parts || [];
+      return t.map((p) => p.text || "").join("").trim().replace(/^```\w*\n?|```$/g, "");
+    }
+    throw new Error(last || "Gemini לא זמין");
+  }
+  async function ocrPages(F, msg) {
+    const out = [];
+    for (let i = 0; i < F.length; i++) {
+      msg("⏳ סורק עמוד " + (i + 1) + " מתוך " + F.length + "…");
+      const cv = await ocrImg(F[i]);
+      out.push(ocrKey() ? await ocrGem(cv) : await ocrTess(cv, msg));
+    }
+    return out.filter(Boolean).join("\n\n");
+  }
+  window.__ocr = { join: ocrJoin, pages: ocrPages };
 
   // ===== 📖 פסוק בתנ"ך ← המקומות בליקוטי מוהר"ן שמבארים אותו (מתוך "תנ"ך ליקוטי מוהר"ן") =====
   const TLM = { t: 0 },
