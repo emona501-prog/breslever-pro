@@ -22524,6 +22524,7 @@ function doGet(e){
   const rr = {
     v: "2026-11-17b",
     items: [
+      ["2026-11-22", "🔐", "הקדשות – כניסת עורך מהטופס", "לעורך בלבד: 5 נגיעות מהירות על הנר 🕯️ שבראש טופס ההקדשה → קוד → השמות נכנסים מיד לפס, בלי תשלום."],
       ["2026-11-22", "✦", "פסוק ← ליקוטי הלכות", "גם ליקוטי הלכות: ליד כל פסוק בתנ״ך שמוהרנ״ת מבאר יש תגית כחולה \"✦ ליקוטי הלכות\" – נגיעה פותחת את המקור, או רשימה לבחירה כשיש כמה מקומות."],
       ["2026-11-22", "✦", "פסוק ← ליקוטי מוהר״ן", "בתנ״ך, ליד כל פסוק שרבנו מבאר בליקוטי מוהר״ן, יש סימן זהוב \"✦ ליקוטי מוהר״ן\". נגיעה בו פותחת ישר את התורה; ואם יש כמה מקומות – נפתחת רשימה עם הלשון המובאת מכל מקום, ובוחרים."],
       ["2026-11-22", "🤫", "שקט בזמן תפילה", "כשנכנסים לסידור, לברכת המזון או לתיקון הכללי – הבוט שואל אם להעביר את הטלפון לרטט. אפשר גם השתקה מלאה או מצב טיסה. כשיוצאים מהתפילה או מהאפליקציה – הצליל חוזר לקדמותו לבד (באפליקציה לאנדרואיד). הגדרות: ⚙️ ← \"שקט בזמן תפילה\"."],
@@ -23533,7 +23534,7 @@ function doGet(e){
   }
   setTimeout(() => {
     const el = l("#hkTick");
-    el && ((el.onclick = () => hkForm()), s.get("ghTok", "") && lp3(el, hkQuick), hkTick());
+    el && ((el.onclick = () => hkForm()), lp3(el, () => hkQuick()), hkTick());
   }, 2e3);
   window.__hkParse = hkParse;
   window.__hkTick = hkTick;
@@ -23591,6 +23592,29 @@ function doGet(e){
           (S.r = r),
           (S.sum = sum));
       };
+    // 🔐 כניסת עורך נסתרת: 5 נגיעות מהירות על הנר 🕯️ שבראש הטופס → קוד → פרסום מיד, בלי תשלום
+    let tp = 0,
+      tt = 0;
+    l(".hk-hd", w).onclick = () => {
+      if ((clearTimeout(tt), (tt = setTimeout(() => (tp = 0), 1500)), ++tp < 5)) return;
+      tp = 0;
+      const pre = { t: S.t, n: hkParse(l("#hkN", w).value, S.ans).P.map((p) => p.n), p: S.p };
+      (Wt(),
+        setTimeout(
+          () =>
+            hkQuick(() =>
+              hkEdit(pre, async (h) => {
+                st("מפרסם…", 2e3);
+                try {
+                  (await hkMod((i) => i.hk.push(h), "🕯️ הקדשה: " + h.n.join(", ")), st("✅ ההקדשה עלתה לכולם", 3e3));
+                } catch (e) {
+                  st("❌ " + (e.message || e), 5e3);
+                }
+              }),
+            ),
+          250,
+        ));
+    };
     (l("#hkN", w).addEventListener("input", R),
       [["#hkTy", "t"], ["#hkPer", "p"]].forEach(([id, k]) =>
         a(id + " button", w).forEach(
@@ -23907,12 +23931,11 @@ function doGet(e){
       }, 600);
   });
   // ✏️ כניסה מהירה לניהול ההקדשות: לחיצה ארוכה (3 שניות) על הפס – רק במכשיר שיש בו מפתח הגיטהאב של העורך
-  function hkQuick() {
-    if (!s.get("ghTok", "")) return;
-    const open = () => {
+  function hkQuick(after) {
+    const open = after || (() => {
       const w = Ut('<h3>🕯️ ניהול הקדשות</h3><div id="hkQ"></div>');
       ((l("#hkQ", w).innerHTML = hkAdmHtml()), hkAdmBind(l("#hkQ", w)));
-    };
+    });
     if (Tf.on) return open();
     const w = Ut('<h3>🔐 ניהול הקדשות</h3><input id="hkPin" type="password" inputmode="numeric" placeholder="קוד" style="width:100%;font-size:22px;text-align:center;letter-spacing:6px"><button class="btn pri" id="hkPinGo" style="width:100%;margin-top:8px">כניסה</button>'),
       I = l("#hkPin", w),
@@ -23928,8 +23951,19 @@ function doGet(e){
   }
   // ----- ניהול (רק אצל העורך, עם מפתח הגיטהאב) -----
   async function hkMod(fn, msg) {
-    const e = await Gd("contents/" + Rd),
-      i = JSON.parse(Qd(e.content)),
+    if (!s.get("ghTok", "")) {
+      const k = (window.prompt("פעם אחת בטלפון הזה: הדבק כאן את מפתח הגיטהאב (github_pat_…). הוא נשמר רק במכשיר שלך.") || "").trim();
+      if (!k) throw new Error("בלי מפתח גישה אי אפשר לפרסם");
+      s.set("ghTok", k);
+    }
+    let e;
+    try {
+      e = await Gd("contents/" + Rd);
+    } catch (x) {
+      if (/^40[13]/.test(x.message || "")) (s.set("ghTok", ""), (x = new Error("מפתח הגיטהאב לא תקין – נסו שוב עם מפתח חדש")));
+      throw x;
+    }
+    const i = JSON.parse(Qd(e.content)),
       now = Date.now();
     ((i.hk = (i.hk || []).filter((h) => h && h.u > now)), fn(i), await Gd("contents/" + Rd, { method: "PUT", body: JSON.stringify({ message: msg, content: Vd(JSON.stringify(i)), sha: e.sha }) }));
     const c = s.get("live", {}) || {};
