@@ -4,6 +4,13 @@ import android.appwidget.AppWidgetManager;
 import android.content.ComponentName;
 import android.content.Context;
 import android.os.Build;
+import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.util.Base64;
+import androidx.core.content.pm.ShortcutInfoCompat;
+import androidx.core.content.pm.ShortcutManagerCompat;
+import androidx.core.graphics.drawable.IconCompat;
 
 import com.getcapacitor.JSObject;
 import android.content.SharedPreferences;
@@ -44,6 +51,32 @@ public class WidgetBridgePlugin extends Plugin {
         try {
             AppWidgetManager mgr = AppWidgetManager.getInstance(ctx);
             if (Build.VERSION.SDK_INT >= 26 && mgr.isRequestPinAppWidgetSupported()) ok = mgr.requestPinAppWidget(new ComponentName(ctx, BpWidget.class), null, null);
+        } catch (Exception e) { ok = false; }
+        r.put("ok", ok);
+        call.resolve(r);
+    }
+
+    /** 📲 קיצור דרך במסך הבית: אייקון שפותח ישר מקום מסוים באפליקציה (הטלפון מציג חלון אישור) */
+    @PluginMethod
+    public void pinShortcut(PluginCall call) {
+        Context ctx = getContext(); JSObject r = new JSObject();
+        boolean ok = false;
+        try {
+            String id = call.getString("id", "sc"), label = call.getString("label", "ברסלב PRO"), act = call.getString("act", ""), icon = call.getString("icon", "");
+            if (act.matches("[a-z:0-9]+") && ShortcutManagerCompat.isRequestPinShortcutSupported(ctx)) {
+                Intent it = new Intent(ctx, MainActivity.class);
+                it.setAction("bp.w." + act);
+                it.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                IconCompat ic = null;
+                if (icon != null && !icon.isEmpty()) {
+                    byte[] b = Base64.decode(icon, Base64.DEFAULT);
+                    Bitmap bm = BitmapFactory.decodeByteArray(b, 0, b.length);
+                    if (bm != null) ic = IconCompat.createWithBitmap(bm);
+                }
+                if (ic == null) ic = IconCompat.createWithResource(ctx, R.mipmap.ic_launcher);
+                ShortcutInfoCompat si = new ShortcutInfoCompat.Builder(ctx, id).setShortLabel(label).setLongLabel(label).setIcon(ic).setIntent(it).build();
+                ok = ShortcutManagerCompat.requestPinShortcut(ctx, si, null);
+            }
         } catch (Exception e) { ok = false; }
         r.put("ok", ok);
         call.resolve(r);

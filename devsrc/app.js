@@ -15732,8 +15732,57 @@ function doGet(e){
       }, 250));
   }
   window.__selfRem = selfRem;
-  function Xl(ov) {
-    const t = ov || (function () {
+  // 📲 קיצור דרך במסך הבית: אייקון שפותח ישר את הדף הזה (ספר, פרק, תפילה, ברכת המזון…)
+  const scHex = (t) => Array.from(new TextEncoder().encode(t)).map((b) => b.toString(16).padStart(2, "0")).join(""),
+    scUnhex = (h) => new TextDecoder().decode(new Uint8Array((h.match(/../g) || []).map((b) => parseInt(b, 16))));
+  function scIcon(lbl) {
+    try {
+      const c = document.createElement("canvas");
+      ((c.width = c.height = 192));
+      const x = c.getContext("2d"),
+        g = x.createLinearGradient(0, 0, 192, 192);
+      (g.addColorStop(0, "#1d2a4a"), g.addColorStop(1, "#33466f"), (x.fillStyle = g), x.beginPath(), x.arc(96, 96, 96, 0, 7), x.fill());
+      ((x.strokeStyle = "#d9b45a"), (x.lineWidth = 7), x.beginPath(), x.arc(96, 96, 88, 0, 7), x.stroke());
+      const w = String(lbl || "").replace(/[\u0591-\u05C7"'״׳]/g, "").trim().split(/\s+/).filter(Boolean),
+        t = w.length > 1 ? w[0][0] + w[1][0] : (w[0] || "ב").slice(0, 2);
+      ((x.fillStyle = "#f3d98c"), (x.font = "bold 84px 'Frank Ruhl Libre', serif"), (x.textAlign = "center"), (x.textBaseline = "middle"), (x.direction = "rtl"), x.fillText(t, 96, 102));
+      return c.toDataURL("image/png").split(",")[1];
+    } catch (t) {
+      return "";
+    }
+  }
+  function scPin() {
+    const t = pgTgt(),
+      parts = String(t.lbl || "").split(" · "),
+      def = (parts[parts.length - 1] || BOOK.title).replace(/[\u0591-\u05C7]/g, "").slice(0, 24),
+      w = Ut(
+        '<h3>📲 קיצור דרך במסך הבית</h3><div class="sh-sub">📍 ' + o(t.lbl) + "</div>" +
+          hi("נוסף אייקון למסך הבית של הטלפון. לחיצה עליו פותחת ישר את המקום הזה באפליקציה – ספר, פרק, תפילה, ברכת המזון, תיקון חצות או כל דף אחר.") +
+          '<div class="field"><label>השם מתחת לאייקון</label><input id="scLbl" maxlength="24" value="' + o(def) + '"></div><div style="text-align:center;margin:6px 0"><img id="scPrev" width="72" height="72" alt=""></div>' +
+          '<button class="btn pri" id="scGo" style="width:100%">📲 הוספה למסך הבית</button>',
+      ),
+      I = l("#scLbl", w),
+      pv = () => {
+        const b = scIcon(I.value);
+        b && (l("#scPrev", w).src = "data:image/png;base64," + b);
+      };
+    ((I.oninput = pv),
+      pv(),
+      (l("#scGo", w).onclick = async () => {
+        const lbl = I.value.trim() || def;
+        if (!NAT.on)
+          return void Ut('<h3>📲 קיצור דרך במסך הבית</h3><div class="sh-sub" style="line-height:1.7">האפשרות הזו עובדת באפליקציה לאנדרואיד: האייקון נוסף למסך הבית ופותח ישר את הדף.<br><br>באייפון ובדפדפן אפשר להוסיף את הדף ל"חדר הפרטי" (בכפתור הצף ✦ ← 🚪), והוא יחכה לכם בלשונית הראשונה.</div>');
+        const P = NAT.P("WidgetBridge");
+        try {
+          const r = await P.pinShortcut({ id: "sc" + scHex(JSON.stringify(t.nav)).slice(0, 60), label: lbl, act: "nv:" + scHex(JSON.stringify(t.nav)), icon: scIcon(lbl) });
+          r && r.ok ? (Wt(), st("✅ אשרו בחלון שנפתח – והאייקון יופיע במסך הבית", 4e3)) : st("הטלפון הזה לא מאפשר להוסיף קיצור דרך", 3500);
+        } catch (e) {
+          st("כדי להוסיף קיצור דרך צריך לעדכן את האפליקציה לגרסה האחרונה", 4e3);
+        }
+      }));
+  }
+  // 📍 המקום הנוכחי באפליקציה (לתזכורת לדף / לקיצור דרך במסך הבית)
+  function pgTgt() {
         let t = { v: Bt.v, p: Object.assign({}, Bt.p || {}) };
         delete t.p.keep;
         let e = "";
@@ -15773,7 +15822,9 @@ function doGet(e){
               }[Bt.v] || "הדף הזה"),
           { nav: t, lbl: e }
         );
-      })(),
+  }
+  function Xl(ov) {
+    const t = ov || pgTgt(),
       e = new Date(Date.now() + 36e5),
       i = (t) => String(t).padStart(2, "0"),
       c = e.getFullYear() + "-" + i(e.getMonth() + 1) + "-" + i(e.getDate()),
@@ -22465,6 +22516,7 @@ function doGet(e){
   const rr = {
     v: "2026-11-17b",
     items: [
+      ["2026-11-22", "📲", "קיצור דרך במסך הבית", "פותחים ספר, פרק או תפילה (ברכת המזון, תיקון חצות – כל דף), לוחצים על הכפתור הצף ✦ ← \"קיצור דרך במסך הבית\" – ונוסף אייקון למסך הבית של הטלפון שפותח ישר את הדף הזה (באפליקציה לאנדרואיד)."],
       ["2026-11-22", "🕯️", "הקדשת הלימוד באפליקציה", "פס חדש בתחתית המסך עם הקדשות – לרפואה, לעילוי נשמת, להצלחה, לזיווג ועוד. לוחצים על הפס, כותבים את השמות, בוחרים יום / שבוע / חודש – והשמות ירוצו אצל כל הלומדים. אפשר לכבות את ההזמנה להקדשה בהגדרות הדיבורים 💎."],
       ["2026-11-21", "📜", "ליקוטי פסוקים לפי סדר התורות – בראש הספר", "בספר \"תנ\"ך ליקוטי מוהר\"ן\" החלק \"לפי סדר התורות\" (כל הפסוקים שרבנו מבאר בכל תורה, חלק א׳ וחלק ב׳) עבר לראש הספר עם כותרת, במקום להיות בסוף אחרי כל הפרשיות."],
       ["2026-11-20", "🕯️", "הדלקת נרות: 20 או 40 דקות", "ברירת המחדל היא עכשיו 20 דקות לפני השקיעה בכל הערים. בירושלים מוצג גם הזמן של מנהג ירושלים (40 דקות). מי שנוהג להחמיר בוחר 40 דקות בזמני היום ← ⚙️ ← \"הדלקת נרות – דקות לפני השקיעה\"."],
@@ -23428,6 +23480,8 @@ function doGet(e){
     ["zk", "לזרע של קיימא ל", "👶", "לזרע של קיימא"],
     ["pr", "לפרנסה טובה ל", "💰", "לפרנסה"],
   ];
+  // נוסח חופשי – רק לעורך (הטקסט מוצג בדיוק כמו שנכתב)
+  const HK_FREE = ["fr", "", "✍️", "נוסח חופשי"];
   // מחיר לכל שם
   const HK_PER = [
     ["d", "יום אחד", 18, 1, "24 שעות"],
@@ -23441,6 +23495,7 @@ function doGet(e){
     return (hkLive().hk || []).filter((h) => h && h.u > now && (h.s || 0) <= now + 6e4 && Array.isArray(h.n) && h.n.length);
   };
   function hkLine(h) {
+    if ("fr" === h.t) return h.n.join(" · ");
     const T = HK_TY.find((t) => t[0] === h.t) || HK_TY[0],
       j = h.n.join(", ");
     return T[1] + (/ ל$/.test(T[1]) ? "" : " ") + j;
@@ -23589,25 +23644,64 @@ function doGet(e){
     const c = s.get("live", {}) || {};
     ((c.hk = i.hk), (c.hkPay = i.hkPay), s.set("live", c), hkTick());
   }
-  const hkNew = (t, n, p) => {
+  const hkNew = (t, n, p, days) => {
     const per = HK_PER.find((x) => x[0] === p) || HK_PER[0],
       now = Date.now();
-    return { id: now.toString(36) + Math.random().toString(36).slice(2, 5), t, n, s: now, u: now + per[3] * 864e5 };
+    return { id: now.toString(36) + Math.random().toString(36).slice(2, 5), t, n, s: now, u: now + (days || per[3]) * 864e5 };
   };
+  // ✏️ עריכה מלאה אצל העורך: מטרה, שמות (כל שורה = שם, בדיוק כמו שנכתב, בלי הגבלה), ומשך
+  function hkEdit(h, onSave) {
+    const ty = HK_TY.concat([HK_FREE]),
+      left = h && h.u ? Math.max(0, Math.round(((h.u - Date.now()) / 864e5) * 10) / 10) : 0,
+      w = Ut(
+        "<h3>" + (h && h.id ? "✏️ עריכת הקדשה" : "🕯️ הקדשה – עריכה ופרסום") + "</h3>" +
+          '<div class="field"><label>מטרה</label><select id="hkET" style="width:100%">' +
+          ty.map((t) => '<option value="' + t[0] + '"' + (h && h.t === t[0] ? " selected" : "") + ">" + t[2] + " " + t[3] + (t[1] ? " (" + t[1].trim() + "…)" : "") + "</option>").join("") +
+          "</select></div>" +
+          '<div class="field"><label>שמות – כל שורה מוצגת בדיוק כמו שנכתבה</label><textarea id="hkEN" rows="6" style="width:100%">' + o(((h && h.n) || []).join("\n")) + "</textarea></div>" +
+          '<div class="field"><label>משך</label><select id="hkEP" style="width:100%">' +
+          (h && h.id ? '<option value="keep">להשאיר כמו שהוא (נשארו ' + left + " ימים)</option>" : "") +
+          HK_PER.map((t) => '<option value="' + t[0] + '"' + (h && !h.id && h.p === t[0] ? " selected" : "") + ">" + t[1] + " מעכשיו (" + t[4] + ")</option>").join("") +
+          '<option value="x">מספר ימים אחר…</option><option value="inf">ללא הגבלת זמן (עד שמורידים)</option></select>' +
+          '<input id="hkED" type="number" min="1" max="3650" placeholder="כמה ימים" style="width:100%;margin-top:6px;display:none"></div>' +
+          '<div class="sh-sub" id="hkEPrev"></div><button class="btn pri" id="hkES" style="width:100%">📤 שמירה ופרסום לכולם</button>',
+      ),
+      P = l("#hkEP", w),
+      D = l("#hkED", w),
+      prev = () => {
+        const n = l("#hkEN", w).value.split("\n").map((t) => t.trim()).filter(Boolean);
+        l("#hkEPrev", w).textContent = n.length ? "בפס: " + hkLine({ t: l("#hkET", w).value, n }) : "";
+      };
+    ((P.onchange = () => (D.style.display = "x" === P.value ? "" : "none")),
+      (l("#hkEN", w).oninput = prev),
+      (l("#hkET", w).onchange = prev),
+      prev(),
+      (l("#hkES", w).onclick = () => {
+        const n = l("#hkEN", w).value.split("\n").map((t) => t.trim()).filter(Boolean);
+        if (!n.length) return st("כתבו לפחות שם אחד", 2e3);
+        const now = Date.now(),
+          v = P.value;
+        let u = h && h.u;
+        if ("inf" === v) u = now + 3650 * 864e5;
+        else if ("x" === v) {
+          const d = +D.value;
+          if (!(d > 0)) return st("כתבו מספר ימים", 2e3);
+          u = now + d * 864e5;
+        } else if ("keep" !== v) u = now + (HK_PER.find((x) => x[0] === v) || HK_PER[0])[3] * 864e5;
+        const e = { id: (h && h.id) || now.toString(36) + Math.random().toString(36).slice(2, 5), t: l("#hkET", w).value, n, s: (h && h.id && h.s) || now, u };
+        (Wt(), onSave(e));
+      }));
+  }
   function hkAdmHtml() {
     const A = hkActive(),
       P = hkLive().hkPay || {};
     return (
       '<div class="sh-sub">ההקדשות רצות בפס בתחתית המסך אצל כולם. בקשות שמשתמשים שולחים מגיעות אליך בוואטסאפ' + (inboxUrl() ? " ובתיבת הרעיונות" : "") + ". אחרי שהתשלום מגיע – מאשרים כאן, וזה עולה לכולם.</div>" +
       (A.length
-        ? A.map((h) => '<div class="prl-mine"><span>' + o(hkLine(h)) + "<small> · עד " + new Date(h.u).toLocaleString("he-IL", { day: "numeric", month: "numeric", hour: "2-digit", minute: "2-digit" }) + '</small></span><button class="btn sm" data-hkx="' + o(h.id) + '">✕</button></div>').join("")
+        ? A.map((h) => '<div class="prl-mine"><span>' + o(hkLine(h)) + "<small> · עד " + new Date(h.u).toLocaleString("he-IL", { day: "numeric", month: "numeric", hour: "2-digit", minute: "2-digit" }) + '</small></span><button class="btn sm" data-hke="' + o(h.id) + '">✏️</button><button class="btn sm" data-hkx="' + o(h.id) + '">✕</button></div>').join("")
         : '<div class="sh-sub">אין עכשיו הקדשות פעילות.</div>') +
       (inboxUrl() ? '<button class="btn sm" id="hkLoad" style="margin:8px 0">📥 בקשות שממתינות לאישור</button><div id="hkReq"></div>' : "") +
-      '<details style="margin-top:8px"><summary><b>➕ הוספת הקדשה ידנית</b> (למשל כשמישהו שילם בוואטסאפ)</summary>' +
-      '<select id="hkAT" style="width:100%;margin:6px 0">' + HK_TY.map((t) => '<option value="' + t[0] + '">' + t[2] + " " + t[3] + "</option>").join("") + "</select>" +
-      '<textarea id="hkAN" rows="3" style="width:100%" placeholder="שם בן/בת שם האם – כל שם בשורה"></textarea>' +
-      '<select id="hkAP" style="width:100%;margin:6px 0">' + HK_PER.map((t) => '<option value="' + t[0] + '">' + t[1] + " (" + t[4] + ")</option>").join("") + "</select>" +
-      '<button class="btn pri sm" id="hkAdd">📤 פרסום לכולם</button></details>' +
+      '<button class="btn pri sm" id="hkAdd" style="margin:8px 0">➕ הוספת הקדשה (בלי הגבלה – שמות, נוסח ומשך)</button>' +
       '<details style="margin-top:8px"><summary><b>💳 קישורי תשלום</b></summary><div class="sh-sub">קישור תשלום אישי מביט / פייבוקס. בלי קישור – המקדישים פונים אליך בוואטסאפ.</div>' +
       '<input id="hkBitIn" type="url" dir="ltr" placeholder="קישור ביט (https://…)" value="' + o(P.bit || "") + '" style="width:100%;margin:4px 0">' +
       '<input id="hkPbIn" type="url" dir="ltr" placeholder="קישור פייבוקס (https://…)" value="' + o(P.pb || "") + '" style="width:100%;margin:4px 0">' +
@@ -23630,11 +23724,14 @@ function doGet(e){
         }
       };
     (a("[data-hkx]", t).forEach((b) => (b.onclick = () => confirm("להוריד את ההקדשה מהפס?") && run(b, (i) => (i.hk = i.hk.filter((h) => h.id !== b.dataset.hkx)), "🕯️ הסרת הקדשה", "ההקדשה הוסרה"))),
-      (l("#hkAdd", t).onclick = (e) => {
-        const r = hkParse(l("#hkAN", t).value, {});
-        if (!r.units) return st("כתבו שמות", 2e3);
-        run(e.target, (i) => i.hk.push(hkNew(l("#hkAT", t).value, r.P.map((p) => p.n), l("#hkAP", t).value)), "🕯️ הקדשה חדשה", "✅ ההקדשה עלתה לכולם");
-      }),
+      (l("#hkAdd", t).onclick = (e) => hkEdit({ t: "rf", n: [], p: "d" }, (h) => run(e.target, (i) => i.hk.push(h), "🕯️ הקדשה חדשה", "✅ ההקדשה עלתה לכולם"))),
+      a("[data-hke]", t).forEach(
+        (b) =>
+          (b.onclick = () => {
+            const h = hkActive().find((h) => h.id === b.dataset.hke);
+            h && hkEdit(h, (e) => run(b, (i) => (i.hk = i.hk.filter((x) => x.id !== e.id).concat([e])), "🕯️ עריכת הקדשה", "✅ ההקדשה עודכנה אצל כולם"));
+          }),
+      ),
       (l("#hkPaySave", t).onclick = (e) => {
         const b = l("#hkBitIn", t).value.trim(),
           p = l("#hkPbIn", t).value.trim();
@@ -23661,7 +23758,7 @@ function doGet(e){
             })
             .filter(Boolean);
           ((c.innerHTML = R.length
-            ? R.map((q, i) => '<div class="ib-it"><p style="white-space:pre-line">' + o(hkReqTxt(q)) + '</p><div class="row2"><button class="btn pri sm" data-hka="' + i + '">✅ שולם – לפרסם</button><button class="btn sm" data-hkd="' + i + '">✕ לא לפרסם</button></div></div>').join("")
+            ? R.map((q, i) => '<div class="ib-it"><p style="white-space:pre-line">' + o(hkReqTxt(q)) + '</p><div class="row2"><button class="btn pri sm" data-hka="' + i + '">✅ שולם – לפרסם</button><button class="btn sm" data-hkr="' + i + '">✏️ לערוך ולפרסם</button><button class="btn sm" data-hkd="' + i + '">✕ לא לפרסם</button></div></div>').join("")
             : '<div class="sh-sub">אין בקשות שממתינות.</div>'),
             a("[data-hka]", c).forEach(
               (b) =>
@@ -23669,6 +23766,13 @@ function doGet(e){
                   const q = R[+b.dataset.hka];
                   (await run(b, (i) => i.hk.push(hkNew(q.t, q.n, q.p)), "🕯️ הקדשה: " + q.n.join(", "), "✅ ההקדשה עלתה לכולם"),
                     fetch(inboxUrl() + k + "&a=done&r=" + q.row).catch(() => {}));
+                }),
+            ),
+            a("[data-hkr]", c).forEach(
+              (b) =>
+                (b.onclick = () => {
+                  const q = R[+b.dataset.hkr];
+                  hkEdit({ t: q.t, n: q.n, p: q.p }, async (h) => (await run(b, (i) => i.hk.push(h), "🕯️ הקדשה: " + h.n.join(", "), "✅ ההקדשה עלתה לכולם"), fetch(inboxUrl() + k + "&a=done&r=" + q.row).catch(() => {})));
                 }),
             ),
             a("[data-hkd]", c).forEach((b) => (b.onclick = () => confirm("לסמן את הבקשה כטופלה בלי לפרסם?") && (fetch(inboxUrl() + k + "&a=done&r=" + R[+b.dataset.hkd].row).catch(() => {}), b.closest(".ib-it").remove()))));
@@ -28492,6 +28596,7 @@ function doGet(e){
                     }));
                 })(),
               "pgrem" === r && Xl(),
+              "pgsc" === r && scPin(),
               "room" === r && qe(Te()),
               "wpromo" === r && $d(!1),
               "upd" === r)
@@ -28517,6 +28622,7 @@ function doGet(e){
                     ["🎲", "פתיחה אקראית", 'פותח קטע אקראי מהספרים – "פתיחת ספר".'],
                     ["🖼️", "רקע לדף הזה", "רקע מיוחד רק לדף הנוכחי – נשמר לפעם הבאה."],
                     ["⏰", "קבע תזכורת לדף הזה", "תזכורת שתפתח בדיוק את הדף הזה – פעם אחת, כל יום או בימים שתבחרו."],
+                    ["📲", "קיצור דרך במסך הבית", "אייקון במסך הבית של הטלפון שפותח ישר את הדף הזה – ספר, פרק, תפילה, ברכת המזון, תיקון חצות…"],
                     ["🚪", "הוסף לחדר הפרטי", "מוסיף את הספר, החלק או הפרק שבו אתם נמצאים לחדר הפרטי – בלשונית הראשונה בספרייה."],
                     ["📱", "ווידג'ט למסך הבית", "הסבר על הווידג'ט והוספה שלו למסך הבית בלחיצה (באפליקציה)."],
                     ["📲", "בדיקת עדכון גרסה", "בודק אם יצאה גרסה חדשה של האפליקציה, ואם כן – מציע להוריד ולהתקין."],
@@ -29950,7 +30056,10 @@ function doGet(e){
         else if ("goals" === t) goalsOpen();
         else if ("haderech" === t) hdOpen();
         else if ("hal" === t) halOpen();
-        else if ("q:" === String(t).slice(0, 2)) {
+        else if ("nv:" === String(t).slice(0, 3)) {
+          const e = JSON.parse(scUnhex(String(t).slice(3)));
+          e && e.v && It(e.v, e.p || {});
+        } else if ("q:" === String(t).slice(0, 2)) {
           const e = String(t).slice(2);
           y[e] ? Ye(e) : It("random");
         } else if ("dir" === t) It("dir");
