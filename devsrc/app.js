@@ -1841,6 +1841,11 @@ function MAIN(t) {
     } catch (t) {}
     a(".view").forEach((t) => t.classList.remove("active"));
     document.body.dataset.v = t;
+    setTimeout(() => {
+      try {
+        qtCheck();
+      } catch (t) {}
+    }, 450);
     (document.getElementById(jt[t]).classList.add("active"),
       a("#tabbar button").forEach((e) => e.classList.toggle("on", e.dataset.tab === Nt[t])),
       "reader" !== t && (document.body.classList.remove("clean"), (l("#progressLine").style.width = "0")));
@@ -22516,6 +22521,7 @@ function doGet(e){
   const rr = {
     v: "2026-11-17b",
     items: [
+      ["2026-11-22", "🤫", "שקט בזמן תפילה", "כשנכנסים לסידור, לברכת המזון או לתיקון הכללי – הבוט שואל אם להעביר את הטלפון לרטט. אפשר גם השתקה מלאה או מצב טיסה. כשיוצאים מהתפילה או מהאפליקציה – הצליל חוזר לקדמותו לבד (באפליקציה לאנדרואיד). הגדרות: ⚙️ ← \"שקט בזמן תפילה\"."],
       ["2026-11-22", "📤", "שיתוף דיבור מהווידג'ט", "בווידג'ט במסך הבית, מתחת לדיבור – כפתור \"📤 שתפו את הדיבור\". לחיצה פותחת את האפליקציה ישר בעיצוב לשיתוף ולסטטוס, עם כל הרקעים – ומשם לוואטסאפ ולרשתות."],
       ["2026-11-22", "📲", "קיצור דרך במסך הבית", "פותחים ספר, פרק או תפילה (ברכת המזון, תיקון חצות – כל דף), לוחצים על הכפתור הצף ✦ ← \"קיצור דרך במסך הבית\" – ונוסף אייקון למסך הבית של הטלפון שפותח ישר את הדף הזה (באפליקציה לאנדרואיד)."],
       ["2026-11-22", "🕯️", "הקדשת הלימוד באפליקציה", "פס חדש בתחתית המסך עם הקדשות – לרפואה, לעילוי נשמת, להצלחה, לזיווג ועוד. לוחצים על הפס, כותבים את השמות, בוחרים יום / שבוע / חודש – והשמות ירוצו אצל כל הלומדים. אפשר לכבות את ההזמנה להקדשה בהגדרות הדיבורים 💎."],
@@ -23643,6 +23649,151 @@ function doGet(e){
       }));
   }
   window.__hkForm = hkForm;
+
+  // ===== 🤫 שקט בזמן תפילה: בסידור, בברכת המזון ובתיקון הכללי – רטט / השתקה מלאה / מצב טיסה, וחזרה אוטומטית =====
+  const QT = { on: !1, mode: "", ask: !1, air: !1, back: !1 };
+  const qtCfg = () => Object.assign({ ask: !0, auto: !1, mode: "vibrate" }, s.get("qtCfg", {}) || {});
+  const qtP = () => (NAT.on ? NAT.P("Quiet") : null);
+  function qtWhere() {
+    try {
+      if ("tikkun" === Bt.v) return "לתיקון הכללי";
+      if ("birkat" === Bt.v) return "לברכת המזון";
+      let v = null;
+      if ("reader" === Bt.v && Bt.p && null != Bt.p.si && n[Bt.p.si]) v = +String(n[Bt.p.si].g).slice(1);
+      else if ("sec" === Bt.v && Bt.p && u[Bt.p.s]) v = +String(u[Bt.p.s].g).slice(1);
+      else if ("home" === Bt.v && null != ee && Bt.p && null != Bt.p.b) v = ee;
+      if (null != v && /^סידור/.test(m(VOLS[v] || ""))) return "לסידור";
+    } catch (t) {}
+    return "";
+  }
+  const QT_MODES = { vibrate: "📳 רטט", silent: "🔕 השתקה מלאה" };
+  async function qtGo(mode, quiet) {
+    const P = qtP();
+    if (!P) return;
+    try {
+      const r = await P.quiet({ mode });
+      if (r && r.ok) return ((QT.on = !0), (QT.mode = mode), (QT.back = !1), qtBub(null), void st((quiet ? "🤫 " : "") + ("silent" === mode ? "🔕 הטלפון מושתק" : "📳 הטלפון ברטט") + " – כשתצאו מהתפילה הצליל יחזור לקדמותו", 3500));
+      r && "dnd" === r.need ? qtNeedDnd() : st("לא הצלחתי לשנות את הצליל", 2500);
+    } catch (t) {
+      st("כדי להשתיק מתוך האפליקציה צריך לעדכן אותה לגרסה האחרונה", 3500);
+    }
+  }
+  async function qtOff(msg) {
+    const P = qtP();
+    if (!P || !QT.on) return;
+    QT.on = !1;
+    try {
+      await P.restore();
+    } catch (t) {}
+    msg && st("🔔 יצאתם מהתפילה – הצליל של הטלפון חזר לקדמותו. תפילתכם תתקבל ברצון 🙏", 4e3);
+  }
+  function qtNeedDnd() {
+    const w = Ut(
+      '<h3>🔕 השתקה מלאה</h3><div class="sh-sub" style="line-height:1.7">כדי שהאפליקציה תוכל להשתיק לגמרי (גם בלי רטט), אנדרואיד מבקש לאשר <b>פעם אחת</b> "גישה למצב נא לא להפריע" ל<b>ברסלב PRO</b>.<br>בחלון שייפתח – מדליקים את המתג ליד ברסלב PRO, וחוזרים לכאן.</div><button class="btn pri" id="qtDnd" style="width:100%">⚙️ לפתיחת ההגדרה</button><button class="btn" id="qtVib" style="width:100%;margin-top:6px">📳 בינתיים – רטט</button>',
+    );
+    ((l("#qtDnd", w).onclick = () => {
+      (Wt(), (QT.ask = !0));
+      try {
+        qtP().openDnd();
+      } catch (t) {}
+    }),
+      (l("#qtVib", w).onclick = () => (Wt(), qtGo("vibrate"))));
+  }
+  function qtAir() {
+    (st("✈️ מדליקים את מצב הטיסה בחלון שנפתח, וחוזרים לתפילה. בסוף התפילה נזכיר לכבות", 5e3), (QT.air = !0));
+    try {
+      qtP().openAirplane();
+    } catch (t) {}
+  }
+  function qtBub(where) {
+    let b = l("#qtBub");
+    if (!where) return void (b && b.remove());
+    (b || ((b = document.createElement("div")), (b.id = "qtBub"), document.body.appendChild(b)),
+      (b.innerHTML =
+        '<div class="qt-t"><span class="qt-av">🤖</span><div>נכנסתם ' + o(where) + ' 🙏<br><b>להעביר את הטלפון לרטט בזמן התפילה?</b><small>כשתצאו – הצליל יחזור לקדמותו לבד</small></div><button class="qt-x" data-q="x">✕</button></div>' +
+        '<div class="qt-b"><button class="btn pri sm" data-q="vibrate">📳 כן, לרטט</button><button class="btn sm" data-q="more">⚙️ עוד אפשרויות</button><button class="btn sm" data-q="no">לא עכשיו</button></div>'),
+      (b.onclick = (e) => {
+        const t = e.target.closest("[data-q]");
+        if (!t) return;
+        const q = t.dataset.q;
+        (qtBub(null), (QT.ask = !0), "vibrate" === q ? qtGo("vibrate") : "more" === q && qtSheet());
+      }),
+      clearTimeout(QT.bt),
+      (QT.bt = setTimeout(() => qtBub(null), 15e3)));
+  }
+  function qtSheet() {
+    const c = qtCfg(),
+      w = Ut(
+        '<h3>🤫 שקט בזמן תפילה</h3><div class="sh-sub" style="line-height:1.7">בסידור, בברכת המזון ובתיקון הכללי – בלי הסחות דעת. כשיוצאים מהתפילה או מהאפליקציה, הצליל חוזר לקדמותו לבד.</div>' +
+          '<div class="qt-opts"><button class="qt-o" data-m="vibrate"><b>📳 רטט</b><small>בלי צלצולים, רק רטט. בלי שום הרשאה</small></button>' +
+          '<button class="qt-o" data-m="silent"><b>🔕 השתקה מלאה</b><small>בלי צליל ובלי רטט. צריך לאשר פעם אחת "נא לא להפריע"</small></button>' +
+          '<button class="qt-o" data-m="air"><b>✈️ מצב טיסה</b><small>בלי שיחות, הודעות והתראות בכלל. נפתח המתג – ובסוף נזכיר לכבות</small></button></div>' +
+          '<div class="field"><label>ברירת מחדל</label><div class="seg" id="qtDef"><button data-v="vibrate"' + ("vibrate" === c.mode ? ' class="on"' : "") + '>📳 רטט</button><button data-v="silent"' + ("silent" === c.mode ? ' class="on"' : "") + ">🔕 השתקה מלאה</button></div></div>" +
+          '<div class="sw"><span>לעשות את זה אוטומטית כשנכנסים לתפילה, בלי לשאול</span><input type="checkbox" id="qtAuto"' + (c.auto ? " checked" : "") + "></div>" +
+          '<div class="sw"><span>לשאול כשנכנסים לתפילה</span><input type="checkbox" id="qtAsk"' + (c.ask ? " checked" : "") + "></div>" +
+          (QT.on ? '<button class="btn" id="qtNow" style="width:100%;margin-top:8px">🔔 להחזיר את הצליל עכשיו</button>' : ""),
+      ),
+      up = (k, v) => {
+        const t = qtCfg();
+        ((t[k] = v), s.set("qtCfg", t));
+      };
+    (a(".qt-o", w).forEach(
+      (b) =>
+        (b.onclick = () => {
+          const m = b.dataset.m;
+          (Wt(), "air" === m ? qtAir() : qtGo(m));
+        }),
+    ),
+      a("#qtDef button", w).forEach((b) => (b.onclick = () => (a("#qtDef button", w).forEach((t) => t.classList.toggle("on", t === b)), up("mode", b.dataset.v)))),
+      (l("#qtAuto", w).onchange = (e) => up("auto", e.target.checked)),
+      (l("#qtAsk", w).onchange = (e) => up("ask", e.target.checked)),
+      l("#qtNow", w) && (l("#qtNow", w).onclick = () => (Wt(), qtOff(!0))));
+  }
+  window.__qtSheet = qtSheet;
+  async function qtCheck() {
+    if (!NAT.on) return;
+    const w = qtWhere();
+    if (w) {
+      if (QT.on || QT.ask) return;
+      const c = qtCfg();
+      c.auto ? ((QT.ask = !0), qtGo(c.mode, !0)) : c.ask && qtBub(w);
+    } else {
+      (qtBub(null), (QT.ask = !1), (QT.back = !1));
+      QT.on && qtOff(!0);
+      if (QT.air) {
+        QT.air = !1;
+        try {
+          const r = await qtP().info();
+          r && r.air &&
+            setTimeout(() => {
+              const t = Ut('<h3>✈️ מצב טיסה עדיין דלוק</h3><div class="sh-sub">התפילה הסתיימה – לכבות את מצב הטיסה כדי לקבל שוב שיחות והודעות?</div><button class="btn pri" id="qtAirOff" style="width:100%">✈️ לכיבוי מצב הטיסה</button>');
+              l("#qtAirOff", t).onclick = () => {
+                Wt();
+                try {
+                  qtP().openAirplane();
+                } catch (t) {}
+              };
+            }, 500);
+        } catch (t) {}
+      }
+    }
+  }
+  // יציאה מהאפליקציה באמצע תפילה: הצליל כבר חזר (בצד של אנדרואיד). כשחוזרים לתפילה – מחזירים את השקט לבד
+  window.__qtPaused = () => {
+    QT.on && ((QT.on = !1), (QT.back = QT.mode || "vibrate"));
+  };
+  document.addEventListener("visibilitychange", () => {
+    "visible" === document.visibilityState &&
+      setTimeout(() => {
+        if (QT.back && qtWhere()) {
+          const m = QT.back;
+          ((QT.back = !1), qtGo(m, !0));
+        } else if (QT.ask && !QT.on && qtWhere() && "silent" === qtCfg().mode) {
+          // חזרו מאישור "נא לא להפריע"
+          qtP() && qtP().info().then((r) => r && r.dnd && qtGo("silent"));
+        }
+      }, 600);
+  });
   // ✏️ כניסה מהירה לניהול ההקדשות: לחיצה ארוכה (3 שניות) על הפס – רק במכשיר שיש בו מפתח הגיטהאב של העורך
   function hkQuick() {
     if (!s.get("ghTok", "")) return;
@@ -27867,6 +28018,7 @@ function doGet(e){
           '<div class="sw"><span>להציע לי תזכורות וטיפים לפי המדור שאני נמצא בו (למשל: "קראתם שניים מקרא?")</span><input type="checkbox" id="nudgeC" ' + (!1 !== s.get("nudgeOn", !0) ? "checked" : "") + "></div>",
         )),
         Tf.on && s.get("ghTok", "") && (r += '<div id="ibCard">' + n("📥 תיבת הרעיונות (רק אצלך)", inboxHtml()) + "</div>"),
+        NAT.on && (r += '<div id="qtCard">' + n("🤫 שקט בזמן תפילה", '<div class="sh-sub">בסידור, בברכת המזון ובתיקון הכללי: רטט, השתקה מלאה או מצב טיסה – והצליל חוזר לקדמותו לבד כשיוצאים.</div><button class="btn sm" id="qtOpen" style="margin-top:6px">⚙️ הגדרות השקט</button>') + "</div>"),
         Tf.on && s.get("ghTok", "") && (r += '<div id="hkCard">' + n("🕯️ הקדשות (ניהול – רק אצלך)", hkAdmHtml()) + "</div>"),
         (r += n(
           "🤖 העוזר",
@@ -28009,6 +28161,10 @@ function doGet(e){
             try {
               const t = l("#hkCard");
               t && hkAdmBind(t);
+            } catch (t) {}
+            try {
+              const t = l("#qtOpen");
+              t && (t.onclick = qtSheet);
             } catch (t) {}
             try {
               const t = l("#ibCard");
