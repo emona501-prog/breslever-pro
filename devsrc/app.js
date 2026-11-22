@@ -22524,6 +22524,7 @@ function doGet(e){
   const rr = {
     v: "2026-11-17b",
     items: [
+      ["2026-11-22", "✦", "פסוק ← ליקוטי הלכות", "גם ליקוטי הלכות: ליד כל פסוק בתנ״ך שמוהרנ״ת מבאר יש תגית כחולה \"✦ ליקוטי הלכות\" – נגיעה פותחת את המקור, או רשימה לבחירה כשיש כמה מקומות."],
       ["2026-11-22", "✦", "פסוק ← ליקוטי מוהר״ן", "בתנ״ך, ליד כל פסוק שרבנו מבאר בליקוטי מוהר״ן, יש סימן זהוב \"✦ ליקוטי מוהר״ן\". נגיעה בו פותחת ישר את התורה; ואם יש כמה מקומות – נפתחת רשימה עם הלשון המובאת מכל מקום, ובוחרים."],
       ["2026-11-22", "🤫", "שקט בזמן תפילה", "כשנכנסים לסידור, לברכת המזון או לתיקון הכללי – הבוט שואל אם להעביר את הטלפון לרטט. אפשר גם השתקה מלאה או מצב טיסה. כשיוצאים מהתפילה או מהאפליקציה – הצליל חוזר לקדמותו לבד (באפליקציה לאנדרואיד). הגדרות: ⚙️ ← \"שקט בזמן תפילה\"."],
       ["2026-11-22", "📤", "שיתוף דיבור מהווידג'ט", "בווידג'ט במסך הבית, מתחת לדיבור – כפתור \"📤 שתפו את הדיבור\". לחיצה פותחת את האפליקציה ישר בעיצוב לשיתוף ולסטטוס, עם כל הרקעים – ומשם לוואטסאפ ולרשתות."],
@@ -23756,15 +23757,19 @@ function doGet(e){
   window.__qtSheet = qtSheet;
 
   // ===== 📖 פסוק בתנ"ך ← המקומות בליקוטי מוהר"ן שמבארים אותו (מתוך "תנ"ך ליקוטי מוהר"ן") =====
-  const TLM = { f: "tlm.290df1cf7e.json", d: null, p: null, t: 0 };
-  function tlmLoad() {
-    return TLM.d
-      ? Promise.resolve(TLM.d)
-      : TLM.p ||
-          (TLM.p = fetch("data/" + TLM.f)
+  const TLM = { t: 0 },
+    TLS = [
+      { k: "lm", f: "tlm.290df1cf7e.json", n: "ליקוטי מוהר״ן", who: "רבנו מבאר", d: null, p: null },
+      { k: "lh", f: "tlh.e72afcac8d.json", n: "ליקוטי הלכות", who: "מוהרנ״ת מבאר", d: null, p: null },
+    ];
+  function tlmLoad(S) {
+    return S.d
+      ? Promise.resolve(S.d)
+      : S.p ||
+          (S.p = fetch("data/" + S.f)
             .then((r) => (r.ok ? r.json() : null))
-            .then((d) => ((TLM.d = d), d))
-            .catch(() => ((TLM.p = null), null)));
+            .then((d) => ((S.d = d), d))
+            .catch(() => ((S.p = null), null)));
   }
   const TLM_GV = { א: 1, ב: 2, ג: 3, ד: 4, ה: 5, ו: 6, ז: 7, ח: 8, ט: 9, י: 10, כ: 20, ך: 20, ל: 30, מ: 40, ם: 40, נ: 50, ן: 50, ס: 60, ע: 70, פ: 80, ף: 80, צ: 90, ץ: 90, ק: 100, ר: 200, ש: 300, ת: 400 };
   const tlmGm = (t) => {
@@ -23796,24 +23801,30 @@ function doGet(e){
     if ("reader" !== Bt.v) return;
     const R = l("#readerView");
     if (!R) return;
-    const I = a(".item[data-id]:not([data-tlm])", R);
-    if (!I.length) return;
-    const v0 = y[I[0].dataset.id];
-    if (!v0 || !tlmBook(+String(v0.s.g).slice(1))) return;
-    if (!TLM.d) return void tlmLoad().then((d) => d && tlmMark());
-    I.forEach((el) => {
-      el.dataset.tlm = "1";
-      const k = tlmKey(el.dataset.id),
-        r = k && TLM.d.p[k];
-      if (!r || !r.length) return;
-      const b = document.createElement("button");
-      ((b.className = "tlm-b"),
-        (b.dataset.k = k),
-        (b.title = "רבנו מבאר את הפסוק הזה בליקוטי מוהר״ן"),
-        (b.innerHTML = '<span class="tlm-i">✦</span>ליקוטי מוהר״ן' + (r.length > 1 ? '<span class="tlm-n">' + r.length + "</span>" : "")));
-      const ps = a("p", el),
-        p = ps[ps.length - 1];
-      p ? p.appendChild(b) : el.appendChild(b);
+    TLS.forEach((S) => {
+      const at = "tl" + S.k,
+        I = a(".item[data-id]:not([data-" + at + "])", R);
+      if (!I.length) return;
+      const v0 = y[I[0].dataset.id];
+      if (!v0 || !tlmBook(+String(v0.s.g).slice(1))) return;
+      if (!S.d) return void tlmLoad(S).then((d) => d && tlmMark());
+      I.forEach((el) => {
+        el.dataset[at] = "1";
+        const k = tlmKey(el.dataset.id),
+          r = k && S.d.p[k];
+        if (!r || !r.length) return;
+        const b = document.createElement("button");
+        ((b.className = "tlm-b tl-" + S.k),
+          (b.dataset.k = k),
+          (b.dataset.s = S.k),
+          (b.title = S.who + " את הפסוק הזה ב" + S.n),
+          (b.innerHTML = '<span class="tlm-i">✦</span>' + S.n + (r.length > 1 ? '<span class="tlm-n">' + r.length + "</span>" : "")));
+        const ps = a("p", el),
+          p = ps[ps.length - 1],
+          prev = l(".tlm-b", el);
+        // ליקוטי מוהר"ן תמיד ראשון
+        prev && "lm" === S.k ? prev.before(b) : p ? p.appendChild(b) : el.appendChild(b);
+      });
     });
   }
   function tlmGo(id) {
@@ -23821,15 +23832,16 @@ function doGet(e){
     if (y[id]) return Ye(id);
     (st("📖 פותח את המקור…", 2e3), LZ.ensure([v]).then(() => (y[id] ? Ye(id) : st("לא מצאתי את המקור"))).catch(() => st("לא הצלחתי לטעון – נסו שוב")));
   }
-  function tlmOpen(k) {
-    const r = (TLM.d && TLM.d.p[k]) || [];
+  function tlmOpen(k, sk) {
+    const S = TLS.find((t) => t.k === sk) || TLS[0],
+      r = (S.d && S.d.p[k]) || [];
     if (!r.length) return;
     if (1 === r.length) return tlmGo(r[0][0]);
     const [bk, ch, vs] = k.split("|"),
       w = Ut(
-        '<h3>✦ ' + o(bk) + " " + o(myHebNum(+ch)) + ", " + o(myHebNum(+vs)) + '</h3><div class="sh-sub">רבנו מבאר את הפסוק הזה ב־' + r.length + " מקומות בליקוטי מוהר״ן. בחרו לאן ללכת:</div>" +
+        '<h3>✦ ' + o(bk) + " " + o(myHebNum(+ch)) + ", " + o(myHebNum(+vs)) + '</h3><div class="sh-sub">' + S.who + " את הפסוק הזה ב־" + r.length + " מקומות ב" + S.n + ". בחרו לאן ללכת:</div>" +
           '<div class="tlm-list">' +
-          r.map((x, i) => '<button class="tlm-o" data-i="' + i + '"><b>' + o(TLM.d.l[x[1]] || "") + "</b>" + (x[2] ? "<small>״" + o(x[2]) + "״</small>" : "") + "</button>").join("") +
+          r.map((x, i) => '<button class="tlm-o" data-i="' + i + '"><b>' + o(S.d.l[x[1]] || "") + "</b>" + (x[2] ? "<small>״" + o(x[2]) + "״</small>" : "") + "</button>").join("") +
           "</div>",
       );
     a(".tlm-o", w).forEach((b) => (b.onclick = () => (Wt(), setTimeout(() => tlmGo(r[+b.dataset.i][0]), 150))));
@@ -23838,7 +23850,7 @@ function doGet(e){
     "click",
     (e) => {
       const b = e.target.closest && e.target.closest(".tlm-b");
-      b && (e.preventDefault(), e.stopPropagation(), tlmOpen(b.dataset.k));
+      b && (e.preventDefault(), e.stopPropagation(), tlmOpen(b.dataset.k, b.dataset.s));
     },
     !0,
   );
