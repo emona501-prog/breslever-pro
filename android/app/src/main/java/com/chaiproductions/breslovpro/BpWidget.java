@@ -147,11 +147,15 @@ public class BpWidget extends AppWidgetProvider {
             boolean hot = nz != null && warn > 0 && nextT - now <= warn * 60000L;
             rv.setInt(R.id.w_zrow, "setBackgroundResource", hot ? R.drawable.widget_red : R.drawable.widget_gold);
             rv.setViewVisibility(R.id.w_zwarn, hot ? View.VISIBLE : View.GONE);
+            if (!hot) { rv.setChronometer(R.id.w_zw1, SystemClock.elapsedRealtime(), "", false); rv.setChronometer(R.id.w_zw2, SystemClock.elapsedRealtime(), "", false); }
             if (hot) {
-                long mins = Math.max(1, (nextT - now + 59999) / 60000);
-                String wt = "⚠️ " + nz.optString("n") + " – בעוד " + (mins <= 1 ? "דקה" : mins + " דקות") + "!";
-                rv.setTextViewText(R.id.w_zw1, wt);
-                rv.setTextViewText(R.id.w_zw2, wt);
+                // ספירה חיה (כמו השעון למעלה) – לא תלויה ברענון של הווידג'ט, ולכן תמיד מתואמת
+                String wt = "⚠️ " + nz.optString("n").replace("%", "") + " – בעוד %s";
+                long base = SystemClock.elapsedRealtime() + (nextT - now);
+                rv.setChronometer(R.id.w_zw1, base, wt, true);
+                rv.setChronometerCountDown(R.id.w_zw1, true);
+                rv.setChronometer(R.id.w_zw2, base, wt, true);
+                rv.setChronometerCountDown(R.id.w_zw2, true);
                 rv.setOnClickPendingIntent(R.id.w_zwarn, act(ctx, "zm", 3));
             }
             rv.setOnClickPendingIntent(R.id.w_zrow, act(ctx, "zm", 2));
