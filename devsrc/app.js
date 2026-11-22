@@ -17291,7 +17291,7 @@ function doGet(e){
                     ((B.innerHTML = ocrIntroHtml()), (B.style.display = ""));
                     const go = (id) => {
                       const v = l("#ocrK", B).value.trim();
-                      if (v && !/^AIza[0-9A-Za-z_\-]{30,}$/.test(v)) return st(/^github_|^ghp_|^gh[a-z]_/.test(v) || /^[0-9A-Za-z]{40,}$/.test(v) ? "⚠️ זה לא מפתח של Gemini (נראה כמו מפתח גיטהאב) – מחקו אותו. מפתח Gemini מתחיל ב־AIza" : "מפתח Gemini מתחיל ב־AIza – בדקו שהעתקתם את כולו", 5e3);
+                      if (v && (ocrBad(v) || !/^[0-9A-Za-z_.\-]{30,}$/.test(v))) return st(ocrBad(v) ? "⚠️ זה מפתח של גיטהאב, לא של Gemini – מחקו אותו והדביקו את המפתח מ־AI Studio" : "המפתח לא נראה שלם – העתיקו אותו שוב בכפתור ההעתקה", 5e3);
                       (s.set("gemKey", v), (B.style.display = "none"), l(id, t).click());
                     };
                     ((l("#ocrGo", B).onclick = () => go("#mbScanI")), (l("#ocrCam", B).onclick = () => go("#mbScanC")));
@@ -23822,9 +23822,11 @@ function doGet(e){
 
   // ===== 📷 סריקת דפים מודפסים מתמונות → טקסט (לספרים שלי) =====
   // בלי מפתח: זיהוי בטלפון (Tesseract, חינם). עם מפתח Gemini אישי: זיהוי מדויק כולל ניקוד – המשתמש משלם לעצמו
+  // מפתח גיטהאב (או חלק ממנו) לא יישלח לגוגל לעולם
+  const ocrBad = (k) => /^github_|^gh[pousr]_/.test(k) || /^[0-9A-Za-z]{50,}$/.test(k) || (s.get("ghTok", "") && s.get("ghTok", "").includes(k));
   const ocrKey = () => {
     const k = s.get("gemKey", "");
-    return /^AIza/.test(k) ? k : "";
+    return k && !ocrBad(k) ? k : "";
   };
   const ocrIntroHtml = () =>
     '<div class="pv-note" style="margin:8px 0;line-height:1.7">📷 מצלמים דף מודפס (או בוחרים כמה תמונות), והטקסט נכנס לספר. אחר כך עוברים ומתקנים.<br>💡 אור טוב, הדף ישר וממלא את התמונה, בלי צל.</div>' +
