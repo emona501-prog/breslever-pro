@@ -23985,6 +23985,7 @@ function doGet(e){
       left = h && h.u ? Math.max(0, Math.round(((h.u - Date.now()) / 864e5) * 10) / 10) : 0,
       w = Ut(
         "<h3>" + (h && h.id ? "✏️ עריכת הקדשה" : "🕯️ הקדשה – עריכה ופרסום") + "</h3>" +
+          (h && h.id ? "" : '<button class="btn sm" id="hkEList" style="width:100%;margin-bottom:8px">📋 ההקדשות שכבר בפס – עריכה / הסרה (' + hkActive().length + ")</button>") +
           '<div class="field"><label>מטרה</label><select id="hkET" style="width:100%">' +
           ty.map((t) => '<option value="' + t[0] + '"' + (h && h.t === t[0] ? " selected" : "") + ">" + t[2] + " " + t[3] + (t[1] ? " (" + t[1].trim() + "…)" : "") + "</option>").join("") +
           "</select></div>" +
@@ -24002,6 +24003,7 @@ function doGet(e){
         const n = l("#hkEN", w).value.split("\n").map((t) => t.trim()).filter(Boolean);
         l("#hkEPrev", w).textContent = n.length ? "בפס: " + hkLine({ t: l("#hkET", w).value, n }) : "";
       };
+    l("#hkEList", w) && (l("#hkEList", w).onclick = () => (Wt(), setTimeout(() => hkQuick(), 250)));
     ((P.onchange = () => (D.style.display = "x" === P.value ? "" : "none")),
       (l("#hkEN", w).oninput = prev),
       (l("#hkET", w).onchange = prev),
