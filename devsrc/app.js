@@ -17291,7 +17291,7 @@ function doGet(e){
                     ((B.innerHTML = ocrIntroHtml()), (B.style.display = ""));
                     const go = (id) => {
                       const v = l("#ocrK", B).value.trim();
-                      if (v && !/^[A-Za-z0-9_\-]{20,}$/.test(v)) return st("המפתח לא נראה תקין", 2500);
+                      if (v && !/^AIza[0-9A-Za-z_\-]{30,}$/.test(v)) return st(/^github_|^ghp_|^gh[a-z]_/.test(v) || /^[0-9A-Za-z]{40,}$/.test(v) ? "⚠️ זה לא מפתח של Gemini (נראה כמו מפתח גיטהאב) – מחקו אותו. מפתח Gemini מתחיל ב־AIza" : "מפתח Gemini מתחיל ב־AIza – בדקו שהעתקתם את כולו", 5e3);
                       (s.set("gemKey", v), (B.style.display = "none"), l(id, t).click());
                     };
                     ((l("#ocrGo", B).onclick = () => go("#mbScanI")), (l("#ocrCam", B).onclick = () => go("#mbScanC")));
@@ -23822,7 +23822,10 @@ function doGet(e){
 
   // ===== 📷 סריקת דפים מודפסים מתמונות → טקסט (לספרים שלי) =====
   // בלי מפתח: זיהוי בטלפון (Tesseract, חינם). עם מפתח Gemini אישי: זיהוי מדויק כולל ניקוד – המשתמש משלם לעצמו
-  const ocrKey = () => s.get("gemKey", "");
+  const ocrKey = () => {
+    const k = s.get("gemKey", "");
+    return /^AIza/.test(k) ? k : "";
+  };
   const ocrIntroHtml = () =>
     '<div class="pv-note" style="margin:8px 0;line-height:1.7">📷 מצלמים דף מודפס (או בוחרים כמה תמונות), והטקסט נכנס לספר. אחר כך עוברים ומתקנים.<br>💡 אור טוב, הדף ישר וממלא את התמונה, בלי צל.</div>' +
     '<div class="qt-opts"><div class="qt-o" style="cursor:default"><b>📱 זיהוי בטלפון – חינם</b><small>בלי הרשמה. טוב לטקסט רגיל; בניקוד ובאותיות דומות (ע/נ, ז/ת) יש טעויות. צריך אינטרנט בפעם הראשונה.</small></div>' +
