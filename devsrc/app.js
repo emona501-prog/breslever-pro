@@ -23888,7 +23888,7 @@ function doGet(e){
       });
     let last = "";
     for (const md of ["gemini-2.5-flash", "gemini-flash-latest"]) {
-      const r = await fetch("https://generativelanguage.googleapis.com/v1beta/models/" + md + ":generateContent?key=" + encodeURIComponent(ocrKey()), { method: "POST", headers: { "Content-Type": "application/json" }, body });
+      const r = await fetch("https://generativelanguage.googleapis.com/v1beta/models/" + md + ":generateContent", { method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": ocrKey() }, body });
       if (404 === r.status) continue;
       const j = await r.json().catch(() => ({}));
       if (!r.ok) {
