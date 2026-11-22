@@ -1845,6 +1845,9 @@ function MAIN(t) {
       try {
         qtCheck();
       } catch (t) {}
+      try {
+        tlmMark();
+      } catch (t) {}
     }, 450);
     (document.getElementById(jt[t]).classList.add("active"),
       a("#tabbar button").forEach((e) => e.classList.toggle("on", e.dataset.tab === Nt[t])),
@@ -22521,6 +22524,7 @@ function doGet(e){
   const rr = {
     v: "2026-11-17b",
     items: [
+      ["2026-11-22", "✦", "פסוק ← ליקוטי מוהר״ן", "בתנ״ך, ליד כל פסוק שרבנו מבאר בליקוטי מוהר״ן, יש סימן זהוב \"✦ ליקוטי מוהר״ן\". נגיעה בו פותחת ישר את התורה; ואם יש כמה מקומות – נפתחת רשימה עם הלשון המובאת מכל מקום, ובוחרים."],
       ["2026-11-22", "🤫", "שקט בזמן תפילה", "כשנכנסים לסידור, לברכת המזון או לתיקון הכללי – הבוט שואל אם להעביר את הטלפון לרטט. אפשר גם השתקה מלאה או מצב טיסה. כשיוצאים מהתפילה או מהאפליקציה – הצליל חוזר לקדמותו לבד (באפליקציה לאנדרואיד). הגדרות: ⚙️ ← \"שקט בזמן תפילה\"."],
       ["2026-11-22", "📤", "שיתוף דיבור מהווידג'ט", "בווידג'ט במסך הבית, מתחת לדיבור – כפתור \"📤 שתפו את הדיבור\". לחיצה פותחת את האפליקציה ישר בעיצוב לשיתוף ולסטטוס, עם כל הרקעים – ומשם לוואטסאפ ולרשתות."],
       ["2026-11-22", "📲", "קיצור דרך במסך הבית", "פותחים ספר, פרק או תפילה (ברכת המזון, תיקון חצות – כל דף), לוחצים על הכפתור הצף ✦ ← \"קיצור דרך במסך הבית\" – ונוסף אייקון למסך הבית של הטלפון שפותח ישר את הדף הזה (באפליקציה לאנדרואיד)."],
@@ -23750,6 +23754,102 @@ function doGet(e){
       l("#qtNow", w) && (l("#qtNow", w).onclick = () => (Wt(), qtOff(!0))));
   }
   window.__qtSheet = qtSheet;
+
+  // ===== 📖 פסוק בתנ"ך ← המקומות בליקוטי מוהר"ן שמבארים אותו (מתוך "תנ"ך ליקוטי מוהר"ן") =====
+  const TLM = { f: "tlm.290df1cf7e.json", d: null, p: null, t: 0 };
+  function tlmLoad() {
+    return TLM.d
+      ? Promise.resolve(TLM.d)
+      : TLM.p ||
+          (TLM.p = fetch("data/" + TLM.f)
+            .then((r) => (r.ok ? r.json() : null))
+            .then((d) => ((TLM.d = d), d))
+            .catch(() => ((TLM.p = null), null)));
+  }
+  const TLM_GV = { א: 1, ב: 2, ג: 3, ד: 4, ה: 5, ו: 6, ז: 7, ח: 8, ט: 9, י: 10, כ: 20, ך: 20, ל: 30, מ: 40, ם: 40, נ: 50, ן: 50, ס: 60, ע: 70, פ: 80, ף: 80, צ: 90, ץ: 90, ק: 100, ר: 200, ש: 300, ת: 400 };
+  const tlmGm = (t) => {
+    const w = String(t || "").replace(/[֑-ׇ"'׳״\s]/g, "");
+    let n = 0;
+    for (const c of w) {
+      if (!TLM_GV[c]) return 0;
+      n += TLM_GV[c];
+    }
+    return n;
+  };
+  function tlmBook(v) {
+    const b = $t[v] || {};
+    if ("teh" === b.cat) return "תהלים";
+    if ("tanach" !== b.cat) return "";
+    return m(VOLS[v] || "").split(" · ")[0].replace(/\s*עם מפרשים.*$/, "").replace(/^ספר\s+/, "").trim();
+  }
+  function tlmKey(id) {
+    const e = y[id];
+    if (!e || !e.it || !e.it.n || !e.c) return "";
+    const bk = tlmBook(+String(e.s.g).slice(1));
+    if (!bk) return "";
+    const mm = String(e.c.t || "").replace(/[֑-ׇ]/g, "").match(/(?:פרק|מזמור)\s+([א-ת"'׳״]+)/),
+      ch = mm ? tlmGm(mm[1]) : 0,
+      vs = tlmGm(e.it.n);
+    return ch && vs ? bk + "|" + ch + "|" + vs : "";
+  }
+  function tlmMark() {
+    if ("reader" !== Bt.v) return;
+    const R = l("#readerView");
+    if (!R) return;
+    const I = a(".item[data-id]:not([data-tlm])", R);
+    if (!I.length) return;
+    const v0 = y[I[0].dataset.id];
+    if (!v0 || !tlmBook(+String(v0.s.g).slice(1))) return;
+    if (!TLM.d) return void tlmLoad().then((d) => d && tlmMark());
+    I.forEach((el) => {
+      el.dataset.tlm = "1";
+      const k = tlmKey(el.dataset.id),
+        r = k && TLM.d.p[k];
+      if (!r || !r.length) return;
+      const b = document.createElement("button");
+      ((b.className = "tlm-b"),
+        (b.dataset.k = k),
+        (b.title = "רבנו מבאר את הפסוק הזה בליקוטי מוהר״ן"),
+        (b.innerHTML = '<span class="tlm-i">✦</span>ליקוטי מוהר״ן' + (r.length > 1 ? '<span class="tlm-n">' + r.length + "</span>" : "")));
+      const ps = a("p", el),
+        p = ps[ps.length - 1];
+      p ? p.appendChild(b) : el.appendChild(b);
+    });
+  }
+  function tlmGo(id) {
+    const v = +String(id).split("g")[0].slice(1);
+    if (y[id]) return Ye(id);
+    (st("📖 פותח את המקור…", 2e3), LZ.ensure([v]).then(() => (y[id] ? Ye(id) : st("לא מצאתי את המקור"))).catch(() => st("לא הצלחתי לטעון – נסו שוב")));
+  }
+  function tlmOpen(k) {
+    const r = (TLM.d && TLM.d.p[k]) || [];
+    if (!r.length) return;
+    if (1 === r.length) return tlmGo(r[0][0]);
+    const [bk, ch, vs] = k.split("|"),
+      w = Ut(
+        '<h3>✦ ' + o(bk) + " " + o(myHebNum(+ch)) + ", " + o(myHebNum(+vs)) + '</h3><div class="sh-sub">רבנו מבאר את הפסוק הזה ב־' + r.length + " מקומות בליקוטי מוהר״ן. בחרו לאן ללכת:</div>" +
+          '<div class="tlm-list">' +
+          r.map((x, i) => '<button class="tlm-o" data-i="' + i + '"><b>' + o(TLM.d.l[x[1]] || "") + "</b>" + (x[2] ? "<small>״" + o(x[2]) + "״</small>" : "") + "</button>").join("") +
+          "</div>",
+      );
+    a(".tlm-o", w).forEach((b) => (b.onclick = () => (Wt(), setTimeout(() => tlmGo(r[+b.dataset.i][0]), 150))));
+  }
+  document.addEventListener(
+    "click",
+    (e) => {
+      const b = e.target.closest && e.target.closest(".tlm-b");
+      b && (e.preventDefault(), e.stopPropagation(), tlmOpen(b.dataset.k));
+    },
+    !0,
+  );
+  (function () {
+    const R = l("#readerView");
+    R &&
+      new MutationObserver(() => {
+        (clearTimeout(TLM.t), (TLM.t = setTimeout(tlmMark, 180)));
+      }).observe(R, { childList: !0, subtree: !0 });
+  })();
+  window.__tlm = { mark: tlmMark, key: tlmKey, open: tlmOpen };
   async function qtCheck() {
     if (!NAT.on) return;
     const w = qtWhere();
