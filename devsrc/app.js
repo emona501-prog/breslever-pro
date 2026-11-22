@@ -23514,6 +23514,11 @@ function doGet(e){
     return T[1] + (/ ל$/.test(T[1]) ? "" : " ") + j;
   }
   let hkT = null;
+  // "הלימוד היום / השבוע / החודש מוקדש" – לפי משך ההקדשה
+  const hkWhen = (h) => {
+    const d = ((h.u || 0) - (h.s || 0)) / 864e5;
+    return d <= 2 ? "הלימוד היום מוקדש" : d <= 10 ? "הלימוד השבוע מוקדש" : d <= 45 ? "הלימוד החודש מוקדש" : "הלימוד מוקדש";
+  };
   function hkTick() {
     const el = l("#hkTick");
     if (!el) return;
@@ -23521,7 +23526,7 @@ function doGet(e){
       show = A.length || s.get("hkCta", !0);
     if ((document.body.classList.toggle("hk-on", !!show), !show)) return void ((el.innerHTML = ""), clearTimeout(hkT));
     const txt = A.length
-      ? '<span class="hk-l">🕯️ הלימוד היום מוקדש</span>' + A.map((h) => "<b>" + o(hkLine(h)) + "</b>").join("<i>✦</i>")
+      ? A.map((h) => ("fr" === h.t ? "" : '<span class="hk-l">🕯️ ' + hkWhen(h) + "</span>") + "<b>" + o(hkLine(h)) + "</b>").join("<i>✦</i>")
       : "<b>🕯️ הקדישו את הלימוד באפליקציה – לרפואה, לעילוי נשמת, להצלחה ולישועה</b><i>✦</i><span>לחצו כאן להקדשה</span>";
     el.innerHTML = '<div class="prl-win"><div class="prl-run">' + txt + "</div></div>";
     const r = l(".prl-run", el),
