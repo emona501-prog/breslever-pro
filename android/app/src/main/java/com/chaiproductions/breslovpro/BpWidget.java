@@ -64,6 +64,12 @@ public class BpWidget extends AppWidgetProvider {
         if (ids.length > 0) scheduleNext(ctx);
     }
 
+    private static String hex(String t) {
+        StringBuilder sb = new StringBuilder();
+        try { for (byte x : t.getBytes("UTF-8")) sb.append(String.format("%02x", x & 0xff)); } catch (Exception e) { }
+        return sb.toString();
+    }
+
     private static PendingIntent act(Context ctx, String a, int req) {
         Intent i = new Intent(ctx, MainActivity.class);
         i.setAction("bp.w." + a);
@@ -188,10 +194,15 @@ public class BpWidget extends AppWidgetProvider {
                     JSONObject q = qs.getJSONObject((int) (((now / qms) + off) % qs.length()));
                     String src = q.optString("s", "");
                     rv.setTextViewText(R.id.w_quote, q.optString("t", "") + (src.isEmpty() ? "" : "\n— " + src));
-                    rv.setOnClickPendingIntent(R.id.w_quote, act(ctx, "q:" + q.optString("id", ""), 20));
+                    rv.setOnClickPendingIntent(R.id.w_quote, act(ctx, "qh:" + hex(q.optString("id", "")), 20));
+                    // 📤 שיתוף הדיבור שמוצג עכשיו – פותח את האפליקציה ישר בעיצוב לשיתוף
+                    String qid = q.optString("id", "");
+                    String sa = !qid.isEmpty() ? "qs:" + hex(qid) : "qt:" + hex(q.optString("t", "") + (src.isEmpty() ? "" : "\n— " + src));
+                    rv.setOnClickPendingIntent(R.id.b_qsh, act(ctx, sa, 21));
                     qShown = true;
                 }
                 rv.setViewVisibility(R.id.w_quote, want ? View.VISIBLE : View.GONE);
+                rv.setViewVisibility(R.id.b_qsh, want ? View.VISIBLE : View.GONE);
                 if (qShown) {
                     Intent di = new Intent(ctx, BpWidget.class); di.setAction(DICE);
                     rv.setOnClickPendingIntent(R.id.b_rand, PendingIntent.getBroadcast(ctx, 78, di, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE));

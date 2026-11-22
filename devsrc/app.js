@@ -22516,6 +22516,7 @@ function doGet(e){
   const rr = {
     v: "2026-11-17b",
     items: [
+      ["2026-11-22", "📤", "שיתוף דיבור מהווידג'ט", "בווידג'ט במסך הבית, מתחת לדיבור – כפתור \"📤 שתפו את הדיבור\". לחיצה פותחת את האפליקציה ישר בעיצוב לשיתוף ולסטטוס, עם כל הרקעים – ומשם לוואטסאפ ולרשתות."],
       ["2026-11-22", "📲", "קיצור דרך במסך הבית", "פותחים ספר, פרק או תפילה (ברכת המזון, תיקון חצות – כל דף), לוחצים על הכפתור הצף ✦ ← \"קיצור דרך במסך הבית\" – ונוסף אייקון למסך הבית של הטלפון שפותח ישר את הדף הזה (באפליקציה לאנדרואיד)."],
       ["2026-11-22", "🕯️", "הקדשת הלימוד באפליקציה", "פס חדש בתחתית המסך עם הקדשות – לרפואה, לעילוי נשמת, להצלחה, לזיווג ועוד. לוחצים על הפס, כותבים את השמות, בוחרים יום / שבוע / חודש – והשמות ירוצו אצל כל הלומדים. אפשר לכבות את ההזמנה להקדשה בהגדרות הדיבורים 💎."],
       ["2026-11-21", "📜", "ליקוטי פסוקים לפי סדר התורות – בראש הספר", "בספר \"תנ\"ך ליקוטי מוהר\"ן\" החלק \"לפי סדר התורות\" (כל הפסוקים שרבנו מבאר בכל תורה, חלק א׳ וחלק ב׳) עבר לראש הספר עם כותרת, במקום להיות בסוף אחרי כל הפרשיות."],
@@ -29907,7 +29908,7 @@ function doGet(e){
         const p = L.splice(Math.floor(Math.random() * L.length), 1)[0];
         String(p.t).replace(/[\u0591-\u05c7]/g, "").length <= 190 && Q.push({ t: p.t, s: PRL.srcOf(p), id: p.id || "" });
       }
-      if (Q.length) return Q;
+      if (Q.length) return (s.set("wdgQ", Q), Q);
     }
     const t = wdgVols(),
       e = [];
@@ -29922,7 +29923,7 @@ function doGet(e){
         c = x(t.it, { noNiqud: !1 }).replace(/\s+/g, " ").trim();
       c.replace(/[\u0591-\u05c7]/g, "").length <= 190 && i.push({ t: c, s: m(VOLS[+String(t.s.g).slice(1)] || "") + " · " + m(g(t.c.t)), id: t.it.id });
     }
-    return i;
+    return (s.set("wdgQ", i), i);
   }
   window.__wdgData = () => Xd();
   function wdgSettingsHtml() {
@@ -30082,7 +30083,22 @@ function doGet(e){
         else if ("goals" === t) goalsOpen();
         else if ("haderech" === t) hdOpen();
         else if ("hal" === t) halOpen();
-        else if ("nv:" === String(t).slice(0, 3)) {
+        else if ("qs:" === String(t).slice(0, 3) || "qt:" === String(t).slice(0, 3)) {
+          // 📤 שיתוף הדיבור מהווידג'ט – ישר לעיצוב לשיתוף ולסטטוס
+          const k = String(t).slice(0, 3),
+            v = "qs:" === k ? scUnhex(String(t).slice(3)) : String(t).slice(3);
+          if ("qs:" === k && y[v]) {
+            const W = s.get("wdgQ", []) || [],
+              q = W.find((x) => x && x.id === v);
+            setTimeout(() => kf(v, q ? q.t : void 0), 350);
+          } else {
+            const tx = "qt:" === k ? scUnhex(v) : "";
+            tx && setTimeout(() => At(tx + ut(), BOOK.title), 350);
+          }
+        } else if ("qh:" === String(t).slice(0, 3)) {
+          const e = scUnhex(String(t).slice(3));
+          y[e] ? Ye(e) : It("random");
+        } else if ("nv:" === String(t).slice(0, 3)) {
           const e = JSON.parse(scUnhex(String(t).slice(3)));
           e && e.v && It(e.v, e.p || {});
         } else if ("q:" === String(t).slice(0, 2)) {
