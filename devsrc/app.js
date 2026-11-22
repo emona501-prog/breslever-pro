@@ -23759,8 +23759,8 @@ function doGet(e){
   // ===== 📖 פסוק בתנ"ך ← המקומות בליקוטי מוהר"ן שמבארים אותו (מתוך "תנ"ך ליקוטי מוהר"ן") =====
   const TLM = { t: 0 },
     TLS = [
-      { k: "lm", f: "tlm.290df1cf7e.json", n: "ליקוטי מוהר״ן", who: "רבנו מבאר", d: null, p: null },
-      { k: "lh", f: "tlh.e72afcac8d.json", n: "ליקוטי הלכות", who: "מוהרנ״ת מבאר", d: null, p: null },
+      { k: "lm", f: "tlm.1564d283ee.json", n: "ליקוטי מוהר״ן", who: "רבנו מבאר", d: null, p: null },
+      { k: "lh", f: "tlh.fae6fb5f62.json", n: "ליקוטי הלכות", who: "מוהרנ״ת מבאר", d: null, p: null },
     ];
   function tlmLoad(S) {
     return S.d
