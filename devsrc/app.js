@@ -17290,7 +17290,7 @@ function doGet(e){
                     if ("none" !== B.style.display) return void (B.style.display = "none");
                     ((B.innerHTML = ocrIntroHtml()), (B.style.display = ""));
                     const go = (id) => {
-                      const v = l("#ocrK", B).value.trim();
+                      const v = l("#ocrK", B).value.replace(/\s+/g, "");
                       if (v && (ocrBad(v) || !/^[0-9A-Za-z_.\-]{30,}$/.test(v))) return st(ocrBad(v) ? "⚠️ זה מפתח של גיטהאב, לא של Gemini – מחקו אותו והדביקו את המפתח מ־AI Studio" : "המפתח לא נראה שלם – העתיקו אותו שוב בכפתור ההעתקה", 5e3);
                       (s.set("gemKey", v), (B.style.display = "none"), l(id, t).click());
                     };
@@ -17305,7 +17305,7 @@ function doGet(e){
                     try {
                       const out = await ocrPages(F, (m) => (c.textContent = m));
                       ((X.value = (X.value.trim() ? X.value.trim() + "\n\n" : "") + out), (e = null), r());
-                      c.innerHTML = (1 === F.length ? "✅ נסרק עמוד אחד" : "✅ נסרקו " + F.length + " עמודים") + " – <b>עברו על הטקסט ותקנו טעויות</b> לפני השמירה" + (ocrKey() ? "" : " (הסריקה בטלפון עלולה להחליף אותיות דומות)");
+                      c.innerHTML = (1 === F.length ? "✅ נסרק עמוד אחד" : "✅ נסרקו " + F.length + " עמודים") + (ocrKey() ? " ב־✨ Gemini" : " ב־📱 זיהוי בטלפון (מדויק פחות)") + " – <b>עברו על הטקסט ותקנו טעויות</b> לפני השמירה. הטקסט נוסף בסוף התיבה.";
                     } catch (x) {
                       c.textContent = "❌ " + (x.message || x);
                     }
@@ -23832,7 +23832,7 @@ function doGet(e){
     '<div class="pv-note" style="margin:8px 0;line-height:1.7">📷 מצלמים דף מודפס (או בוחרים כמה תמונות), והטקסט נכנס לספר. אחר כך עוברים ומתקנים.<br>💡 אור טוב, הדף ישר וממלא את התמונה, בלי צל.</div>' +
     '<div class="qt-opts"><div class="qt-o" style="cursor:default"><b>📱 זיהוי בטלפון – חינם</b><small>בלי הרשמה. טוב לטקסט רגיל; בניקוד ובאותיות דומות (ע/נ, ז/ת) יש טעויות. צריך אינטרנט בפעם הראשונה.</small></div>' +
     '<div class="qt-o" style="cursor:default"><b>✨ זיהוי מדויק עם Gemini – מפתח אישי (לא חובה)</b><small>מדויק מאוד, גם ניקוד ודפים מסובכים. המפתח שלכם – והחיוב (אם יש) אצלכם מול גוגל; לרוב יש מכסה חינמית.</small>' +
-    '<input id="ocrK" dir="ltr" placeholder="מפתח Gemini (AIza…) – השאירו ריק לזיהוי בטלפון" value="' + o(ocrKey()) + '" style="width:100%;margin-top:6px"><small>מקבלים מפתח ב־aistudio.google.com/apikey · נשמר רק במכשיר הזה</small></div></div>' +
+    '<input id="ocrK" dir="ltr" placeholder="מפתח Gemini – השאירו ריק לזיהוי בטלפון" value="' + o(ocrKey()) + '" style="width:100%;margin-top:6px"><div style="margin-top:4px;font-weight:700">' + (ocrKey() ? "✅ מפתח שמור – הסריקה תהיה דרך Gemini" : "⚪ אין מפתח שמור – הסריקה תהיה בטלפון") + "</div>" + '<small>מקבלים מפתח ב־aistudio.google.com/apikey · נשמר רק במכשיר הזה</small></div></div>' +
     '<div class="row2"><button class="btn pri" id="ocrCam">📸 צילום עכשיו</button><button class="btn pri" id="ocrGo">🖼️ מהגלריה (כמה דפים)</button></div>';
   async function ocrImg(f) {
     // הקטנה ושחור-לבן לפני הזיהוי (מהיר יותר ומדויק יותר)
