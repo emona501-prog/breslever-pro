@@ -1849,6 +1849,9 @@ function MAIN(t) {
         tlmMark();
       } catch (t) {}
     }, 450);
+    try {
+      hkVis();
+    } catch (t) {}
     (document.getElementById(jt[t]).classList.add("active"),
       a("#tabbar button").forEach((e) => e.classList.toggle("on", e.dataset.tab === Nt[t])),
       "reader" !== t && (document.body.classList.remove("clean"), (l("#progressLine").style.width = "0")));
@@ -22524,6 +22527,7 @@ function doGet(e){
   const rr = {
     v: "2026-11-17b",
     items: [
+      ["2026-11-22", "🕯️", "ההקדשות גם בתוך הספרים", "פס ההקדשות רץ עכשיו גם בזמן הקריאה בספר – כל זמן שיש הקדשות פעילות (לעילוי נשמת, לרפואה ועוד)."],
       ["2026-11-22", "🔐", "הקדשות – כניסת עורך מהטופס", "לעורך בלבד: 5 נגיעות מהירות על הנר 🕯️ שבראש טופס ההקדשה → קוד → השמות נכנסים מיד לפס, בלי תשלום."],
       ["2026-11-22", "✦", "פסוק ← ליקוטי הלכות", "גם ליקוטי הלכות: ליד כל פסוק בתנ״ך שמוהרנ״ת מבאר יש תגית כחולה \"✦ ליקוטי הלכות\" – נגיעה פותחת את המקור, או רשימה לבחירה כשיש כמה מקומות."],
       ["2026-11-22", "✦", "פסוק ← ליקוטי מוהר״ן", "בתנ״ך, ליד כל פסוק שרבנו מבאר בליקוטי מוהר״ן, יש סימן זהוב \"✦ ליקוטי מוהר״ן\". נגיעה בו פותחת ישר את התורה; ואם יש כמה מקומות – נפתחת רשימה עם הלשון המובאת מכל מקום, ובוחרים."],
@@ -23519,12 +23523,17 @@ function doGet(e){
     const d = ((h.u || 0) - (h.s || 0)) / 864e5;
     return d <= 2 ? "הלימוד היום מוקדש" : d <= 10 ? "הלימוד השבוע מוקדש" : d <= 45 ? "הלימוד החודש מוקדש" : "הלימוד מוקדש";
   };
+  // בתוך ספר – הפס מופיע רק כשיש הקדשות פעילות (לא ההזמנה להקדיש)
+  function hkVis() {
+    const b = document.body;
+    b.classList.toggle("hk-sp", b.classList.contains("hk-on") && ("reader" !== b.dataset.v || hkActive().length > 0));
+  }
   function hkTick() {
     const el = l("#hkTick");
     if (!el) return;
     const A = hkActive(),
       show = A.length || s.get("hkCta", !0);
-    if ((document.body.classList.toggle("hk-on", !!show), !show)) return void ((el.innerHTML = ""), clearTimeout(hkT));
+    if ((document.body.classList.toggle("hk-on", !!show), hkVis(), !show)) return void ((el.innerHTML = ""), clearTimeout(hkT));
     const txt = A.length
       ? A.map((h) => ("fr" === h.t ? "" : '<span class="hk-l">🕯️ ' + hkWhen(h) + "</span>") + "<b>" + o(hkLine(h)) + "</b>").join("<i>✦</i>")
       : "<b>🕯️ הקדישו את הלימוד באפליקציה – לרפואה, לעילוי נשמת, להצלחה ולישועה</b><i>✦</i><span>לחצו כאן להקדשה</span>";
