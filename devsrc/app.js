@@ -23521,7 +23521,7 @@ function doGet(e){
   }
   setTimeout(() => {
     const el = l("#hkTick");
-    el && ((el.onclick = () => hkForm()), hkTick());
+    el && ((el.onclick = () => hkForm()), s.get("ghTok", "") && lp3(el, hkQuick), hkTick());
   }, 2e3);
   window.__hkParse = hkParse;
   window.__hkTick = hkTick;
@@ -23604,8 +23604,11 @@ function doGet(e){
     const per = HK_PER.find((t) => t[0] === q.p) || HK_PER[0];
     return "🕯️ " + hkLine(q) + "\n⏱️ " + per[1] + " · " + q.u + (1 === q.u ? " שם" : " שמות") + " · " + q.sum + " ₪" + (q.by ? "\n👤 המקדיש: " + q.by : "");
   }
+  const HK_PAY0 = { pb: "https://links.payboxapp.com/BiD773Dwv7b", bit: "054-6137202" };
   function hkPay(q) {
-    const P = hkLive().hkPay || {},
+    const L0 = hkLive().hkPay || {},
+      P = { pb: L0.pb || HK_PAY0.pb, bit: L0.bit || HK_PAY0.bit },
+      bitUrl = /^https:\/\//.test(P.bit),
       wa = () => NAT.openUrl("https://wa.me/" + HK_WA + "?text=" + encodeURIComponent("שלום, הקדשה בברסלב PRO:\n" + hkReqTxt(q) + "\n\n✅ שילמתי – מצרף אישור תשלום")),
       w = Ut(
         '<div class="hk-f"><div class="hk-hd">💳</div><h3 style="text-align:center">תשלום ההקדשה</h3><div class="hk-sum"><b>' +
@@ -23613,8 +23616,11 @@ function doGet(e){
           ' ₪</b><small style="white-space:pre-line">' +
           o(hkReqTxt(q)) +
           "</small></div>" +
-          (P.bit || P.pb
-            ? '<div class="row2">' + (P.bit ? '<button class="btn pri" id="hkBit">💙 תשלום בביט</button>' : "") + (P.pb ? '<button class="btn pri" id="hkPb">💚 תשלום בפייבוקס</button>' : "") + "</div>"
+          (P.pb || bitUrl
+            ? '<div class="row2">' + (P.pb ? '<button class="btn pri" id="hkPb">💚 תשלום בפייבוקס</button>' : "") + (bitUrl ? '<button class="btn pri" id="hkBit">💙 תשלום בביט</button>' : "") + "</div>"
+            : "") +
+          (P.bit && !bitUrl
+            ? '<div class="hk-bit">💙 אפשר לשלם גם <b>בביט</b> למספר <b dir="ltr">' + o(P.bit) + '</b> <button class="btn sm" id="hkBitCp">📋 העתקה</button></div>'
             : "") +
           '<div class="sh-sub" style="margin:10px 0">' +
           (P.bit || P.pb ? "אחרי התשלום לחצו על הכפתור למטה ושלחו בוואטסאפ את אישור התשלום." : "לתשלום – שלחו את ההקדשה בוואטסאפ, ונחזור אליכם עם פרטי התשלום.") +
@@ -23625,6 +23631,7 @@ function doGet(e){
           "</div>",
       );
     (l("#hkBit", w) && (l("#hkBit", w).onclick = () => NAT.openUrl(P.bit)),
+      l("#hkBitCp", w) && (l("#hkBitCp", w).onclick = () => nt(P.bit.replace(/\D/g, ""))),
       l("#hkPb", w) && (l("#hkPb", w).onclick = () => NAT.openUrl(P.pb)),
       (l("#hkSend", w).onclick = () => {
         // גם לתיבה (אם מוגדרת) – כדי שהבקשה לא תלך לאיבוד
@@ -23635,6 +23642,26 @@ function doGet(e){
       }));
   }
   window.__hkForm = hkForm;
+  // ✏️ כניסה מהירה לניהול ההקדשות: לחיצה ארוכה (3 שניות) על הפס – רק במכשיר שיש בו מפתח הגיטהאב של העורך
+  function hkQuick() {
+    if (!s.get("ghTok", "")) return;
+    const open = () => {
+      const w = Ut('<h3>🕯️ ניהול הקדשות</h3><div id="hkQ"></div>');
+      ((l("#hkQ", w).innerHTML = hkAdmHtml()), hkAdmBind(l("#hkQ", w)));
+    };
+    if (Tf.on) return open();
+    const w = Ut('<h3>🔐 ניהול הקדשות</h3><input id="hkPin" type="password" inputmode="numeric" placeholder="קוד" style="width:100%;font-size:22px;text-align:center;letter-spacing:6px"><button class="btn pri" id="hkPinGo" style="width:100%;margin-top:8px">כניסה</button>'),
+      I = l("#hkPin", w),
+      go = () => {
+        if ("1986" !== I.value) return st("קוד שגוי");
+        Tf.on = !0;
+        try {
+          sessionStorage.setItem(SPFX + "admin", "1");
+        } catch (t) {}
+        (Wt(), setTimeout(open, 250));
+      };
+    (setTimeout(() => I.focus(), 250), (l("#hkPinGo", w).onclick = go), (I.onkeydown = (e) => "Enter" === e.key && go()));
+  }
   // ----- ניהול (רק אצל העורך, עם מפתח הגיטהאב) -----
   async function hkMod(fn, msg) {
     const e = await Gd("contents/" + Rd),
@@ -23702,17 +23729,16 @@ function doGet(e){
         : '<div class="sh-sub">אין עכשיו הקדשות פעילות.</div>') +
       (inboxUrl() ? '<button class="btn sm" id="hkLoad" style="margin:8px 0">📥 בקשות שממתינות לאישור</button><div id="hkReq"></div>' : "") +
       '<button class="btn pri sm" id="hkAdd" style="margin:8px 0">➕ הוספת הקדשה (בלי הגבלה – שמות, נוסח ומשך)</button>' +
-      '<details style="margin-top:8px"><summary><b>💳 קישורי תשלום</b></summary><div class="sh-sub">קישור תשלום אישי מביט / פייבוקס. בלי קישור – המקדישים פונים אליך בוואטסאפ.</div>' +
-      '<input id="hkBitIn" type="url" dir="ltr" placeholder="קישור ביט (https://…)" value="' + o(P.bit || "") + '" style="width:100%;margin:4px 0">' +
-      '<input id="hkPbIn" type="url" dir="ltr" placeholder="קישור פייבוקס (https://…)" value="' + o(P.pb || "") + '" style="width:100%;margin:4px 0">' +
+      '<details style="margin-top:8px"><summary><b>💳 קישורי תשלום</b></summary><div class="sh-sub">פייבוקס – קישור. ביט – מספר טלפון (או קישור).</div>' +
+      '<input id="hkBitIn" dir="ltr" placeholder="ביט: מספר טלפון או קישור" value="' + o(P.bit || HK_PAY0.bit) + '" style="width:100%;margin:4px 0">' +
+      '<input id="hkPbIn" type="url" dir="ltr" placeholder="קישור פייבוקס (https://…)" value="' + o(P.pb || HK_PAY0.pb) + '" style="width:100%;margin:4px 0">' +
       '<button class="btn sm" id="hkPaySave">💾 שמירה ופרסום</button></details>'
     );
   }
   function hkAdmBind(t) {
     const re = () => {
-        const c = l("#hkCard .cnt") || l("#hkCard");
         try {
-          Ft.settings();
+          "hkQ" === t.id ? ((t.innerHTML = hkAdmHtml()), hkAdmBind(t)) : Ft.settings();
         } catch (e) {}
       },
       run = async (b, fn, msg, ok) => {
@@ -23735,7 +23761,7 @@ function doGet(e){
       (l("#hkPaySave", t).onclick = (e) => {
         const b = l("#hkBitIn", t).value.trim(),
           p = l("#hkPbIn", t).value.trim();
-        if ((b && !/^https:\/\//.test(b)) || (p && !/^https:\/\//.test(p))) return st("קישור צריך להתחיל ב־https://", 3e3);
+        if ((b && !/^https:\/\//.test(b) && !/^[\d\- ]{9,13}$/.test(b)) || (p && !/^https:\/\//.test(p))) return st("ביט: מספר טלפון או קישור; פייבוקס: קישור שמתחיל ב־https://", 3500);
         run(e.target, (i) => (i.hkPay = { bit: b, pb: p }), "💳 קישורי תשלום להקדשות", "✅ נשמר");
       }));
     const ld = l("#hkLoad", t);
