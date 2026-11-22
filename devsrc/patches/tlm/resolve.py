@@ -1,7 +1,6 @@
 # איתור הפסוק המדויק לערכים שרשומים רק לפי פרק: התאמה גמישה (כתיב מלא/חסר, הבדל של אות) מול התנ"ך שבאפליקציה
 import json,re,collections,glob
 NQ=re.compile(r'[֑-ׇ]')
-D=json.load(open('/home/claude/kb/env.json'))
 GV=dict(zip('אבגדהוזחטיכלמנסעפצקרשת',[1,2,3,4,5,6,7,8,9,10,20,30,40,50,60,70,80,90,100,200,300,400])); GV.update({'ך':20,'ם':40,'ן':50,'ף':80,'ץ':90})
 def gm(t):
     t=re.sub(r'["\'׳״\s]','',NQ.sub('',t or ''))
@@ -34,20 +33,29 @@ def run(q,v):
                 ex+=q[i+k]==v[j+k]; k+=1
             if (k,ex)>best: best=(k,ex)
     return best
-B=D['books']; bmap={}
 BOOKS=['בראשית','שמות','ויקרא','במדבר','דברים','יהושע','שופטים','שמואל א','שמואל ב','מלכים א','מלכים ב','ישעיה','ירמיה','יחזקאל','הושע','יואל','עמוס','עובדיה','יונה','מיכה','נחום','חבקוק','צפניה','חגי','זכריה','מלאכי','תהלים','משלי','איוב','שיר השירים','רות','איכה','קהלת','אסתר','דניאל','עזרא','נחמיה','דברי הימים א','דברי הימים ב']
-for i,b in enumerate(B):
+# התנ"ך כפי שהוא באפליקציה עכשיו (נקרא ישירות מקבצי האפליקציה – ספר חדש שנכנס נכלל אוטומטית)
+SHL=open('/home/claude/src/shell.html',encoding='utf-8').read()
+CFG=json.loads(re.search(r'<script type="application/json" id="bookcfg">(.*?)</script>',SHL,re.S).group(1))
+bmap={}
+for i,b in enumerate(CFG['books']):
     if not b: continue
-    t=NQ.sub('',b.get('title','')).split(' · ')[0].replace(' עם מפרשים','').strip()
+    t=NQ.sub('',CFG['groups'][i] or b.get('title','')).split(' · ')[0].replace(' עם מפרשים','').strip()
+    t=re.sub(r'^ספר\s+','',t)
     if b.get('cat')=='tanach' and t in BOOKS and t not in bmap.values(): bmap[i]=t
-pass
 TV=collections.defaultdict(lambda:collections.defaultdict(list))
-for i,v in enumerate(D['vi']):
-    if v in bmap:
-        mm=re.match(r'\s*(?:פרק|מזמור)\s+([א-ת"\'׳״]+)',D['ch'][i]); ch=gm(mm.group(1)) if mm else 0
-        if not ch: continue
-        m2=re.match(r'^v\d+g\d+\.\d+\.(\d+)$',D['id'][i])
-        TV[bmap[v]][ch].append(words(D['T'][i]))
+for vi,bk in bmap.items():
+    f=glob.glob('/home/claude/breslever-pro/www/data/b*_V%d.*.json'%vi)
+    if not f: continue
+    for sec in json.load(open(f[0],encoding='utf-8')):
+        for c in sec.get('c',[]):
+            mm=re.search(r'(?:פרק|מזמור)\s+([א-ת"\'׳״]+)',NQ.sub('',c.get('t','')))
+            ch=gm(mm.group(1)) if mm else 0
+            if not ch: continue
+            for it in c.get('i',[]):
+                if not it.get('n'): continue
+                t=' '.join(re.sub('<[^>]+>','',x[1]) for x in it['b'] if isinstance(x,list) and len(x)>1 and x[0]=='p' and isinstance(x[1],str))
+                if t: TV[bk][ch].append(words(t))
 def resolve(bk,ch,quote,snip):
     """מחזיר (פסוק, שיטה) או (0,'')"""
     if bk not in TV or ch not in TV[bk]: return 0,'nobook'
