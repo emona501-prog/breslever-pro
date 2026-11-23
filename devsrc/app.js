@@ -1852,6 +1852,12 @@ function MAIN(t) {
     try {
       hkVis();
     } catch (t) {}
+    "reader" === t &&
+      setTimeout(() => {
+        try {
+          document.getElementById("sheet").classList.contains("on") || tourRun();
+        } catch (t) {}
+      }, 1400);
     (document.getElementById(jt[t]).classList.add("active"),
       a("#tabbar button").forEach((e) => e.classList.toggle("on", e.dataset.tab === Nt[t])),
       "reader" !== t && (document.body.classList.remove("clean"), (l("#progressLine").style.width = "0")));
@@ -22584,6 +22590,7 @@ function doGet(e){
   const rr = {
     v: "2026-11-17b",
     items: [
+      ["2026-11-23", "👆", "הדרכה קצרה על הכפתורים", "בכניסה לספר מופיע פעם אחת חץ מכל כפתור עם הסבר בשתי מילים. רוצים לראות שוב? ⚙️ הגדרות ← \"הדרכת הכפתורים\"."],
       ["2026-11-23", "⬇️", "סגירת חלונות בגרירה + כתב הוראות ברור", "כל חלון שנפתח מלמטה (העוזר, הגדרות ועוד) – גוררים את הפס שבראשו כלפי מטה והוא נסגר. בסידור ובתפילות, הוראות וההסברים בכתב הקטן – בצבע כהה וברור יותר. ליד כפתור 📜 בקריאה נכתב \"ברצף\"."],
       ["2026-11-23", "✨", "זוהר: כותרת \"לשון הקודש\"", "בזוהר בתצוגה המשולבת (ארמית + לשון הקודש), מעל כל קטע תרגום מופיעה תווית קטנה \"לשון הקודש\" – כדי שיהיה ברור איפה עוברים מהארמית לתרגום."],
       ["2026-11-22", "📷", "סריקת דפים לספרים שלי", "באזור שלי ← הספרים שלי ← ➕ ספר חדש ← \"📷 צילום / תמונות של דפים\": מצלמים דף מודפס והטקסט נכנס לספר. זיהוי בטלפון בחינם, או זיהוי מדויק (כולל ניקוד) עם מפתח Gemini אישי."],
@@ -23853,6 +23860,57 @@ function doGet(e){
       l("#qtNow", w) && (l("#qtNow", w).onclick = () => (Wt(), qtOff(!0))));
   }
   window.__qtSheet = qtSheet;
+
+  // ===== 👆 הדרכה ראשונה: חץ מכל אייקון עם הסבר בשתי מילים (פעם אחת לכל משתמש, גם אחרי עדכון) =====
+  const TOUR = [
+    ["#rFlow", "📜 קריאה ברצף", "כל הספר בגלילה אחת, בלי לעבור פרקים"],
+    ["#rToc", "☰ תוכן הספר", "קפיצה לפרק או לאות"],
+    ["#rFind", "🔍 חיפוש בדף", "מוצא מילה בדף הזה"],
+    ["#rTts", "🔊 הקראה בקול", "האפליקציה קוראת לכם את הטקסט"],
+    ["#rFont", "א גודל אותיות", "הגדלה והקטנה של הכתב"],
+    ["#rPrint", "🖨️ הדפסה", "הדפסה או שמירה כ־PDF"],
+    ["#rcNext", "‹ הבא", "המעבר לפרק / לתורה הבאה"],
+    ["#bmFab", "🔖 סימניה", "שומר את המקום – וחוזרים אליו בלחיצה"],
+    ["#fab", "✦ כל הפעולות", "שיתוף, הערות, תזכורת, קיצור דרך ועוד"],
+    ["#botFloat", "🤖 העוזר", "שואלים כל שאלה על האפליקציה ועל הספרים"],
+  ];
+  function tourRun(force) {
+    if ((!force && s.get("tourRd", 0) >= 1) || document.getElementById("tourOv")) return;
+    const L = TOUR.map((t) => [l(t[0]), t[1], t[2]]).filter((t) => {
+      if (!t[0]) return !1;
+      const r = t[0].getBoundingClientRect();
+      return r.width > 0 && r.height > 0 && "hidden" !== getComputedStyle(t[0]).visibility;
+    });
+    if (L.length < 3) return;
+    s.set("tourRd", 1);
+    let i = 0;
+    const ov = document.createElement("div");
+    ((ov.id = "tourOv"), document.body.appendChild(ov));
+    const end = () => (ov.remove(), window.removeEventListener("resize", draw));
+    function draw() {
+      if (i >= L.length) return end();
+      const [el, h, d] = L[i],
+        r = el.getBoundingClientRect(),
+        W = window.innerWidth,
+        H = window.innerHeight,
+        cx = r.left + r.width / 2,
+        below = r.top + r.height / 2 < H / 2,
+        bw = Math.min(260, W - 24),
+        bx = Math.max(12, Math.min(W - bw - 12, cx - bw / 2)),
+        ax = Math.max(bx + 18, Math.min(bx + bw - 18, cx));
+      ov.innerHTML =
+        '<div class="tr-hole" style="left:' + (r.left - 6) + "px;top:" + (r.top - 6) + "px;width:" + (r.width + 12) + "px;height:" + (r.height + 12) + 'px"></div>' +
+        '<div class="tr-box ' + (below ? "dn" : "up") + '" style="left:' + bx + "px;width:" + bw + "px;" + (below ? "top:" + (r.bottom + 16) : "bottom:" + (H - r.top + 16)) + 'px">' +
+        '<i class="tr-ar" style="left:' + (ax - bx - 9) + 'px"></i><b>' + o(h) + "</b><span>" + o(d) + '</span><div class="tr-ft"><small>' + (i + 1) + " / " + L.length + '</small><button data-t="skip">דלג</button><button data-t="next" class="pri">' + (i === L.length - 1 ? "סיום ✓" : "הבא ›") + "</button></div></div>";
+    }
+    ((ov.onclick = (e) => {
+      const b = e.target.closest("[data-t]");
+      b && "skip" === b.dataset.t ? end() : (i++, draw());
+    }),
+      window.addEventListener("resize", draw),
+      draw());
+  }
+  window.__tour = tourRun;
 
   // ===== 📷 סריקת דפים מודפסים מתמונות → טקסט (לספרים שלי) =====
   // בלי מפתח: זיהוי בטלפון (Tesseract, חינם). עם מפתח Gemini אישי: זיהוי מדויק כולל ניקוד – המשתמש משלם לעצמו
@@ -28333,6 +28391,7 @@ function doGet(e){
           '<div class="sw"><span>להציע לי תזכורות וטיפים לפי המדור שאני נמצא בו (למשל: "קראתם שניים מקרא?")</span><input type="checkbox" id="nudgeC" ' + (!1 !== s.get("nudgeOn", !0) ? "checked" : "") + "></div>",
         )),
         Tf.on && s.get("ghTok", "") && (r += '<div id="ibCard">' + n("📥 תיבת הרעיונות (רק אצלך)", inboxHtml()) + "</div>"),
+        (r += '<div id="tourCard">' + n("👆 הדרכת הכפתורים", '<div class="sh-sub">חץ מכל כפתור בדף הקריאה עם הסבר קצר.</div><button class="btn sm" id="tourAgain" style="margin-top:6px">▶️ להציג שוב</button>') + "</div>"),
         NAT.on && (r += '<div id="qtCard">' + n("🤫 שקט בזמן תפילה", '<div class="sh-sub">בסידור, בברכת המזון ובתיקון הכללי: רטט, השתקה מלאה או מצב טיסה – והצליל חוזר לקדמותו לבד כשיוצאים.</div><button class="btn sm" id="qtOpen" style="margin-top:6px">⚙️ הגדרות השקט</button>') + "</div>"),
         Tf.on && s.get("ghTok", "") && (r += '<div id="hkCard">' + n("🕯️ הקדשות (ניהול – רק אצלך)", hkAdmHtml()) + "</div>"),
         (r += n(
@@ -28476,6 +28535,13 @@ function doGet(e){
             try {
               const t = l("#hkCard");
               t && hkAdmBind(t);
+            } catch (t) {}
+            try {
+              const t = l("#tourAgain");
+              t &&
+                (t.onclick = () => {
+                  (s.set("tourRd", 0), st("👆 ההדרכה תופיע בכניסה הבאה לספר", 3e3));
+                });
             } catch (t) {}
             try {
               const t = l("#qtOpen");
