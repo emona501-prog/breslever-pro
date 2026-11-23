@@ -1746,7 +1746,25 @@ function MAIN(t) {
       body = g ? g[2] : sel.replace(/\{\{[\d.]+\|([^}]*)\}\}/g, "$1"),
       z = Math.round(Math.min(2.5, Math.max(0.4, (g ? +g[1] : 1) + d)) * 100) / 100,
       out = Math.abs(z - 1) < 0.01 ? body : "{{" + z + "|" + body + "}}";
-    ((t.value = v.slice(0, i) + out + v.slice(c)), t.focus(), t.setSelectionRange(i, i + out.length), t.dispatchEvent(new Event("input")), st("גודל הסימון: " + Math.round(100 * z) + "%", 1200));
+    // שומרים את מיקום הגלילה – בלי קפיצות בזמן הגדלה / הקטנה
+    const S = document.getElementById("sheet"),
+      y = S ? S.scrollTop : 0,
+      keep = () => S && S.scrollTop !== y && (S.scrollTop = y);
+    S && S.addEventListener("scroll", keep);
+    ((t.value = v.slice(0, i) + out + v.slice(c)), t.focus({ preventScroll: !0 }), t.setSelectionRange(i, i + out.length), t.dispatchEvent(new Event("input")), keep());
+    (requestAnimationFrame(keep), setTimeout(() => (keep(), S && S.removeEventListener("scroll", keep)), 300));
+    t.closest(".ed-row") || st("גודל הסימון: " + Math.round(100 * z) + "%", 1200);
+    return z;
+  }
+  // הגודל של הטקסט המסומן / הקבוצה שהסמן בתוכה (לתצוגה ליד הטקסט)
+  function szCur(t) {
+    const v = t.value,
+      i = t.selectionStart,
+      c = t.selectionEnd,
+      re = /\{\{([\d.]+)\|[^}]*\}\}/g;
+    let m;
+    for (; (m = re.exec(v)); ) if (i >= m.index && c <= m.index + m[0].length) return +m[1];
+    return i === c ? null : 1;
   }
   function Tt(t, e) {
     const i = t.selectionStart,
@@ -1759,7 +1777,7 @@ function MAIN(t) {
       n = a.slice(0, a.length - a.trimStart().length),
       r = a.slice(a.trimEnd().length),
       f = n + (s.startsWith(o) && s.endsWith(o) && s.length > 2 * o.length ? s.slice(o.length, -o.length) : o + s + o) + r;
-    ((t.value = l.slice(0, i) + f + l.slice(c)), t.focus(), t.setSelectionRange(i, i + f.length), t.dispatchEvent(new Event("input")));
+    ((t.value = l.slice(0, i) + f + l.slice(c)), t.focus({ preventScroll: !0 }), t.setSelectionRange(i, i + f.length), t.dispatchEvent(new Event("input")));
   }
   function At(t, e) {
     const i = Ut(
@@ -22629,6 +22647,8 @@ function doGet(e){
   const rr = {
     v: "2026-11-17b",
     items: [
+      ["2026-11-23", "🚗", "תזכורת תפילת הדרך – ישר לנוסח", "לחיצה על התזכורת בנסיעה פותחת מיד את \"יהי רצון מלפניך... שתוליכנו לשלום\", בלי ההלכה וההקדמות שלפניו. ההלכה עדיין מופיעה בראש עמוד תפילת הדרך."],
+      ["2026-11-23", "🔠", "סרגל גודל צמוד לטקסט", "בעורך תמונת השיתוף: מסמנים מילים – ומיד מתחת לשורה קופץ סרגל קטן: א־ · האחוז · א+ · B. רואים כמה הגדלתם או הקטנתם, והמסך לא זז."],
       ["2026-11-23", "🔠", "עיצוב הטקסט בתמונת השיתוף", "בעורך תמונת ההילולה: מסמנים מילים בתוך שורה ולוחצים א+ / א־ – רק הטקסט המסומן גדל או קטן. כברירת מחדל טקסט בסוגריים קטן יותר משם הצדיק (אפשר לשנות במחוון \"טקסט בסוגריים\"). המחוונים כבר לא מקפיצים את המסך והאחוזים בתוך המסגרת."],
       ["2026-11-23", "👆", "הדרכה קצרה על הכפתורים", "בכניסה לספר מופיע פעם אחת חץ מכל כפתור עם הסבר בשתי מילים. רוצים לראות שוב? ⚙️ הגדרות ← \"הדרכת הכפתורים\"."],
       ["2026-11-23", "⬇️", "סגירת חלונות בגרירה + כתב הוראות ברור", "כל חלון שנפתח מלמטה (העוזר, הגדרות ועוד) – גוררים את הפס שבראשו כלפי מטה והוא נסגר. בסידור ובתפילות, הוראות וההסברים בכתב הקטן – בצבע כהה וברור יותר. ליד כפתור 📜 בקריאה נכתב \"ברצף\"."],
@@ -24377,8 +24397,19 @@ function doGet(e){
   function hdOpen() {
     const v = VOLS.findIndex((t) => "תפילת הדרך" === String((t && t.title) || t || "").trim()),
       si = v >= 0 ? n.findIndex((t) => t.g === "V" + v) : -1;
-    si >= 0 && We(si, 0);
-    setTimeout(hdLaw, si >= 0 ? 350 : 0);
+    if (si < 0) return void hdLaw();
+    // ישר לנוסח "יהי רצון מלפניך" – בלי ההלכה וההקדמות שלפניו
+    const N = (t) => String(t || "").replace(/<[^>]+>/g, "").replace(/[\u0591-\u05C7]/g, ""),
+      RX = /יהי רצון מלפניך/;
+    let ci = 0,
+      fid = null;
+    (n[si].c || []).some((c, k) => (c.i || []).some((t) => RX.test(N(t.b)) && ((ci = k), (fid = t.id), !0)));
+    We(si, ci, fid);
+    // גיבוי: אם הטקסט נטען מאוחר – גוללים לפסקה לפי מה שעל המסך
+    setTimeout(() => {
+      const e = [...document.querySelectorAll("#reader .item")].find((t) => RX.test(N(t.textContent)));
+      e && ((e.style.scrollMarginTop = "110px"), e.scrollIntoView({ block: "start" }));
+    }, 600);
   }
   function hdLaw() {
     (Ut(
@@ -25331,6 +25362,40 @@ function doGet(e){
               ((e[t.dataset.f] = t.value), r());
             }),
         ),
+        (() => {
+          // סרגל גודל צף – צמוד לשורה שבה סימנת טקסט
+          const old = l("#szFt", d);
+          old && old.remove();
+          const F = document.createElement("div");
+          ((F.id = "szFt"),
+            (F.className = "sz-ft"),
+            (F.innerHTML = '<button type="button" data-z="-1" aria-label="הקטנה">א־</button><b>100%</b><button type="button" data-z="1" aria-label="הגדלה">א+</button><button type="button" data-z="b" aria-label="הדגשה"><b>B</b></button>'));
+          let cur = null;
+          const show = (t) => {
+            const z = szCur(t);
+            if (null == z) return void (F.hidden = !0);
+            const row = t.closest(".ed-row") || t.parentNode;
+            (F.parentNode !== row && ((row.style.position = "relative"), row.appendChild(F)),
+              (F.style.top = t.offsetTop + t.offsetHeight + 4 + "px"),
+              (F.querySelector("b").textContent = Math.round(100 * z) + "%"),
+              (F.hidden = !1),
+              (cur = t));
+          };
+          ((F.hidden = !0),
+            F.addEventListener("pointerdown", (t) => t.preventDefault()),
+            F.addEventListener("mousedown", (t) => t.preventDefault()),
+            a("button", F).forEach((b) => {
+              b.onclick = () => {
+                cur && ("b" === b.dataset.z ? Tt(cur) : szSel(cur, 0.1 * +b.dataset.z), requestAnimationFrame(() => show(cur)));
+              };
+            }));
+          const sc = () => {
+            if (!F.isConnected && !d.isConnected) return void document.removeEventListener("selectionchange", sc);
+            const t = document.activeElement;
+            t && t.matches && t.matches("textarea[data-t]") && d.contains(t) ? show(t) : (F.hidden = !0);
+          };
+          document.addEventListener("selectionchange", sc);
+        })(),
         a("[data-t]", d).forEach((t) => {
           ((t.onfocus = () => {
             p = t;
