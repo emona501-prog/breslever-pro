@@ -1664,7 +1664,36 @@ function MAIN(t) {
       t.fillText(vt, d - r - 22, i + 30),
       t.restore());
   }
-  function wt(t, e, i, c) {
+  // גודל לחלק מהטקסט: {{0.7|טקסט}} ; pz – גודל אוטומטי לטקסט שבסוגריים (למשל 0.75)
+  const fz = (f, z) => (1 === z || !z ? f : String(f).replace(/(\d+(?:\.\d+)?)px/, (m, n) => Math.max(8, Math.round(n * z)) + "px"));
+  function wtTok(t, pz) {
+    const e = [];
+    return (
+      String(t || "")
+        .split(/(\{\{[\d.]+\|[^}]*\}\})/)
+        .forEach((t) => {
+          if (!t) return;
+          const g = t.match(/^\{\{([\d.]+)\|([^}]*)\}\}$/),
+            Z = g ? Math.min(3, Math.max(0.3, +g[1] || 1)) : 0;
+          (g ? g[2] : t).split(/(\*\*[^*]+\*\*)/).forEach((t) => {
+            if (!t) return;
+            const i = /^\*\*[^*]+\*\*$/.test(t);
+            let par = 0;
+            (i ? t.slice(2, -2) : t)
+              .split(/\s+/)
+              .filter(Boolean)
+              .forEach((t) => {
+                const op = /\(/.test(t) && !/\)/.test(t.slice(t.indexOf("(")));
+                (/^\(/.test(t) && (par = 1));
+                const z = Z || (pz && (par || /^\(.*\)[.,:;]?$/.test(t)) ? pz : 1);
+                (e.push({ w: t, b: i, z }), /\)/.test(t) && (par = 0), op && !/^\(/.test(t) && (par = 1));
+              });
+          });
+        }),
+      e
+    );
+  }
+  function wt(t, e, i, c, pz) {
     const l = [];
     return (
       String(e || "")
@@ -1673,23 +1702,8 @@ function MAIN(t) {
           let a = [],
             o = 0;
           const s = ((t.font = c(!1)), t.measureText(" ").width);
-          ((function (t) {
-            const e = [];
-            return (
-              String(t || "")
-                .split(/(\*\*[^*]+\*\*)/)
-                .forEach((t) => {
-                  if (!t) return;
-                  const i = /^\*\*[^*]+\*\*$/.test(t);
-                  (i ? t.slice(2, -2) : t)
-                    .split(/\s+/)
-                    .filter(Boolean)
-                    .forEach((t) => e.push({ w: t, b: i }));
-                }),
-              e
-            );
-          })(e).forEach((e) => {
-            t.font = c(e.b);
+          (wtTok(e, pz).forEach((e) => {
+            t.font = fz(c(e.b), e.z);
             const n = t.measureText(e.w).width;
             ((e.width = n), a.length && o + s + n > i && (l.push({ ws: a, w: o }), (a = []), (o = 0)), (o += (a.length ? s : 0) + n), a.push(e));
           }),
@@ -1703,12 +1717,37 @@ function MAIN(t) {
     let n = i + e.w / 2;
     ((t.textAlign = "right"),
       e.ws.forEach((e) => {
-        ((t.font = l(e.b)), (t.fillStyle = (e.b && o) || a), t.fillText(e.w, n, c), (n -= e.width + s));
+        ((t.font = fz(l(e.b), e.z)), (t.fillStyle = (e.b && o) || a), t.fillText(e.w, n, c), (n -= e.width + s));
       }),
       (t.textAlign = "center"));
   }
-  const Mt = (t) => String(t || "").replace(/\*\*([^*]+)\*\*/g, "$1"),
-    St = (t) => String(t || "").replace(/\*\*([^*]+)\*\*/g, "*$1*");
+  const Mt = (t) =>
+      String(t || "")
+        .replace(/\{\{[\d.]+\|([^}]*)\}\}/g, "$1")
+        .replace(/\*\*([^*]+)\*\*/g, "$1"),
+    St = (t) =>
+      String(t || "")
+        .replace(/\{\{[\d.]+\|([^}]*)\}\}/g, "$1")
+        .replace(/\*\*([^*]+)\*\*/g, "*$1*");
+  // גודל לטקסט המסומן: כל לחיצה מגדילה / מקטינה ב־10%
+  function szSel(t, d) {
+    let i = t.selectionStart,
+      c = t.selectionEnd;
+    const v = t.value;
+    if (i === c) {
+      // בלי סימון: אם הסמן בתוך קבוצת גודל – משנים אותה
+      const re = /\{\{[\d.]+\|[^}]*\}\}/g;
+      let m;
+      for (; (m = re.exec(v)); ) if (i >= m.index && i <= m.index + m[0].length) ((i = m.index), (c = m.index + m[0].length));
+      if (i === c) return void st("סמנו קודם את המילים שרוצים להגדיל או להקטין");
+    }
+    const sel = v.slice(i, c),
+      g = sel.match(/^\{\{([\d.]+)\|([^}]*)\}\}$/),
+      body = g ? g[2] : sel.replace(/\{\{[\d.]+\|([^}]*)\}\}/g, "$1"),
+      z = Math.round(Math.min(2.5, Math.max(0.4, (g ? +g[1] : 1) + d)) * 100) / 100,
+      out = Math.abs(z - 1) < 0.01 ? body : "{{" + z + "|" + body + "}}";
+    ((t.value = v.slice(0, i) + out + v.slice(c)), t.focus(), t.setSelectionRange(i, i + out.length), t.dispatchEvent(new Event("input")), st("גודל הסימון: " + Math.round(100 * z) + "%", 1200));
+  }
   function Tt(t, e) {
     const i = t.selectionStart,
       c = t.selectionEnd;
@@ -22590,6 +22629,7 @@ function doGet(e){
   const rr = {
     v: "2026-11-17b",
     items: [
+      ["2026-11-23", "🔠", "עיצוב הטקסט בתמונת השיתוף", "בעורך תמונת ההילולה: מסמנים מילים בתוך שורה ולוחצים א+ / א־ – רק הטקסט המסומן גדל או קטן. כברירת מחדל טקסט בסוגריים קטן יותר משם הצדיק (אפשר לשנות במחוון \"טקסט בסוגריים\"). המחוונים כבר לא מקפיצים את המסך והאחוזים בתוך המסגרת."],
       ["2026-11-23", "👆", "הדרכה קצרה על הכפתורים", "בכניסה לספר מופיע פעם אחת חץ מכל כפתור עם הסבר בשתי מילים. רוצים לראות שוב? ⚙️ הגדרות ← \"הדרכת הכפתורים\"."],
       ["2026-11-23", "⬇️", "סגירת חלונות בגרירה + כתב הוראות ברור", "כל חלון שנפתח מלמטה (העוזר, הגדרות ועוד) – גוררים את הפס שבראשו כלפי מטה והוא נסגר. בסידור ובתפילות, הוראות וההסברים בכתב הקטן – בצבע כהה וברור יותר. ליד כפתור 📜 בקריאה נכתב \"ברצף\"."],
       ["2026-11-23", "✨", "זוהר: כותרת \"לשון הקודש\"", "בזוהר בתצוגה המשולבת (ארמית + לשון הקודש), מעל כל קטע תרגום מופיעה תווית קטנה \"לשון הקודש\" – כדי שיהיה ברור איפה עוברים מהארמית לתרגום."],
@@ -24347,6 +24387,7 @@ function doGet(e){
       (l("#hdGo").onclick = () => Wt()));
   }
   window.__hdOpen = hdOpen;
+  window.__hshOpen = (o) => Ur(o);
   // בראש עמוד תפילת הדרך: ההלכה + הפעלת התזכורת בנסיעות
   function hdVolId() {
     const v = VOLS.findIndex((t) => "תפילת הדרך" === String((t && t.title) || t || "").trim()),
@@ -25048,7 +25089,7 @@ function doGet(e){
         return (
           (M = k.map((i, c) => {
             const a = i.hd && k[c + 1] && k[c + 1].hd === i.hd ? Object.assign({}, i, { hd: "" }) : i,
-              n = wt(l, a.t, x, S);
+              n = wt(l, a.t, x, S, null != e.ui && null != e.ui.pm ? +e.ui.pm : 0.75);
             l.font = "500 " + Math.round(0.62 * e * d) + "px " + s;
             const r = a.sub ? Ir(l, Mt(a.sub), x) : [];
             l.font = "700 " + Math.round(0.72 * e * p) + "px " + o;
@@ -25182,13 +25223,14 @@ function doGet(e){
       ((d.innerHTML =
         '<div class="hsh-sz"><div class="ed-l" style="margin:0 0 4px">🔠 גודל הכתב וריווח</div>' +
         t("fm", "שורה ראשית (שם עיר / צדיק)", 0.5, 2.5, 1) +
+        t("pm", "(טקסט בסוגריים)", 0.4, 1.2, 0.75) +
         ((e.rows || []).some((t) => t.sub) ? t("sm", "שורות משנה / זמנים", 0.5, 3, 1) : "") +
         ((e.rows || []).some((t) => t.hd) ? t("hm", "שורת תאריך צהובה", 0.5, 3, 1) : "") +
         t("tm", "כותרת עליונה ולוגו", 0.6, 1.5, 1) +
         (e.date ? t("dm", "תאריך בפינה", 0.6, 1.6, 1) : "") +
         ("" !== e.foot ? t("ftm", "שורת סיום", 0.6, 1.6, 1) : "") +
         ((e.rows || []).length > 1 ? t("gm", "ריווח בין השורות", 0, 3, 1) : "") +
-        '<div class="hsh-fitn" style="font-size:12px;color:var(--sub);margin:4px 0"></div><div style="font-size:12px;color:var(--muted);margin:2px 0 6px">💡 בזמן העריכה התמונה נשארת למעלה, כך שרואים כל שינוי מיד.</div><button class="btn sm" data-uireset="1">↺ גודל אוטומטי</button></div><div class="ed-tb"><button class="btn sm" data-ed="b"><b>B</b> הדגשה</button><button class="btn sm" data-ed="add">➕ שורה</button><button class="btn sm" data-ed="reset">↺ מקור</button></div><label class="ed-l">כותרת</label><textarea class="ed-i ed-g" rows="1" data-f="title">' +
+        '<div class="hsh-fitn" style="font-size:12px;color:var(--sub);margin:4px 0"></div><div style="font-size:12px;color:var(--muted);margin:2px 0 6px">💡 בזמן העריכה התמונה נשארת למעלה, כך שרואים כל שינוי מיד.</div><button class="btn sm" data-uireset="1">↺ גודל אוטומטי</button></div><div class="ed-tb"><button class="btn sm" data-ed="b"><b>B</b> הדגשה</button><button class="btn sm" data-ed="zm" title="הקטנת הטקסט המסומן">א־ הקטנה</button><button class="btn sm" data-ed="zp" title="הגדלת הטקסט המסומן">א+ הגדלה</button><button class="btn sm" data-ed="add">➕ שורה</button><button class="btn sm" data-ed="reset">↺ מקור</button></div><label class="ed-l">כותרת</label><textarea class="ed-i ed-g" rows="1" data-f="title">' +
         o(e.title) +
         '</textarea><label class="ed-l">שורת תאריך</label><textarea class="ed-i ed-g" rows="1" data-f="date">' +
         o(e.date || "") +
@@ -25250,6 +25292,20 @@ function doGet(e){
             o(ht()) +
             '"><button class="btn sm" id="capSave">שמירה</button> <button class="btn sm" id="capReset">↺ לערוץ גאולה וישועה</button></div>'
           : "")),
+        a("[data-ui]", d).forEach((t) => {
+          // בזמן הזזת מחוון – המסך לא זז
+          const S = l("#sheet");
+          let y = null;
+          const keep = () => null != y && S && S.scrollTop !== y && (S.scrollTop = y),
+            on = () => {
+              S && ((y = S.scrollTop), S.addEventListener("scroll", keep));
+            },
+            off = () =>
+              setTimeout(() => {
+                (S && S.removeEventListener("scroll", keep), (y = null));
+              }, 350);
+          (t.addEventListener("pointerdown", on), t.addEventListener("touchstart", on, { passive: !0 }), ["pointerup", "pointercancel", "touchend", "change"].forEach((e) => t.addEventListener(e, off)));
+        }),
         a("[data-ui]", d).forEach(
           (t) =>
             (t.oninput = () => {
@@ -25314,6 +25370,12 @@ function doGet(e){
               i > 0 && (([e.rows[i - 1], e.rows[i]] = [e.rows[i], e.rows[i - 1]]), h(), r());
             }),
         ),
+        a('[data-ed="zm"],[data-ed="zp"]', d).forEach((b) => {
+          // לא לאבד את הסימון בטקסט בלחיצה על הכפתור
+          (b.addEventListener("pointerdown", (t) => t.preventDefault()),
+            b.addEventListener("mousedown", (t) => t.preventDefault()),
+            (b.onclick = () => (p ? szSel(p, "zp" === b.dataset.ed ? 0.1 : -0.1) : st("לחצו קודם בתוך שורה וסמנו מילים"))));
+        }),
         (l('[data-ed="b"]', d).onclick = () => {
           p ? Tt(p) : st("לחץ קודם בתוך שורה וסמן מילים");
         }),
