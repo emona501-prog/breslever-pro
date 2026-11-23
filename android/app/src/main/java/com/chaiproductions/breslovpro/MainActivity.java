@@ -28,6 +28,7 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(UpdaterPlugin.class);
         registerPlugin(TravelPlugin.class);
         registerPlugin(QuietPlugin.class);
+        registerPlugin(BpAlarmPlugin.class);
         super.onCreate(savedInstanceState);
 
         // מסך מלא "קצה לקצה": האפליקציה נמשכת מתחת לשעון ולפס הניווט, בדיוק כמו באתר המותקן

@@ -28142,7 +28142,20 @@ function doGet(e){
               t.second.time +
               '"></div><div style="font-size:12.5px;color:var(--muted);line-height:1.6;margin-top:8px">כשתזכורת קופצת אפשר ללחוץ ⏰ נודניק — 10 דקות, חצי שעה או שעה. תזכורת שהוחמצה (הטלפון היה כבוי) תקפוץ כשתפתח את האפליקציה. ' +
               e +
-              '.</div><div class="row2"><button class="btn sm" id="remTest">🔔 בדיקת תזכורת</button></div>'
+              '.</div><div class="row2"><button class="btn sm" id="remTest">🔔 בדיקת תזכורת</button></div>' +
+              (NAT.on
+                ? (function () {
+                    const m = s.get("ntfMode", "snd"),
+                      b = (k, t) => '<button class="btn sm' + (m === k ? " pri" : "") + '" data-ntfm="' + k + '" onclick="window.__ntfSet&&window.__ntfSet(\'' + k + '\')" style="flex:1;min-width:0">' + t + "</button>";
+                    return (
+                      '<div style="margin-top:12px;font-weight:700">📣 איך התזכורות יקפצו?</div><div class="row2" style="display:flex;gap:6px;flex-wrap:wrap">' +
+                      b("q", "🔕 שקט") +
+                      b("snd", "🔔 צליל ורטט") +
+                      b("alarm", "⏰ מסך מלא") +
+                      '</div><div style="font-size:12.5px;color:var(--muted);line-height:1.6;margin-top:6px">⏰ <b>מסך מלא</b> = כמו שעון מעורר: המסך נדלק גם כשהטלפון נעול, עם צליל שעון מעורר ורטט עד שלוחצים "פתיחה", "נודניק" או "סגירה". הצליל נשמע גם כשהטלפון במצב רטט. מתאים למי שלא רוצה לפספס.</div><div class="row2"><button class="btn sm" onclick="window.__ntfTest&&window.__ntfTest()">🧪 בדיקה לפי המצב שנבחר</button></div>'
+                    );
+                  })()
+                : "")
             );
           })(),
         )),
@@ -29976,7 +29989,7 @@ function doGet(e){
   !(function () {
     const t = NAT.P("LocalNotifications");
     if (!t) return;
-    const e = { goals: 1, goalsRem: 1, halPlan: 1, pgRem: 1, dayRem: 1, rem: 1, tchRem: 1, zmAlert: 1, zmCity: 1, zmMode: 1, zmCl: 1, zmRem: 1, lvE: 1, lvL: 1, lvClk: 1, omNus: 1 };
+    const e = { ntfMode: 1, goals: 1, goalsRem: 1, halPlan: 1, pgRem: 1, dayRem: 1, rem: 1, tchRem: 1, zmAlert: 1, zmCity: 1, zmMode: 1, zmCl: 1, zmRem: 1, lvE: 1, lvL: 1, lvClk: 1, omNus: 1 };
     let i = null;
     async function c() {
       try {
@@ -30161,7 +30174,7 @@ function doGet(e){
         if (
           (i.forEach((t) => {
             ((t.actionTypeId = "REMX"),
-              (t.channelId = "bp_rem_snd"),
+              (t.channelId = "q" === s.get("ntfMode", "snd") ? "bp_rem_q" : "bp_rem_v2"),
               (t.extra = Object.assign(
                 { kind: t.id >= 3e3 && t.id < 3100 ? "dr" : t.extra && "tch" === t.extra.go ? "tch" : t.id < 110 ? "rem" : "" },
                 t.extra || {},
@@ -30170,6 +30183,28 @@ function doGet(e){
           !i.length)
         )
           return;
+        // ⏰ מצב "שעון מעורר" – מסך מלא עם צליל שעון מעורר (תוסף BpAlarm באפליקציה)
+        const AL = NAT.P("BpAlarm");
+        if ("alarm" === s.get("ntfMode", "snd") && AL) {
+          const L = [];
+          let n = 0;
+          i.forEach((x) => {
+            const sc = x.schedule || {},
+              ex = JSON.stringify(x.extra || {});
+            if (sc.at) L.push({ id: 20000 + n++, at: +new Date(sc.at), title: x.title, body: x.body, extra: ex });
+            else if (sc.on)
+              for (let k = 0; k < 7; k++) {
+                const d = new Date();
+                (d.setDate(d.getDate() + k), d.setHours(sc.on.hour, sc.on.minute || 0, 0, 0), d > new Date(Date.now() + 3e4) && L.push({ id: 20000 + n++, at: +d, title: x.title, body: x.body, extra: ex }));
+              }
+          });
+          L.sort((a, b) => a.at - b.at);
+          await AL.schedule({ items: L.slice(0, 110) });
+          return;
+        }
+        try {
+          AL && AL.cancel();
+        } catch (t) {}
         let a = await t.checkPermissions();
         if (("granted" !== a.display && (a = await t.requestPermissions()), "granted" !== a.display))
           return void st("כדי לקבל תזכורות צריך לאשר התראות בהגדרות הטלפון");
@@ -30184,6 +30219,56 @@ function doGet(e){
     try {
       t.createChannel({ id: "bp_rem_snd", name: "תזכורות ברסלב PRO", description: "תזכורות לימוד, זמני היום והודעות", importance: 5, visibility: 1, vibration: !0, lights: !0 });
     } catch (t) {}
+    try {
+      t.createChannel({ id: "bp_rem_v2", name: "🔔 תזכורות – צליל ורטט", description: "תזכורות לימוד וזמני היום עם צליל ורטט", importance: 5, visibility: 1, vibration: !0, lights: !0 });
+      t.createChannel({ id: "bp_rem_q", name: "🔕 תזכורות שקטות", description: "תזכורות בלי צליל", importance: 2, visibility: 1, vibration: !1 });
+    } catch (t) {}
+    // ⏰ לחיצה על "פתיחה" במסך השעון המעורר – עוברים למקום הנכון באפליקציה
+    async function alOpen() {
+      try {
+        const AL = NAT.P("BpAlarm");
+        if (!AL) return;
+        const r = await AL.takeOpen();
+        if (!r || !r.extra) return;
+        const e = JSON.parse(r.extra || "{}");
+        if (e.nav) return void It(e.nav.v, e.nav.p);
+        if (e.zk) return void goZman(e.zk);
+        if (e.hal) return void halOpen(0);
+        if (e.goals) return void goalsOpen();
+        if (e.open) return void ("cal" === e.open ? It("calendar") : Ye(e.open));
+        "tch" === e.go ? td() : "day" === e.go && It(jl().has ? "day" : "home");
+      } catch (t) {}
+    }
+    (setTimeout(alOpen, 1200),
+      document.addEventListener("visibilitychange", () => {
+        "visible" === document.visibilityState && setTimeout(alOpen, 300);
+      }));
+    window.__ntfSet = async (m) => {
+      const AL = NAT.P("BpAlarm");
+      if ("alarm" === m && !AL) return void st("מצב שעון מעורר דורש את הגרסה החדשה של האפליקציה");
+      s.set("ntfMode", m);
+      if ("alarm" === m && AL)
+        try {
+          const p = await AL.perm();
+          if (!p.fsi || !p.exact) {
+            st("צריך לאשר לאפליקציה להציג מסך מלא – נפתחות ההגדרות, מדליקים ומחזירים", 6e3);
+            setTimeout(() => AL.openFsi(), 1200);
+          }
+        } catch (t) {}
+      st({ q: "🔕 תזכורות שקטות", snd: "🔔 תזכורות עם צליל ורטט", alarm: "⏰ תזכורות במסך מלא – כמו שעון מעורר" }[m] || "נשמר");
+      try {
+        document.querySelectorAll("[data-ntfm]").forEach((b) => b.classList.toggle("pri", b.dataset.ntfm === m));
+      } catch (t) {}
+    };
+    window.__ntfTest = async () => {
+      const m = s.get("ntfMode", "snd"),
+        AL = NAT.P("BpAlarm");
+      if ("alarm" === m && AL) return (await AL.test({ title: "⏰ בדיקת שעון מעורר", body: "כך תיראה התזכורת – בעוד 5 שניות" }), void st("⏰ בעוד 5 שניות יקפוץ המסך – אפשר לנעול את הטלפון"));
+      try {
+        await t.schedule({ notifications: [{ id: 3599, title: "🔔 בדיקת תזכורת", body: "כך תיראה התזכורת", channelId: "q" === m ? "bp_rem_q" : "bp_rem_v2", schedule: { at: new Date(Date.now() + 5e3), allowWhileIdle: !0 } }] });
+        st("🔔 בעוד 5 שניות תגיע התראת בדיקה");
+      } catch (t) {}
+    };
     try {
       t.registerActionTypes({
         types: [
