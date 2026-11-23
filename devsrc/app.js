@@ -1946,6 +1946,38 @@ function MAIN(t) {
     ((Qt = null), e && e(), !t && Vt ? ((Vt = !1), Rt++, history.back()) : (Vt = !1));
   }
   l("#backdrop").addEventListener("click", () => Wt());
+  // ⬇️ גרירה למטה של הפס שבראש החלון (או של אזור הכותרת כשהחלון בראשו) – סוגרת את החלון
+  (function () {
+    const S = l("#sheet");
+    if (!S) return;
+    let y0 = null,
+      dy = 0,
+      ok = !1;
+    (S.addEventListener(
+      "touchstart",
+      (e) => {
+        const t = e.touches[0],
+          r = S.getBoundingClientRect(),
+          g = e.target.closest && e.target.closest(".grab");
+        ok = !!g || (S.scrollTop <= 0 && t.clientY - r.top < 56 && !(e.target.closest && e.target.closest("input,textarea,select,button,a")));
+        ok && ((y0 = t.clientY), (dy = 0), (S.style.transition = "none"));
+      },
+      { passive: !0 },
+    ),
+      S.addEventListener(
+        "touchmove",
+        (e) => {
+          if (!ok || null == y0) return;
+          ((dy = Math.max(0, e.touches[0].clientY - y0)), dy > 4 && ((S.style.transform = "translateY(" + dy + "px)"), e.cancelable && e.preventDefault()));
+        },
+        { passive: !1 },
+      ),
+      S.addEventListener("touchend", () => {
+        if (!ok) return;
+        ((ok = !1), (y0 = null), (S.style.transition = ""), (S.style.transform = ""), dy > 90 && Wt(), (dy = 0));
+      }),
+      S.addEventListener("touchcancel", () => ((ok = !1), (y0 = null), (S.style.transition = ""), (S.style.transform = ""))));
+  })();
   const Yt = s.get("stats", {});
   function Kt() {
     const t = new Date();
@@ -22552,6 +22584,7 @@ function doGet(e){
   const rr = {
     v: "2026-11-17b",
     items: [
+      ["2026-11-23", "⬇️", "סגירת חלונות בגרירה + כתב הוראות ברור", "כל חלון שנפתח מלמטה (העוזר, הגדרות ועוד) – גוררים את הפס שבראשו כלפי מטה והוא נסגר. בסידור ובתפילות, הוראות וההסברים בכתב הקטן – בצבע כהה וברור יותר. ליד כפתור 📜 בקריאה נכתב \"ברצף\"."],
       ["2026-11-23", "✨", "זוהר: כותרת \"לשון הקודש\"", "בזוהר בתצוגה המשולבת (ארמית + לשון הקודש), מעל כל קטע תרגום מופיעה תווית קטנה \"לשון הקודש\" – כדי שיהיה ברור איפה עוברים מהארמית לתרגום."],
       ["2026-11-22", "📷", "סריקת דפים לספרים שלי", "באזור שלי ← הספרים שלי ← ➕ ספר חדש ← \"📷 צילום / תמונות של דפים\": מצלמים דף מודפס והטקסט נכנס לספר. זיהוי בטלפון בחינם, או זיהוי מדויק (כולל ניקוד) עם מפתח Gemini אישי."],
       ["2026-11-22", "🕯️", "ההקדשות גם בתוך הספרים", "פס ההקדשות רץ עכשיו גם בזמן הקריאה בספר – כל זמן שיש הקדשות פעילות (לעילוי נשמת, לרפואה ועוד)."],
