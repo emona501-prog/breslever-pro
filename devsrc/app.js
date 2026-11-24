@@ -14800,6 +14800,121 @@ function MAIN(t) {
       '</button><button class="btn sm" id="pkOther">🧭 נושא אחר</button></div>';
     return { html: x, acts };
   }
+  // 🙏 "מה מברכים על…" – מחפש את הברכה בסידור, בקונטרסי הברכות ובשולחן ערוך, ומציג את הנוסח עם מקור
+  const BR_V = [66, 67, 65, 68, 70, 49, 136];
+  // מאכלים נפוצים → סוג הברכה (לפי הכלל; כשיש מנהגים שונים – מציינים)
+  const BR_FOOD = {
+    עצ: "תפוח אגס תפוז תפוזים קלמנטינה קלמנטינות אשכולית אפרסק אפרסקים שזיף שזיפים משמש משמשים דובדבנ דובדבנים ענב ענבים תמר תמרים תאנה תאנים רימונ רימונים זית זיתים אגוז אגוזים שקד שקדים אבוקדו מנגו אפרסמונ ליצי גויאבה נקטרינה פירות",
+    אדמה: "בננה בננות אבטיח מלונ תות תותים מלפפונ מלפפונים עגבניה עגבניות גזר תפוח אדמה תפוחי אדמה חסה פלפל פלפלים תירס בוטנ בוטנים ירקות ירק סלק בצל קישוא חציל",
+    מזונות: "עוגה עוגות עוגיה עוגיות פסטה ספגטי אטריות קוסקוס אורז דייסה פתיתים ופל ופלים קרקר קרקרים בורקס רוגלך",
+    מוציא: "לחמ לחמניה לחמניות פיתה פיתות חלה חלות באגט",
+    גפנ: "יינ מיצ ענבים",
+    שהכל: "מימ מים חלב ביצה ביצים בשר עופ דג דגים גבינה שוקולד ממתק ממתקים סוכריה סוכריות קפה תה מיצ מיצים שתיה פטריות גלידה סודה",
+  };
+  const BR_FORM = { עצ: "בורא פרי העץ", אדמה: "בורא פרי האדמה", מזונות: "בורא מיני מזונות", מוציא: "המוציא לחם מן הארץ", גפנ: "בורא פרי הגפן", שהכל: "שהכל נהיה בדברו" };
+  const BR_SA = { עצ: /סימנ רב /, אדמה: /סימנ רג /, מזונות: /סימנ קסח /, מוציא: /סימנ קסח /, גפנ: /סימנ רב /, שהכל: /סימנ רד / };
+  const BR_STOP = new Set("מה מהי מהו איזה איזו איך כמה מברכימ מברכינ מברכ מברכת לברכ ברכה ברכת ברכות הברכה הברכות מברכה מברכות על עלי את אני אנחנו אתה כש כשרואימ כשרואה רואימ רואה רואה צריכ צריכה צריכימ אומרימ אומר אומרת שאומרימ של לפני אחרי כל זה זו לי לו הוא היא יש ישנ בבקשה תגיד תאמר תכתוב תביא תמצא לי מותר ראשונה האמ אמ או גמ שיש שמברכימ שצריכ כשקובעימ קובעימ לקבוע כשמדליקימ מדליקימ להדליק כשמריחימ מריחימ כשאוכלימ אוכלימ לאכול כששותימ שותימ כשרואימ לראות פעמ פעמ ראשונה".split(" "));
+  function brT(t) {
+    return String(t || "").replace(/<[^>]+>/g, " ").replace(/[\u0591-\u05C7]/g, "").replace(/[^א-ת '׳"״]/g, " ").replace(/\s+/g, " ").trim();
+  }
+  function brN(t) {
+    return nc(String(t || "").replace(/<[^>]+>/g, " ").replace(/[֑-ׇ]/g, "").replace(/[״"׳']/g, "").replace(/[^א-ת ]/g, " ").replace(/\s+/g, " ").trim());
+  }
+  function brAsk(t) {
+    const z = " " + brN(t) + " ";
+    if (!/ (מה |איזה |איזו |מתי |איכ )?(מברכימ|מברכינ|מברכ|לברכ|ברכת|הברכה|ברכה|ברכות|מברכה) /.test(z)) return null;
+    // בקשת ברכה אישית ("תברך אותי") – נשארת אצל השיחה הרגילה
+    if (/ (תברכ|תנ ברכה|צריכ ברכה|תתפלל) /.test(z)) return null;
+    const w = z.trim().split(" ").filter((t) => t.length > 1 && !BR_STOP.has(t));
+    return w.length ? { w, z } : null;
+  }
+  function brFood(w) {
+    const s = " " + w.join(" ") + " ";
+    for (const k in BR_FOOD)
+      for (const f of BR_FOOD[k].split(" ").sort((a, b) => b.length - a.length))
+        if (s.includes(" " + f + " ") || s.includes(" ה" + f + " ") || s.includes(" ו" + f + " ")) return { k, f };
+    return null;
+  }
+  // מחפש פסקאות שיש בהן גם מילות השאלה וגם נוסח ברכה
+  function brSearch(w) {
+    const pre = "[והבלמשכ]{0,3}",
+      W = w.map((x) => {
+        const b = x.length > 3 && /^[הו]/.test(x) ? x.slice(1) : x;
+        return new RegExp("(^| )" + pre + b + "( |$)");
+      }),
+      Wg = w.map((x) => {
+        const b = x.length > 3 && /^[הו]/.test(x) ? x.slice(1) : x;
+        return new RegExp("(^| )" + pre + b + "(?= |$)", "g");
+      }),
+      FR = /(ברוכ אתה (יהוה|ה['׳]?|השמ|יי) [^:]{4,140}?(?=:| ועל | על |$)|ברוכ ש[א-ת]+ [^:]{3,60}?(?=:| ועל | על |$)|בורא פרי [א-ת]+|בורא מיני (מזונות|בשמימ)|שהכל נהיה בדברו|המוציא לחמ מנ הארצ|עושה מעשה בראשית|שכחו וגבורתו מלא עולמ|שהחיינו וקיימנו|הטוב והמטיב|עושה הימ הגדול)/g,
+      out = [];
+    h.forEach((x, k) => {
+      const vol = +String(x.s.g || "v-1").slice(1);
+      if (!BR_V.includes(vol) || !x.it || !x.it.b || !x.it.b.length) return;
+      const ct = brN(x.c.t) + " " + brN(x.s.short || "");
+      const raw = x.it.b.filter((t) => !v[t[0]]).map((t) => String(t[1])).join(" ");
+      const T0 = brT(raw),
+        T = nc(T0);
+      let hit = 0,
+        sc = 0;
+      W.forEach((r) => (r.test(T) ? (hit++, (sc += 2)) : r.test(ct) && (hit++, (sc += 4))));
+      if (hit < Math.max(1, Math.ceil(w.length * 0.67))) return;
+      W.forEach((r) => r.test(ct) && (sc += 3));
+      // הנוסח הקרוב ביותר למילות השאלה
+      const pos = [];
+      Wg.forEach((r) => {
+        let m;
+        for (r.lastIndex = 0; (m = r.exec(T)); ) pos.push(m.index);
+      });
+      let best = null;
+      for (let m, d; (m = FR.exec(T)); ) ((d = pos.length ? Math.min(...pos.map((p) => Math.abs(p - m.index))) : 999), (!best || d < best.d) && (best = { f: T0.substr(m.index, m[0].length), d, i: m.index }));
+      if (!best && !/ברכ|מברכ/.test(T + ct)) return;
+      best && best.d < 220 && (sc += 4);
+      best && best.d < 90 && (sc += 2);
+      /ברכ/.test(ct) && (sc += 2);
+      66 === vol || 67 === vol ? (sc += 2) : 136 === vol && /ברכ/.test(ct) && (sc += 1);
+      const c0 = pos.length ? Math.max(0, Math.min(...pos) - 90) : 0;
+      const tm = W.some((r) => r.test(ct)) || (best && best.d < 260 && W.some((r) => r.test(nc(best.f))));
+      out.push({ k, v: vol, sc, tm, f: best && best.d < 260 ? best.f : null, ex: T0.slice(c0, c0 + 260).replace(/^\S*\s/, "") });
+    });
+    return out.sort((a, b) => b.sc - a.sc);
+  }
+  function brSrc(x) {
+    const H = h[x.k],
+      b = $t[x.v],
+      bt = b ? m(String(b.title || "")) : "",
+      n_ = H.it && H.it.n ? m(String(H.it.n)) : "";
+    return [bt, m(g(String(H.c.t || ""))), 136 === x.v && n_ ? "סעיף " + n_ : ""].filter((t) => t && t.trim()).join(" · ");
+  }
+  function brHtml(t) {
+    const A = brAsk(t);
+    if (!A) return null;
+    const acts = [],
+      bt = (lb, k) => (acts.push(() => We(h[k].si, h[k].ci, h[k].id)), '<button class="btn sm" data-br="' + (acts.length - 1) + '">' + lb + "</button>"),
+      obj = A.w.map((t) => t.replace(/[מנצפכ]$/, (c) => ({ מ: "ם", נ: "ן", צ: "ץ", פ: "ף", כ: "ך" })[c])).join(" ");
+    let html = "";
+    const F = brFood(A.w);
+    if (F) {
+      const sa = h.findIndex((x) => "V136" === x.s.g && BR_SA[F.k].test(brN(x.c.t) + " "));
+      const sd = h.findIndex((x) => "V66" === x.s.g);
+      html =
+        '<div class="bot-a bot-qa"><b>🙏 הברכה על ' + o(F.f.replace(/[מנצפכ]$/, (c) => ({ מ: "ם", נ: "ן", צ: "ץ", פ: "ף", כ: "ך" })[c])) + '</b><p class="br-f">ברוך אתה ה׳ אלהינו מלך העולם, <b>' + BR_FORM[F.k] + "</b></p>" +
+        '<p class="br-n">לפי הכלל הרגיל. יש מאכלים שהברכה עליהם תלויה באופן ההכנה או במנהג – במקרה של ספק, כדאי לשאול רב.</p><div class="bot-srcs">' +
+        (sd >= 0 ? bt("📖 נוסח הברכות בסידור", sd) : "") + (sa >= 0 ? bt("⚖️ שולחן ערוך – " + m(g(String(h[sa].c.t || ""))).split("–")[0].trim(), sa) : "") + "</div></div>";
+      return { html, acts };
+    }
+    const R = brSearch(A.w);
+    if (!R.length) return { html: '<div class="bot-say">🔎 לא מצאתי בסידור ובשולחן ערוך ברכה על «' + o(obj) + '». נסה לכתוב במילים אחרות – למשל "מה מברכים כשרואים קשת".</div>', acts };
+    const seen = new Set(),
+      top = R.filter((x, i) => (seen.has(x.v) ? !1 : (0 === i || (x.f && x.tm && x.sc >= 0.75 * R[0].sc)) && (seen.add(x.v), !0))).slice(0, 3),
+      f0 = (top.find((x) => x.f) || {}).f;
+    html =
+      '<div class="bot-a bot-qa"><b>🙏 הברכה – ' + o(obj) + "</b>" +
+      (f0 ? '<p class="br-f">' + o(f0) + "</p>" : "") +
+      top.map((x) => '<div class="br-r"><div class="br-s">📚 ' + o(brSrc(x)) + '</div><p class="br-n">…' + o(x.ex) + "…</p>" + bt("📖 לפתוח במקור", x.k) + "</div>").join("") +
+      "</div>";
+    return { html, acts };
+  }
   function botBookletAsk(t) {
     const e = " " + botNorm(t) + " ";
     if (!/ (צור|תצור|תיצור|תכינ|הכנ|תעשה|לעשות|להכינ|ליצור|תבנה|תסדר|תכנ|אפשר|רוצה|תוכל)/.test(e) || !/ (חוברת|קונטרס|חוברות|דפ לימוד|דפי לימוד) /.test(e)) return null;
@@ -15029,6 +15144,13 @@ function MAIN(t) {
           );
         }
         if (CM) return ((c.innerHTML = '<div class="bot-say">' + CM.say + "</div>"), void setTimeout(() => (Wt(), setTimeout(CM.run, 250)), 1100));
+        // 🙏 "מה מברכים על…" – נוסח הברכה מהסידור והשולחן ערוך
+        if (brAsk(t)) {
+          const need = brFood(brAsk(t).w) ? [66, 136] : BR_V;
+          if (GATE(need, "מחפש את הברכה…")) return;
+          const B = brHtml(t);
+          if (B) return ((c.innerHTML = B.html), void a("[data-br]", c).forEach((t) => (t.onclick = () => (Wt(), setTimeout(B.acts[+t.dataset.br], 230)))));
+        }
         // 🛠️ פעולה: "צור לי חוברת על ..."
         const BK = botBookletAsk(t);
         if (BK) {
@@ -22647,6 +22769,7 @@ function doGet(e){
   const rr = {
     v: "2026-11-17b",
     items: [
+      ["2026-11-24", "🙏", "העוזר יודע איזו ברכה לברך", "שאלו את העוזר \"מה מברכים על…\" – על הים הגדול, קשת, ברקים, פרי חדש, מזוזה, נר חנוכה, בשמים, בננה, עוגה ועוד – והוא מביא את נוסח הברכה עם המקור בסידור ובשולחן ערוך, וכפתור לפתוח אותו."],
       ["2026-11-23", "🚗", "תזכורת תפילת הדרך – ישר לנוסח", "לחיצה על התזכורת בנסיעה פותחת מיד את \"יהי רצון מלפניך... שתוליכנו לשלום\", בלי ההלכה וההקדמות שלפניו. ההלכה עדיין מופיעה בראש עמוד תפילת הדרך."],
       ["2026-11-23", "🔠", "סרגל גודל צמוד לטקסט", "בעורך תמונת השיתוף: מסמנים מילים – ומיד מתחת לשורה קופץ סרגל קטן: א־ · האחוז · א+ · B. רואים כמה הגדלתם או הקטנתם, והמסך לא זז."],
       ["2026-11-23", "🔠", "עיצוב הטקסט בתמונת השיתוף", "בעורך תמונת ההילולה: מסמנים מילים בתוך שורה ולוחצים א+ / א־ – רק הטקסט המסומן גדל או קטן. כברירת מחדל טקסט בסוגריים קטן יותר משם הצדיק (אפשר לשנות במחוון \"טקסט בסוגריים\"). המחוונים כבר לא מקפיצים את המסך והאחוזים בתוך המסגרת."],
