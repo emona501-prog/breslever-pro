@@ -14412,7 +14412,26 @@ function MAIN(t) {
         a = (_o(t) || []).map(Xo)[0];
       (i && L.push(["hanuka", "🕎 הי אחי, היום נר " + i + " של חנוכה! רוצה לשמוע דיבור חזק על חנוכה?", "כן, תביא!", () => botOpen("תורה על חנוכה")]),
         c && L.push(["hag", "✨ היום " + o(String(c)) + " – רוצה לראות מה רבנו אומר על זה?", "כן!", () => botOpen("תורה על " + String(c).split(/[ ·]/)[0])]),
-        a && L.push(["hil", "🕯️ היום הילולת " + o(m(g(String(a)))).slice(0, 70) + " – רוצה לראות בלוח ההילולות?", "פתח", () => It("calendar")]));
+        a &&
+          L.push([
+            "hil",
+            "🕯️ היום הילולת " + o(m(g(String(a)))).slice(0, 70) + " – רוצה לראות בלוח ההילולות?",
+            "פתח",
+            () => It("calendar"),
+            [
+              "📤 שתף",
+              () => {
+                try {
+                  const id = (_o(t) || [])[0],
+                    e0 = hs(0),
+                    r = { g: new Date(e0.y, e0.m - 1, e0.d, 12), h: t };
+                  Ur({ link: dt("cal=" + mt(r.g)), title: "הִלּוּלַת הַצַּדִּיק", date: Kr(r), rows: [{ t: Xo(id), br: Qo(id), hn: 1, hd: k(t.day, !0) + " " + (Dt[t.mon] || t.mon || ""), sub: Wr(uo.hsrc[id]) }] });
+                } catch (e) {
+                  It("calendar");
+                }
+              },
+            ],
+          ]));
     } catch (t) {}
     (5 === t.getDay() && e >= 9 && e < 17 && L.push(["shabbat", "🕯️🕯️ הי צדיק, רוצה לדעת מתי נכנסת שבת?", "כן", () => botOpen("מתי נכנסת שבת")]),
       (e >= 21 || e < 2) && L.push(["chatzot", "🌙 מה קורה אחי? רוצה שאזכיר לך לקום לתיקון חצות?", "כן, תזכיר לי", () => Xl({ nav: { v: "home", p: { b: 27 } }, lbl: "🌙 תיקון חצות", free: 1 })]),
@@ -14457,13 +14476,13 @@ function MAIN(t) {
           e[1] +
           '</p><div class="bt-a"><button class="btn sm pri" data-a="y">' +
           e[2] +
-          '</button><button class="btn sm" data-a="n">לא עכשיו</button></div><button class="bt-off" data-a="off">אל תציע לי יותר</button></div><button class="bt-x" data-a="n" aria-label="סגירה">✕</button>'),
+          "</button>" + (e[4] ? '<button class="btn sm" data-a="s">' + e[4][0] + "</button>" : "") + '<button class="btn sm" data-a="n">לא עכשיו</button></div><button class="bt-off" data-a="off">אל תציע לי יותר</button></div><button class="bt-x" data-a="n" aria-label="סגירה">✕</button>'),
         document.body.appendChild(c),
         requestAnimationFrame(() => c.classList.add("on")));
       const a = () => (c.classList.remove("on"), setTimeout(() => c.remove(), 400));
       ((c.onclick = (t) => {
         const i = t.target.closest("[data-a]");
-        i && ("y" === i.dataset.a ? (a(), setTimeout(e[3], 120)) : "off" === i.dataset.a ? (s.set("botTips", !1), a(), st("בסדר 🙂 אפשר להחזיר בהגדרות ← העוזר", 3e3)) : a());
+        i && ("y" === i.dataset.a ? (a(), setTimeout(e[3], 120)) : "s" === i.dataset.a && e[4] ? (a(), setTimeout(e[4][1], 120)) : "off" === i.dataset.a ? (s.set("botTips", !1), a(), st("בסדר 🙂 אפשר להחזיר בהגדרות ← העוזר", 3e3)) : a());
       }),
         setTimeout(a, 2e4));
     } catch (t) {
@@ -14920,6 +14939,26 @@ function MAIN(t) {
       bt = (lb, k) => (acts.push(() => We(h[k].si, h[k].ci, h[k].id)), '<button class="btn sm" data-br="' + (acts.length - 1) + '">' + lb + "</button>"),
       obj = A.w.map((t) => t.replace(/[מנצפכ]$/, (c) => ({ מ: "ם", נ: "ן", צ: "ץ", פ: "ף", כ: "ך" })[c])).join(" ");
     let html = "";
+    let brHit = null;
+    // קודם – אם השאלה תואמת ברכה מהרשימה של "ברכות בשלוף" (למשל: משיח, ברכת החמה, חופה)
+    {
+      const ws = A.w.map((t) => (t.length > 3 && /^[הו]/.test(t) ? t.slice(1) : t)).filter((t) => t.length > 1);
+      let hit = null;
+      ws.length &&
+        BRC.some((c, ci) =>
+          c[3].some((x, j) => {
+            const T = " " + brN(x[0] + " " + x[1]) + " ";
+            return ws.every((w) => T.includes(w)) && (hit = [ci, j, x]);
+          }),
+        );
+      brHit = hit;
+      if (hit && hit[2][3]) {
+        const x = hit[2];
+        acts.push(() => brSheet(hit[0], hit[0] + "." + hit[1]));
+        html = '<div class="bot-a bot-qa"><b>🙏 ' + o(x[0]) + "</b>" + (x[1] ? '<p class="br-n">' + o(x[1]) + "</p>" : "") + (x[3] || "") + '<div class="bot-srcs"><button class="btn sm pri" data-br="0">🙏 לנוסח המלא ולמקורות</button></div></div>';
+        return { html, acts };
+      }
+    }
     const F = brFood(A.w);
     if (F) {
       const sa = h.findIndex((x) => "V136" === x.s.g && BR_SA[F.k].test(brN(x.c.t) + " "));
@@ -14931,6 +14970,7 @@ function MAIN(t) {
       return { html, acts };
     }
     const R = brSearch(A.w);
+    if (!R.length && brHit) return (acts.push(() => brSheet(brHit[0], brHit[0] + "." + brHit[1])), { html: '<div class="bot-a bot-qa"><b>🙏 ' + o(brHit[2][0]) + '</b><div class="bot-srcs"><button class="btn sm pri" data-br="0">🙏 לנוסח ולמקורות</button></div></div>', acts });
     if (!R.length) return { html: '<div class="bot-say">🔎 לא מצאתי בסידור ובשולחן ערוך ברכה על «' + o(obj) + '». נסה לכתוב במילים אחרות – למשל "מה מברכים כשרואים קשת".</div>', acts };
     const seen = new Set(),
       top = R.filter((x, i) => (seen.has(x.v) ? !1 : (0 === i || (x.f && x.tm && x.sc >= 0.75 * R[0].sc)) && (seen.add(x.v), !0))).slice(0, 3),
@@ -15037,7 +15077,7 @@ function MAIN(t) {
       .map((t) => "<p>" + t[1] + "</p>")
       .join("");
   }
-  function brSheet(cat) {
+  function brSheet(cat, key) {
     const w = Ut(
         '<h3>🙏 ברכות בשלוף</h3><div class="sh-sub">כל הברכות במקום אחד – בוחרים נושא, לוחצים על הברכה והנוסח נפתח כאן. הטקסטים מהסידור, מקונטרסי הברכות ומהשולחן ערוך.</div>' +
           '<input id="brcQ" type="search" placeholder="🔎 חיפוש ברכה (למשל: קשת, חופה, הים)" class="brc-q">' +
@@ -15098,6 +15138,10 @@ function MAIN(t) {
         (q && ((cur = null), a("#brcCats button", w).forEach((t) => t.classList.remove("on"))), show(q ? null : cur, q));
       }),
       show(cur, ""));
+    if (key) {
+      const b0 = l('.brc-b[data-k="' + key + '"]', w);
+      b0 && setTimeout(() => b0.click(), 150);
+    }
     return w;
   }
   // ===== ✨ בינה מלאכותית – כל משתמש עם מפתח אישי משלו (החיוב, אם יש, אצלו מול החברה) =====
@@ -23279,6 +23323,7 @@ function doGet(e){
   const rr = {
     v: "2026-11-17b",
     items: [
+      ["2026-11-25b", "🕯️", "שיתוף הילולה מההודעה", "כשהעוזר מזכיר שהיום הילולה – יש כפתור 📤 שתף שמכין מיד תמונה מעוצבת של ההילולה. ובעוזר: \"מה מברכים כשרואים את המשיח\" מביא את חמש הברכות. ובתהילים מחולק – ספרים קהילתיים כפולים מתאחדים לספר אחד."],
       ["2026-11-25", "✨", "בינה מלאכותית בעוזר – עם מפתח אישי", "חברו מפתח משלכם (Gemini של גוגל – יש חינם, או Claude – בתשלום, ברמה הגבוהה ביותר) וכתבו לעוזר: \"תעשה לי סיכום מעשי של תורה רפב\". הבינה קוראת את התורה מהספר, כותבת, בודקת את עצמה מול המקור – ומקבלים תשובה עם מקורות וכפתור 📄 לקובץ PDF. הכל מוסבר במסך ✨ בינה מלאכותית: מה חינם, מה בתשלום וכמה זה עולה."],
       ["2026-11-24e", "🕊️", "ברכות בביאת המשיח", "בברכות בשלוף ← ברכות נדירות: חמש הברכות שיברכו בביאת המשיח (חכם הרזים, שחלק מחכמתו, שחלק מכבודו, גואל ישראל ושהחיינו), עם המקורות."],
       ["2026-11-24d", "📖", "תהילים מחולק – בלי ספר כפול", "כששני מכשירים פתחו ספר קהילתי חדש באותו רגע – הופיעו שני ספרים. עכשיו מוצג רק אחד, וכולם קוראים בו. ספר שהוקדש (לרפואה, לעילוי נשמת) עדיין נפתח לצד הספר הקהילתי."],
@@ -25165,7 +25210,7 @@ function doGet(e){
         F.onSnapshot(
           F.collection(this.fs, "th2"),
           (q) => {
-            ((this.books = q.docs.map((d) => Object.assign({}, d.data(), { id: d.id }))), (this.loaded = !0), this.ensure(), thmRender(), thmHome());
+            ((this.books = q.docs.map((d) => Object.assign({}, d.data(), { id: d.id }))), (this.loaded = !0), this.ensure(), this.merge(), thmRender(), thmHome());
           },
           (e) => ((this.err = String((e && e.code) || e)), thmRender()),
         );
@@ -25187,8 +25232,41 @@ function doGet(e){
     active() {
       // ספר אוטומטי כפול (שני מכשירים פתחו ספר חדש באותו רגע) – מציגים רק את הראשון, כל עוד הכפול ריק
       const A = this.books.filter((b) => !b.doneAt).sort((a, b) => (a.created || 0) - (b.created || 0)),
-        au = A.find((b) => b.auto);
-      return A.filter((b) => !(b.auto && b !== au && !Object.keys(b.ch || {}).length));
+        com = (b) => b.auto && !b.once && !b.ded,
+        au = A.find(com);
+      return A.filter((b) => !(com(b) && b !== au));
+    },
+    // 🔗 שני ספרים קהילתיים פתוחים (נפתחו בו־זמנית משני מכשירים) – מאחדים לספר אחד:
+    // הפרקים שנקראו בכפול עוברים לספר הראשון (מה שכבר נקרא בשניהם – נשאר פעם אחת), והכפול נסגר
+    async merge() {
+      if (this._mg || !this.loaded) return;
+      const C = this.books.filter((b) => !b.doneAt && b.auto && !b.once && !b.ded).sort((a, b) => (a.created || 0) - (b.created || 0));
+      if (C.length < 2) return;
+      this._mg = 1;
+      const F = this.F;
+      try {
+        await this.authP;
+        for (const D of C.slice(1))
+          await F.runTransaction(this.fs, async (tx) => {
+            const pr = F.doc(this.fs, "th2", C[0].id),
+              dr = F.doc(this.fs, "th2", D.id),
+              P = await tx.get(pr),
+              Q = await tx.get(dr);
+            if (!P.exists() || !Q.exists() || Q.data().doneAt) return;
+            const pch = P.data().ch || {},
+              dch = Q.data().ch || {},
+              up = {};
+            for (const n in dch) {
+              const x = dch[n],
+                y0 = pch[n];
+              x && ("d" === x.st ? !(y0 && "d" === y0.st) : !y0) && (up["ch." + n] = x);
+            }
+            (Object.keys(up).length && tx.update(pr, up), tx.update(dr, { doneAt: Date.now() }));
+          });
+      } catch (e) {
+        console.warn("thm merge", e);
+      }
+      setTimeout(() => (this._mg = 0), 6e4);
     },
     async ensure() {
       if (!this.loaded || this.active().length || this._eb) return;
