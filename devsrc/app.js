@@ -12637,6 +12637,7 @@ function MAIN(t) {
     { id: "widget", ic: "📱", t: "ווידג'ט למסך הבית", a: "באנדרואיד: לחיצה ארוכה על מסך הבית ← ווידג'טים ← ברסלב PRO. בהגדרות ← הגדרות הווידג'ט בוחרים מה יופיע בו, דיבור מתחלף מהספרים שתבחרו ולוגו הערוץ. גודל – גוררים את פינות הווידג'ט.", w: "ווידגט וידגט ווידג וידג וידגט׳ יישומון מסך הבית מסךהבית", go: () => botSettings("wdgCard") },
     { id: "room", ic: "🚪", t: "החדר הפרטי", a: "הלשונית הראשונה בספרייה: מקבצים את מה שלומדים בקביעות. מוסיפים בכפתור הצף ✦ ← \"הוסף לחדר הפרטי\" ובוחרים נושא; אפשר ליצור נושאים (לשוניות) עם אייקון.", w: "חדר פרטי פרטית חדרי החדר נושא נושאים לשונית לשוניות מועדפים", go: () => (s.set("libTab", "room"), It("home")) },
     { id: "random", ic: "🎲", t: "פתיחה אקראית", a: "דיבור אקראי מהספרים. מתחת לקובייה פותחים את \"מגרילים מתוך\": כל הספרים, או ספרים לבחירה – מסמנים את הספרים שרוצים, ו\"ניקוי בחירה\" מחזיר לכל הספרים.", w: "אקראי אקראית הגרלה להגריל מגריל קוביה קובייה מזל רנדומלי סתם", go: () => It("random") },
+    { id: "qsched", ic: "🔕", t: "לוח זמני שקט", a: "הטלפון עובר לבד לרטט/שקט בזמנים קבועים – שחרית, מנחה, ערבית, שיעורי תורה – לפי שעה או לפי זמני היום.", w: "שקט רטט השתקה טלפון שחרית מנחה ערבית שיעור לוח זמנים מצב שקט", go: () => qsSheet() },
     { id: "ai", ic: "✨", t: "בינה מלאכותית – מפתח אישי", a: "סיכומים מעשיים, הסברים ותשובות מהספרים בעזרת Gemini (יש חינם) או Claude (בתשלום) – עם מקורות וקובץ להורדה.", w: "בינה מלאכותית AI ג'מיני Gemini Claude קלוד סיכום תסכם הסבר מפתח", go: () => aiSheet() },
     { id: "brachot", ic: "🙏", t: "ברכות בשלוף", a: "כל הברכות במקום אחד: ראייה, שמיעה, הנהנין, הבית, חופה ושבע ברכות, לבנה וחמה.", w: "ברכות ברכה ראייה שמיעה הנהנין חופה שבע ברכות לבנה חמה אילנות הגומל מזוזה", go: () => brSheet() },
     { id: "compass", ic: "🧭", t: "מצפן – כיוון התפילה", a: "מצפן שמראה לאן להתפלל – לירושלים ולהר הבית.", w: "מצפן כיוון כיוונים להתפלל ירושלים מזרח הר הבית כותל צפון", go: () => It("dir") },
@@ -23323,6 +23324,7 @@ function doGet(e){
   const rr = {
     v: "2026-11-17b",
     items: [
+      ["2026-11-25c", "🔕", "לוח זמני שקט", "קובעים פעם אחת: שחרית, מנחה, ערבית, שיעורי תורה – באילו ימים ובאיזה שעות (או לפי זמני היום, למשל 20 דק׳ לפני השקיעה). הטלפון עובר לבד לרטט או לשקט – גם כשהאפליקציה סגורה – ובסוף חוזר למצב שהיה. בחיפוש: \"לוח זמני שקט\", או בשקט בזמן תפילה ← 🗓️."],
       ["2026-11-25b", "🕯️", "שיתוף הילולה מההודעה", "כשהעוזר מזכיר שהיום הילולה – יש כפתור 📤 שתף שמכין מיד תמונה מעוצבת של ההילולה. ובעוזר: \"מה מברכים כשרואים את המשיח\" מביא את חמש הברכות. ובתהילים מחולק – ספרים קהילתיים כפולים מתאחדים לספר אחד."],
       ["2026-11-25", "✨", "בינה מלאכותית בעוזר – עם מפתח אישי", "חברו מפתח משלכם (Gemini של גוגל – יש חינם, או Claude – בתשלום, ברמה הגבוהה ביותר) וכתבו לעוזר: \"תעשה לי סיכום מעשי של תורה רפב\". הבינה קוראת את התורה מהספר, כותבת, בודקת את עצמה מול המקור – ומקבלים תשובה עם מקורות וכפתור 📄 לקובץ PDF. הכל מוסבר במסך ✨ בינה מלאכותית: מה חינם, מה בתשלום וכמה זה עולה."],
       ["2026-11-24e", "🕊️", "ברכות בביאת המשיח", "בברכות בשלוף ← ברכות נדירות: חמש הברכות שיברכו בביאת המשיח (חכם הרזים, שחלק מחכמתו, שחלק מכבודו, גואל ישראל ושהחיינו), עם המקורות."],
@@ -24584,7 +24586,8 @@ function doGet(e){
           '<div class="field"><label>ברירת מחדל</label><div class="seg" id="qtDef"><button data-v="vibrate"' + ("vibrate" === c.mode ? ' class="on"' : "") + '>📳 רטט</button><button data-v="silent"' + ("silent" === c.mode ? ' class="on"' : "") + ">🔕 השתקה מלאה</button></div></div>" +
           '<div class="sw"><span>לעשות את זה אוטומטית כשנכנסים לתפילה, בלי לשאול</span><input type="checkbox" id="qtAuto"' + (c.auto ? " checked" : "") + "></div>" +
           '<div class="sw"><span>לשאול כשנכנסים לתפילה</span><input type="checkbox" id="qtAsk"' + (c.ask ? " checked" : "") + "></div>" +
-          (QT.on ? '<button class="btn" id="qtNow" style="width:100%;margin-top:8px">🔔 להחזיר את הצליל עכשיו</button>' : ""),
+          (QT.on ? '<button class="btn" id="qtNow" style="width:100%;margin-top:8px">🔔 להחזיר את הצליל עכשיו</button>' : "") +
+          '<button class="btn pri" id="qtSched" style="width:100%;margin-top:10px">🗓️ לוח זמני שקט קבוע – שחרית, מנחה, ערבית, שיעורים</button>',
       ),
       up = (k, v) => {
         const t = qtCfg();
@@ -24600,9 +24603,151 @@ function doGet(e){
       a("#qtDef button", w).forEach((b) => (b.onclick = () => (a("#qtDef button", w).forEach((t) => t.classList.toggle("on", t === b)), up("mode", b.dataset.v)))),
       (l("#qtAuto", w).onchange = (e) => up("auto", e.target.checked)),
       (l("#qtAsk", w).onchange = (e) => up("ask", e.target.checked)),
-      l("#qtNow", w) && (l("#qtNow", w).onclick = () => (Wt(), qtOff(!0))));
+      l("#qtNow", w) && (l("#qtNow", w).onclick = () => (Wt(), qtOff(!0))),
+      (l("#qtSched", w).onclick = () => (Wt(), setTimeout(qsSheet, 230))));
   }
   window.__qtSheet = qtSheet;
+  // ===== 🔕 לוח זמני שקט קבוע: שחרית, מנחה, ערבית, שיעורי תורה – כל ימים ושעות שרוצים =====
+  const QS_Z = [["alos", "עלות השחר"], ["rise", "הנץ החמה"], ["tfilaGra", "סוף זמן תפילה"], ["chatzot", "חצות היום"], ["minchaG", "מנחה גדולה"], ["minchaK", "מנחה קטנה"], ["plag", "פלג המנחה"], ["set", "שקיעה"], ["tzeit", "צאת הכוכבים"]];
+  const QS_D = ["א׳", "ב׳", "ג׳", "ד׳", "ה׳", "ו׳", "ש׳"];
+  const QS_DEF = () => [
+    { id: "sh", n: "שחרית", on: !1, d: [0, 1, 2, 3, 4, 5], a: { t: "f", h: "06:30" }, b: { t: "f", h: "07:30" }, m: "vibrate" },
+    { id: "mn", n: "מנחה", on: !1, d: [0, 1, 2, 3, 4], a: { t: "z", z: "set", o: -20 }, b: { t: "z", z: "set", o: 5 }, m: "vibrate" },
+    { id: "ar", n: "ערבית", on: !1, d: [0, 1, 2, 3, 4], a: { t: "z", z: "tzeit", o: 0 }, b: { t: "z", z: "tzeit", o: 20 }, m: "vibrate" },
+    { id: "sk", n: "שיעור תורה", on: !1, d: [0, 1, 2, 3, 4], a: { t: "f", h: "20:00" }, b: { t: "f", h: "21:00" }, m: "vibrate" },
+  ];
+  const qsCfg = () => {
+    const c = s.get("qsCfg", null);
+    return c && Array.isArray(c.L) ? c : { on: !1, L: QS_DEF() };
+  };
+  // זמן אמיתי של קצה חלון ביום d (0 = היום)
+  function qsAt(x, d) {
+    const e0 = hs(d);
+    if ("z" === x.t) {
+      const v = Yd(ms(d).v[x.z]);
+      return v ? Math.round(v) + 6e4 * (+x.o || 0) : null;
+    }
+    const [h0, m0] = String(x.h || "00:00").split(":").map(Number);
+    return new Date(e0.y, e0.m - 1, e0.d, h0 || 0, m0 || 0).getTime();
+  }
+  function qsWins(C, days) {
+    const now = Date.now(),
+      W = [];
+    for (let d = 0; d < (days || 14); d++) {
+      const wd = Cs(d);
+      C.L.forEach((x) => {
+        if (!x.on || !x.d.includes(wd)) return;
+        try {
+          const a0 = qsAt(x.a, d);
+          let b0 = qsAt(x.b, d);
+          if (!a0 || !b0) return;
+          b0 <= a0 && (b0 += 864e5);
+          // הגנה: חלון ארוך מ־10 שעות הוא כנראה טעות בהגדרה – לא מפעילים
+          b0 - a0 <= 36e6 && b0 > now && W.push({ s: a0, e: b0, m: x.m, n: x.n });
+        } catch (t) {}
+      });
+    }
+    W.sort((a, b) => a.s - b.s);
+    // חלונות חופפים – מאחדים
+    const M = [];
+    W.forEach((w) => {
+      const p = M[M.length - 1];
+      p && w.s <= p.e ? ((p.e = Math.max(p.e, w.e)), "silent" === w.m && (p.m = "silent"), p.n.includes(w.n) || (p.n += " + " + w.n)) : M.push(Object.assign({}, w));
+    });
+    return M;
+  }
+  async function qsSync() {
+    try {
+      const P = qtP();
+      if (!P || !P.setSched) return null;
+      const C = qsCfg();
+      return await P.setSched({ on: !!C.on, w: JSON.stringify(C.on ? qsWins(C, 14) : []) });
+    } catch (t) {
+      return null;
+    }
+  }
+  const qsHM = (t) => (t ? new Date(t).toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" }) : "—");
+  function qsEdge(x, k, lbl) {
+    const z = "z" === x.t;
+    return (
+      '<div class="qs-e"><span class="qs-el">' + lbl + '</span><select data-f="' + k + '.t"><option value="f"' + (z ? "" : " selected") + '>בשעה קבועה</option><option value="z"' + (z ? " selected" : "") + ">לפי זמני היום</option></select>" +
+      (z
+        ? '<select data-f="' + k + '.z">' + QS_Z.map(([v, n]) => '<option value="' + v + '"' + (v === x.z ? " selected" : "") + ">" + n + "</option>").join("") + '</select><select data-f="' + k + '.o">' +
+          [-60, -45, -30, -25, -20, -15, -10, -5, 0, 5, 10, 15, 20, 25, 30, 45, 60, 75, 90].map((v) => '<option value="' + v + '"' + (v === +x.o ? " selected" : "") + ">" + (0 === v ? "בדיוק" : Math.abs(v) + " דק׳ " + (v < 0 ? "לפני" : "אחרי")) + "</option>").join("") + "</select>"
+        : '<input type="time" data-f="' + k + '.h" value="' + o(x.h || "") + '">') +
+      "</div>"
+    );
+  }
+  function qsSheet() {
+    let C = JSON.parse(JSON.stringify(qsCfg()));
+    const w = Ut('<h3>🔕 לוח זמני שקט</h3><div class="sh-sub" style="line-height:1.7">בזמנים שתקבעו הטלפון עובר לבד לרטט או לשקט – <b>גם כשהאפליקציה סגורה</b> – ובסוף חוזר בדיוק למצב שהיה. אפשר לקבוע שעה קבועה, או לפי זמני היום (שקיעה, צאת הכוכבים…) – ואז זה זז לבד עם עונות השנה. בתחילת כל זמן תופיע הודעה שקטה עם כפתור "בטל הפעם".</div><div id="qsB"></div>'),
+      B = l("#qsB", w),
+      draw = () => {
+        B.innerHTML =
+          '<div class="sw qs-master"><span><b>הלוח פעיל</b></span><input type="checkbox" id="qsOn"' + (C.on ? " checked" : "") + "></div>" +
+          C.L.map((x, i) => {
+            let pv = "";
+            try {
+              const a0 = qsAt(x.a, 0);
+              let b0 = qsAt(x.b, 0);
+              b0 && a0 && b0 <= a0 && (b0 += 864e5);
+              pv = b0 - a0 > 36e6 ? "⚠️ יוצא יותר מ־10 שעות – בדקו את ההתחלה והסוף" : "היום: \u2066" + qsHM(a0) + "–" + qsHM(b0) + "\u2069";
+            } catch (t) {}
+            return (
+              '<div class="qs-it' + (x.on ? " on" : "") + '" data-i="' + i + '"><div class="qs-h"><input type="checkbox" data-f="on"' + (x.on ? " checked" : "") + '><input class="qs-n" data-f="n" value="' + o(x.n) + '" placeholder="שם (למשל: שיעור דף יומי)"><button class="qs-del" data-del aria-label="מחיקה">🗑️</button></div>' +
+              '<div class="qs-days">' + QS_D.map((t, d) => '<button data-day="' + d + '"' + (x.d.includes(d) ? ' class="on"' : "") + ">" + t + "</button>").join("") + "</div>" +
+              qsEdge(x.a, "a", "מתחיל") + qsEdge(x.b, "b", "נגמר") +
+              '<div class="qs-f"><div class="seg qs-m"><button data-m="vibrate"' + ("silent" !== x.m ? ' class="on"' : "") + '>📳 רטט</button><button data-m="silent"' + ("silent" === x.m ? ' class="on"' : "") + '>🔕 שקט מלא</button></div><small class="qs-pv">' + pv + "</small></div></div>"
+            );
+          }).join("") +
+          '<button class="btn" id="qsAdd" style="width:100%;margin:8px 0">➕ הוספת זמן (שיעור, תפילה, כל דבר)</button><button class="btn pri" id="qsSave" style="width:100%">💾 שמירה והפעלה</button><div class="sh-sub" id="qsSt" style="margin-top:8px"></div>';
+        l("#qsOn", B).onchange = (e) => (C.on = e.target.checked);
+        a(".qs-it", B).forEach((el) => {
+          const x = C.L[+el.dataset.i];
+          (a("[data-f]", el).forEach((f) => {
+            const H = () => {
+              const k = f.dataset.f,
+                v = "checkbox" === f.type ? f.checked : f.value;
+              if (k.includes(".")) {
+                const [p, q] = k.split(".");
+                ((x[p][q] = "o" === q ? +v : v), "t" === q && ("z" === v ? ((x[p].z = x[p].z || "set"), (x[p].o = x[p].o || 0)) : (x[p].h = x[p].h || "20:00")), draw());
+              } else ((x[k] = v), "on" === k && el.classList.toggle("on", v));
+            };
+            "n" === f.dataset.f ? (f.oninput = H) : (f.onchange = H);
+          }),
+            a("[data-day]", el).forEach((b) => (b.onclick = () => {
+              const d = +b.dataset.day;
+              ((x.d = x.d.includes(d) ? x.d.filter((t) => t !== d) : x.d.concat(d).sort()), b.classList.toggle("on", x.d.includes(d)));
+            })),
+            a("[data-m]", el).forEach((b) => (b.onclick = () => ((x.m = b.dataset.m), a("[data-m]", el).forEach((t) => t.classList.toggle("on", t === b))))),
+            (l("[data-del]", el).onclick = () => confirm("למחוק את \"" + (x.n || "הזמן") + "\"?") && (C.L.splice(+el.dataset.i, 1), draw())));
+        });
+        l("#qsAdd", B).onclick = () => (C.L.push({ id: Date.now().toString(36), n: "שיעור תורה", on: !0, d: [0, 1, 2, 3, 4], a: { t: "f", h: "20:00" }, b: { t: "f", h: "21:00" }, m: "vibrate" }), draw(), setTimeout(() => { const t = a(".qs-it", B).pop(); t && t.scrollIntoView({ block: "center", behavior: "smooth" }); }, 50));
+        l("#qsSave", B).onclick = async () => {
+          (C.on || C.L.some((t) => t.on)) && !C.on && ((C.on = !0), (l("#qsOn", B).checked = !0));
+          s.set("qsCfg", C);
+          const St = l("#qsSt", B);
+          if (!NAT.on) return void (St.textContent = "💾 נשמר. הלוח עובד רק באפליקציה המותקנת בטלפון (אנדרואיד).");
+          const r = await qsSync();
+          if (!r || !r.ok) return void (St.textContent = "⚠️ לא הצלחנו להפעיל – עדכנו את האפליקציה לגרסה האחרונה.");
+          if (C.L.some((t) => t.on && "silent" === t.m) && !r.dnd) {
+            St.innerHTML = '🔕 לשקט מלא צריך לאשר פעם אחת "נא לא להפריע" לברסלב PRO (בינתיים – רטט). <button class="btn sm" id="qsDnd">לאישור</button>';
+            l("#qsDnd", B).onclick = () => qtP().openDnd();
+            return;
+          }
+          const nx = qsWins(C, 14)[0];
+          St.textContent = C.on ? (r.act ? "✅ נשמר – עכשיו בזמן שקט (" + r.actN + ") עד " + qsHM(r.actE) : "✅ נשמר. הזמן הבא: " + (nx ? nx.n + " · " + new Date(nx.s).toLocaleDateString("he-IL", { weekday: "long" }) + " " + qsHM(nx.s) : "—")) : "⏸️ הלוח כבוי";
+          st("✅ לוח זמני השקט נשמר", 2e3);
+        };
+      };
+    draw();
+    return w;
+  }
+  window.__qsSheet = qsSheet;
+  window.__qsWins = () => qsWins(qsCfg(), 3);
+  // מחשבים מחדש את החלונות כל פעם שהאפליקציה נפתחת (זמני היום משתנים כל יום)
+  NAT.on && setTimeout(() => qsCfg().on && qsSync(), 8e3);
+
 
   // ===== 👆 הדרכה ראשונה: חץ מכל אייקון עם הסבר בשתי מילים (פעם אחת לכל משתמש, גם אחרי עדכון) =====
   const TOUR = [

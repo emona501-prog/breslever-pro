@@ -84,6 +84,30 @@ public class QuietPlugin extends Plugin {
         call.resolve(r);
     }
 
+    /** 🔕 לוח זמני שקט קבוע – האפליקציה שולחת את החלונות לימים הקרובים, והטלפון עובד לפיהם לבד */
+    @PluginMethod
+    public void setSched(PluginCall call) {
+        Context c = getContext(); JSObject r = new JSObject();
+        try {
+            QuietSchedReceiver.sp(c).edit().putString("w", call.getString("w", "[]")).putBoolean("on", Boolean.TRUE.equals(call.getBoolean("on", false))).apply();
+            QuietSchedReceiver.plan(c);
+            r.put("ok", true);
+            SharedPreferences s = QuietSchedReceiver.sp(c);
+            r.put("act", s.getLong("actE", 0) > 0);
+            r.put("actN", s.getString("actN", ""));
+            r.put("actE", s.getLong("actE", 0));
+        } catch (Exception e) { r.put("ok", false); }
+        r.put("dnd", dnd(c));
+        call.resolve(r);
+    }
+
+    @PluginMethod
+    public void skipSched(PluginCall call) {
+        Context c = getContext();
+        QuietSchedReceiver.skip(c); QuietSchedReceiver.plan(c);
+        JSObject r = new JSObject(); r.put("ok", true); call.resolve(r);
+    }
+
     @PluginMethod
     public void restore(PluginCall call) {
         JSObject r = new JSObject();
