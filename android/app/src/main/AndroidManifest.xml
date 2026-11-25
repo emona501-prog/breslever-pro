@@ -76,6 +76,11 @@
         </provider>
     </application>
 
+    <!-- 🪜 חיבור ל"הסולם שלי" (חסימה חכמה) – כדי שאפשר יהיה לשלוח אליו את היעדים -->
+    <queries>
+        <package android:name="com.chaiapps.chasima" />
+    </queries>
+
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />

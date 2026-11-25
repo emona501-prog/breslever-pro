@@ -33,6 +33,22 @@ public class WidgetBridgePlugin extends Plugin {
         call.resolve();
     }
 
+    /** 🪜 "הסולם שלי" (חסימה חכמה): שולחים לסולם את היעדים ומה סומן. אם הסולם לא מותקן – לא קורה כלום. */
+    @PluginMethod
+    public void sulam(PluginCall call) {
+        String data = call.getString("data", "");
+        Context ctx = getContext();
+        try {
+            Intent i = new Intent("com.chaiapps.chasima.BP_SYNC");
+            i.setComponent(new ComponentName("com.chaiapps.chasima", "com.chaiapps.chasima.BpSync"));
+            i.putExtra("d", data);
+            i.putExtra("pkg", ctx.getPackageName());
+            i.addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES);
+            ctx.sendBroadcast(i);
+        } catch (Exception e) { }
+        call.resolve();
+    }
+
     /** כמה ווידג'טים כבר במסך הבית, והאם אפשר לבקש הוספה ישירה */
     @PluginMethod
     public void info(PluginCall call) {

@@ -3,7 +3,7 @@
 name: Build APK
 on:
   push:
-    branches: [main]
+    branches: [main, sulam]
     paths-ignore:
       - 'live/**'
   workflow_dispatch:
@@ -70,7 +70,16 @@ jobs:
           cd android
           ./gradlew assembleRelease --no-daemon 2>&1 | tail -20
           cp app/build/outputs/apk/release/app-release.apk ../breslever-pro_lite.apk
+      - name: קובץ לבדיקה (ענף שאינו main – בלי פרסום)
+        if: github.ref != 'refs/heads/main'
+        uses: actions/upload-artifact@v4
+        with:
+          name: apk-test
+          path: |
+            breslever-pro.apk
+            breslever-pro_lite.apk
       - name: פרסום בעמוד ההורדות
+        if: github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ steps.ver.outputs.v }}

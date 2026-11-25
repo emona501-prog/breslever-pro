@@ -16089,6 +16089,7 @@ function doGet(e){
     try {
       Jd();
     } catch (t) {}
+    sulamSync();
   }
   function goalDone(t, e) {
     const i = s.get("goalsDone", {}),
@@ -16260,6 +16261,66 @@ function doGet(e){
     a(".gl-list").forEach((t) => {
       ((t.innerHTML = goalsHtml()), goalsBind(t));
     });
+  }
+  // 🪜 חיבור ל"הסולם שלי" (אפליקציית חסימה חכמה בנגן): שולחים לסולם את היעדים, מה סומן היום ואת רשימת הספרים.
+  // בטלפון שאין בו את הסולם – השליחה פשוט לא מגיעה לשום מקום. בדפדפן – לא עושה כלום.
+  function sulamSnap() {
+    const L = goals(),
+      w = new Date(),
+      dk = w.getFullYear() + "-" + String(w.getMonth() + 1).padStart(2, "0") + "-" + String(w.getDate()).padStart(2, "0");
+    return {
+      v: 1,
+      at: Date.now(),
+      dk: dk,
+      goals: L.map((g) => {
+        const td = goalToday(g),
+          sq = "smt" === g.k ? goalSeqC.smt : goalSeqC[g.k + ":" + (g.b || "")];
+        return { id: g.id, k: g.k, ic: (GOAL_T[g.k] || {}).ic || "🎯", n: (GOAL_T[g.k] || {}).n || "", lbl: td.lbl, q: g.q || 1, pos: g.pos || 0, tot: sq ? sq.length : 0, once: !!g.once, cur: !!g.cur, done: goalDone(g.id) };
+      }),
+      books: VOLS.map((t, e) => ({ t, e }))
+        .filter((t) => $t[t.e] && !$t[t.e].hidden && "hidden" !== $t[t.e].cat && !ce(t.e) && !$t[t.e].special)
+        .map((t) => ({ b: t.e, n: m(t.t) })),
+    };
+  }
+  var sulamT = null;
+  function sulamSync() {
+    if (!NAT.on) return;
+    (clearTimeout(sulamT),
+      (sulamT = setTimeout(() => {
+        try {
+          const p = NAT.P("WidgetBridge");
+          p && p.sulam && p.sulam({ data: JSON.stringify(sulamSnap()) }).catch(() => {});
+        } catch (t) {}
+      }, 700)));
+  }
+  // יעד חדש שתוכנן בסולם (מגיע דרך פתיחת האפליקציה עם ng:...)
+  function sulamNewGoal(o) {
+    try {
+      if (!o || !GOAL_T[o.k]) return void goalsOpen();
+      const i = GOAL_T[o.k],
+        c = { id: "g" + Date.now().toString(36), k: o.k, q: i.q ? Math.max(1, Math.min(50, +o.q || i.q[0])) : 1, pos: 0 };
+      if ("book" === o.k) {
+        if (!(+o.b >= 0 && $t[+o.b])) return void goalsOpen();
+        c.b = +o.b;
+      }
+      "free" === o.k && (c.txt = String(o.txt || "יעד אישי").slice(0, 60));
+      if ("hal" === o.k) {
+        halPlan().on || (s.set("halPlan", Object.assign(halPlan(), { on: !0, pos: 0, d0: halDay() })), halSet({}));
+        ((c.hv = 1), (c.v2 = 1), (c.pos = halIdx(0)));
+      }
+      (o.once && (c.once = 1), o.cur && "smt" === o.k && (c.cur = 1));
+      (goalsSave(goals().concat([c])), st('🎯 היעד מ"הסולם שלי" נוסף!', 3e3), setTimeout(goalsOpen, 300));
+    } catch (t) {
+      goalsOpen();
+    }
+  }
+  window.__sulamNewGoal = sulamNewGoal;
+  window.__sulamSync = sulamSync;
+  if (NAT.on) {
+    (setTimeout(sulamSync, 8e3),
+      document.addEventListener("visibilitychange", () => {
+        "hidden" === document.visibilityState && sulamSync();
+      }));
   }
   function goalsOpen() {
     const t = Ut(
@@ -31694,6 +31755,13 @@ function doGet(e){
         if ((void 0 !== Gt && Gt && Wt(!0), "random" === t)) It("random");
         else if ("cont" === t) tt.last && y[tt.last.id] ? Ye(tt.last.id) : It("home", {});
         else if ("goals" === t) goalsOpen();
+        else if ("g:" === String(t).slice(0, 2)) {
+          // 🪜 מהסולם: פותחים את המנה של היום ביעד הזה
+          const id = String(t).slice(2),
+            G = goals().find((g) => g.id === id),
+            td = G ? goalToday(G) : null;
+          td && td.go ? setTimeout(td.go, 200) : goalsOpen();
+        } else if ("ng:" === String(t).slice(0, 3)) window.__sulamNewGoal && window.__sulamNewGoal(JSON.parse(scUnhex(String(t).slice(3))));
         else if ("haderech" === t) hdOpen();
         else if ("hal" === t) halOpen();
         else if ("qs:" === String(t).slice(0, 3) || "qt:" === String(t).slice(0, 3)) {
