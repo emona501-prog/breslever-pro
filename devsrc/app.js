@@ -12637,6 +12637,7 @@ function MAIN(t) {
     { id: "widget", ic: "📱", t: "ווידג'ט למסך הבית", a: "באנדרואיד: לחיצה ארוכה על מסך הבית ← ווידג'טים ← ברסלב PRO. בהגדרות ← הגדרות הווידג'ט בוחרים מה יופיע בו, דיבור מתחלף מהספרים שתבחרו ולוגו הערוץ. גודל – גוררים את פינות הווידג'ט.", w: "ווידגט וידגט ווידג וידג וידגט׳ יישומון מסך הבית מסךהבית", go: () => botSettings("wdgCard") },
     { id: "room", ic: "🚪", t: "החדר הפרטי", a: "הלשונית הראשונה בספרייה: מקבצים את מה שלומדים בקביעות. מוסיפים בכפתור הצף ✦ ← \"הוסף לחדר הפרטי\" ובוחרים נושא; אפשר ליצור נושאים (לשוניות) עם אייקון.", w: "חדר פרטי פרטית חדרי החדר נושא נושאים לשונית לשוניות מועדפים", go: () => (s.set("libTab", "room"), It("home")) },
     { id: "random", ic: "🎲", t: "פתיחה אקראית", a: "דיבור אקראי מהספרים. מתחת לקובייה פותחים את \"מגרילים מתוך\": כל הספרים, או ספרים לבחירה – מסמנים את הספרים שרוצים, ו\"ניקוי בחירה\" מחזיר לכל הספרים.", w: "אקראי אקראית הגרלה להגריל מגריל קוביה קובייה מזל רנדומלי סתם", go: () => It("random") },
+    { id: "ai", ic: "✨", t: "בינה מלאכותית – מפתח אישי", a: "סיכומים מעשיים, הסברים ותשובות מהספרים בעזרת Gemini (יש חינם) או Claude (בתשלום) – עם מקורות וקובץ להורדה.", w: "בינה מלאכותית AI ג'מיני Gemini Claude קלוד סיכום תסכם הסבר מפתח", go: () => aiSheet() },
     { id: "brachot", ic: "🙏", t: "ברכות בשלוף", a: "כל הברכות במקום אחד: ראייה, שמיעה, הנהנין, הבית, חופה ושבע ברכות, לבנה וחמה.", w: "ברכות ברכה ראייה שמיעה הנהנין חופה שבע ברכות לבנה חמה אילנות הגומל מזוזה", go: () => brSheet() },
     { id: "compass", ic: "🧭", t: "מצפן – כיוון התפילה", a: "מצפן שמראה לאן להתפלל – לירושלים ולהר הבית.", w: "מצפן כיוון כיוונים להתפלל ירושלים מזרח הר הבית כותל צפון", go: () => It("dir") },
     { id: "tikkun", ic: "📜", t: "התיקון הכללי", a: "בסרגל התחתון ← \"תיקון הכללי\": עשרת המזמורים עם סימון \"אמרתי\", הקראה ותפילה שלאחריו.", w: "תיקון הכללי כללי עשרה מזמורים עשרת", go: () => It("tikkun") },
@@ -15099,6 +15100,315 @@ function MAIN(t) {
       show(cur, ""));
     return w;
   }
+  // ===== ✨ בינה מלאכותית – כל משתמש עם מפתח אישי משלו (החיוב, אם יש, אצלו מול החברה) =====
+  // המפתח נשמר רק במכשיר. הבקשות יוצאות ישר מהמכשיר לגוגל / ל־Anthropic – לא עוברות דרכנו.
+  const AI_P = {
+    gem: { n: "Gemini Flash", by: "Google", ic: "🆓", md: ["gemini-flash-latest", "gemini-3.8-flash", "gemini-3.5-flash-lite"] },
+    gemPro: { n: "Gemini Pro", by: "Google", ic: "💳", md: ["gemini-pro-latest", "gemini-3.1-pro-preview"] },
+    clH: { n: "Claude Haiku 5.5", by: "Anthropic", ic: "💎", md: "claude-haiku-5-5", pr: [0.1, 0.5] },
+    clS: { n: "Claude Sonnet 5.5", by: "Anthropic", ic: "💎", md: "claude-sonnet-5-5", pr: [2, 10] },
+    clO: { n: "Claude Opus 5.5", by: "Anthropic", ic: "💎", md: "claude-opus-5-5", pr: [4, 20] },
+  };
+  const aiClKey = () => {
+    const k = String(s.get("clKey", "") || "").trim();
+    return /^sk-ant-/.test(k) ? k : "";
+  };
+  const aiHas = (p) => (/^cl/.test(p) ? !!aiClKey() : !!ocrKey());
+  const aiProv = () => {
+    const p = s.get("aiProv", "");
+    return AI_P[p] && aiHas(p) ? p : aiClKey() ? "clS" : ocrKey() ? "gem" : "";
+  };
+  const aiOn = () => !!aiProv() && !!s.get("aiMode", !1);
+  function aiUse(p, i, u) {
+    const U = s.get("aiUse", {}) || {},
+      mo = new Date().toISOString().slice(0, 7);
+    U.mo !== mo && ((U.mo = mo), (U.r = {}));
+    const r = (U.r[p] = U.r[p] || { n: 0, i: 0, o: 0 });
+    ((r.n += 1), (r.i += i || 0), (r.o += u || 0), s.set("aiUse", U));
+  }
+  function aiCost(p, r) {
+    const P = AI_P[p];
+    return P && P.pr && r ? (r.i * P.pr[0] + r.o * P.pr[1]) / 1e6 : null;
+  }
+  async function aiCall(sys, prompt, max, prov) {
+    const p = prov || aiProv(),
+      P = AI_P[p];
+    if (!P) throw new Error("עוד לא הוגדר מפתח בינה מלאכותית");
+    max = max || 4e3;
+    if (/^cl/.test(p)) {
+      const r = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: { "content-type": "application/json", "x-api-key": aiClKey(), "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true" },
+        body: JSON.stringify({ model: P.md, max_tokens: max, system: sys, messages: [{ role: "user", content: prompt }] }),
+      }).catch(() => null);
+      if (!r) throw new Error("אין חיבור לאינטרנט");
+      const j = await r.json().catch(() => ({})),
+        em = (j.error && j.error.message) || "";
+      if (!r.ok) {
+        if (401 === r.status) throw new Error("המפתח של Claude לא תקין – בדקו שהעתקתם אותו שלם");
+        if (/credit balance/i.test(em)) throw new Error("אין קרדיט בחשבון ה־Claude שלכם – צריך להטעין ב־platform.claude.com ← Billing");
+        if (429 === r.status) throw new Error("יותר מדי בקשות בבת אחת – נסו שוב בעוד דקה");
+        if (529 === r.status || 503 === r.status) throw new Error("השרת של Claude עמוס כרגע – נסו שוב בעוד רגע");
+        throw new Error("שגיאה מ־Claude: " + (em || r.status));
+      }
+      const u = j.usage || {};
+      aiUse(p, u.input_tokens, u.output_tokens);
+      return (j.content || []).map((t) => t.text || "").join("").trim();
+    }
+    let last = "";
+    for (const md of P.md) {
+      const r = await fetch("https://generativelanguage.googleapis.com/v1beta/models/" + md + ":generateContent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-goog-api-key": ocrKey() },
+        body: JSON.stringify({ systemInstruction: { parts: [{ text: sys }] }, contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { temperature: 0.3, maxOutputTokens: Math.max(max * 2, 8192) } }),
+      }).catch(() => null);
+      if (!r) throw new Error("אין חיבור לאינטרנט");
+      if (404 === r.status) continue;
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) {
+        last = (j.error && j.error.message) || "שגיאה " + r.status;
+        if (400 === r.status && /api key/i.test(last)) throw new Error("המפתח של Gemini לא תקין");
+        if (403 === r.status) throw new Error("המפתח של Gemini חסום או לא מורשה");
+        if (429 === r.status) throw new Error("gemPro" === p ? "המודל Pro לא כלול במסלול החינמי – צריך להפעיל חיוב בחשבון גוגל, או לבחור Gemini Flash" : "נגמרה המכסה החינמית להיום / לדקה – נסו שוב מאוחר יותר");
+        continue;
+      }
+      const um = j.usageMetadata || {};
+      aiUse(p, um.promptTokenCount, um.candidatesTokenCount);
+      const t = (((j.candidates || [])[0] || {}).content || {}).parts || [];
+      return t.map((p) => p.text || "").join("").trim();
+    }
+    throw new Error(last || "Gemini לא זמין כרגע");
+  }
+  // ---- מקורות: תורה מסוימת בשלמותה, או הקטעים הכי קשורים לשאלה ----
+  function aiHebN(n) {
+    const U = ["", "א", "ב", "ג", "ד", "ה", "ו", "ז", "ח", "ט"],
+      T = ["", "י", "כ", "ל", "מ", "נ", "ס", "ע", "פ", "צ"],
+      H = ["", "ק", "ר", "ש", "ת", "תק", "תר", "תש", "תת", "תתק"];
+    let s0 = H[Math.floor(n / 100)] + T[Math.floor((n % 100) / 10)] + U[n % 10];
+    return s0.replace(/יה$/, "טו").replace(/יו$/, "טז");
+  }
+  function aiRef(q) {
+    const z = " " + brN(q) + " ",
+      m0 = / (תורה|תורות|בתורה|לתורה|סימנ|סימן) ([א-ת]{1,4}|\d{1,3}) /.exec(z);
+    if (!m0) return null;
+    const num = /\d/.test(m0[2]) ? aiHebN(+m0[2]) : m0[2],
+      part2 = / (תנינא|חלק ב|חב|בתנינא|ב תנינא) /.test(z) ? 1 : 0;
+    if (!/ (תורה|תורות|בתורה|לתורה) /.test(m0[0] + " ") && !/מוהרנ/.test(z)) return null;
+    const G = "V0",
+      L = h.filter((x) => x.s.g === G && x.si !== void 0),
+      secs = [...new Set(L.map((x) => x.si))],
+      si = secs[part2] !== void 0 ? secs[part2] : secs[0],
+      idx = [];
+    h.forEach((x, k) => {
+      if (x.s.g !== G || x.si !== si) return;
+      const ct = brN(x.c.t) + " ";
+      (ct.startsWith("תורה " + num + " ") || ct.startsWith("תורה " + num + "-")) && idx.push(k);
+    });
+    return idx.length ? { idx, lbl: 'ליקוטי מוהר"ן' + (part2 ? " תנינא" : "") + " תורה " + num, vols: [0] } : null;
+  }
+  const aiTxt = (x) =>
+    brT((x.it.b || []).filter((t) => !v[t[0]]).map((t) => String(t[1])).join(" "))
+      .replace(/\s+/g, " ")
+      .trim();
+  function aiSrc(q) {
+    const R = aiRef(q);
+    if (R) {
+      let txt = R.idx.map((k) => aiTxt(h[k])).join("\n");
+      txt.length > 9e4 && (txt = txt.slice(0, 9e4));
+      return { whole: R, list: [{ k: R.idx[0], lbl: R.lbl, t: txt }] };
+    }
+    let L = [];
+    try {
+      const Q = botQAget(),
+        r = Q.ask(q);
+      L = r && r.S ? r.S.list.slice(0, 10).map((t) => t.bi) : [];
+      // מעט תוצאות? משלימים מכל מילה חשובה בשאלה בנפרד
+      if (L.length < 6 && r && r.P && r.P.terms && r.P.terms.length > 1)
+        for (const w of r.P.terms) {
+          const r2 = Q.ask(w);
+          (r2 && r2.S ? r2.S.list.slice(0, 4) : []).forEach((t) => L.length < 10 && !L.includes(t.bi) && L.push(t.bi));
+        }
+    } catch (t) {}
+    return {
+      list: L.map((k) => {
+        const x = h[k],
+          b = $t[+String(x.s.g).slice(1)];
+        return { k, lbl: (b ? m(String(b.title || "")) : "") + " · " + m(g(String(x.c.t || ""))), t: aiTxt(x).slice(0, 2500) };
+      }).filter((t) => t.t.length > 30),
+    };
+  }
+  const AI_SYS =
+    'אתה עוזר תורני באפליקציה "ברסלב PRO" – אפליקציית ספרי רבי נחמן מברסלב ותלמידיו. ' +
+    "ענה בעברית בלבד, בלשון ברורה וחמה, בלי הקדמות מיותרות. " +
+    "התבסס רק על המקורות שבתוך <מקורות>. אל תמציא ציטוטים, מספרי תורות, סיפורים או דברים בשם רבנו שאינם כתובים שם. " +
+    "כשאתה מביא דבר ממקור – ציין אחריו את מספרו בסוגריים מרובעים, למשל [1]. " +
+    "אם המקורות לא עונים על השאלה – כתוב זאת בפשטות, בלי לנחש. " +
+    "בשאלות של הלכה למעשה – הוסף בסוף שבמקרה של ספק יש לשאול רב. " +
+    "עיצוב: כותרת משנה בשורה שמתחילה ב־## , נקודות בשורות שמתחילות ב־- , הדגשה ב־**כך**. בלי טבלאות.";
+  const aiSumQ = (q) => /(סיכומ|סכמ|תסכמ|לסכמ|הלכה למעשה|מעשי|נקודות)/.test(brN(q));
+  function aiPrompt(q, S) {
+    const src = S.list.map((t, i) => "[" + (i + 1) + "] " + t.lbl + "\n" + t.t).join("\n\n");
+    return "<מקורות>\n" + src + "\n</מקורות>\n\n" + (S.whole && aiSumQ(q) ? "בקשה: " + q + "\nכתוב סיכום מעשי של התורה – מה עושים בפועל: כותרת קצרה לכל עניין, ובכל עניין נקודות מעשיות קצרות, נאמנות לדברי התורה. בסוף – שורה אחת של העיקר." : "שאלה / בקשה: " + q);
+  }
+  async function aiRun(q, S, msg) {
+    const p = aiProv(),
+      pr = aiPrompt(q, S);
+    msg && msg("✨ " + AI_P[p].n + " כותב…");
+    let out = await aiCall(AI_SYS, pr, S.whole ? 5e3 : 2500);
+    if (!1 !== s.get("aiCheck", !0) && out) {
+      msg && msg("🔍 בדיקה כפולה מול המקורות…");
+      try {
+        const c2 = await aiCall(
+          AI_SYS + " אתה עכשיו בודק: קבל טיוטה, השווה כל משפט למקורות, מחק או תקן כל דבר שאינו כתוב במקורות, ושמור על אותו עיצוב. החזר רק את הנוסח הסופי, בלי הערות.",
+          pr + "\n\n<טיוטה>\n" + out + "\n</טיוטה>",
+          S.whole ? 5e3 : 2500,
+        );
+        c2 && c2.length > out.length * 0.4 && (out = c2);
+      } catch (t) {}
+    }
+    return out;
+  }
+  function aiMd(t, S) {
+    const e = (t) =>
+      o(t)
+        .replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>")
+        .replace(/\[(\d{1,2})\]/g, (m0, n) => (S.list[+n - 1] ? '<button class="ai-ref" data-ar="' + (+n - 1) + '" title="' + o(S.list[+n - 1].lbl) + '">' + n + "</button>" : m0));
+    let html = "",
+      ul = !1;
+    String(t || "")
+      .split(/\n/)
+      .forEach((ln) => {
+        const x = ln.trim();
+        if (/^[-*•] /.test(x)) return ((ul || ((html += "<ul>"), (ul = !0))), void (html += "<li>" + e(x.replace(/^[-*•] /, "")) + "</li>"));
+        ul && ((html += "</ul>"), (ul = !1));
+        x && (html += /^#{1,4} /.test(x) ? "<h4>" + e(x.replace(/^#+ /, "")) + "</h4>" : "<p>" + e(x) + "</p>");
+      });
+    return ul ? html + "</ul>" : html;
+  }
+  // קובץ להורדה – דרך מסך ההדפסה והעימוד של האפליקציה (PDF)
+  function aiFile(q, out, S) {
+    const P = AI_P[aiProv()] || { n: "" },
+      secs = [];
+    let cur = null;
+    String(out)
+      .split(/\n/)
+      .forEach((ln) => {
+        const x = ln.trim();
+        if (!x) return;
+        if (/^#{1,4} /.test(x) || !cur) (cur = { h: /^#{1,4} /.test(x) ? x.replace(/^#+ /, "") : "", p: [] }), secs.push(cur), /^#{1,4} /.test(x) || cur.p.push(x);
+        else cur.p.push(x);
+      });
+    const fmt = (t) => o(t.replace(/^[-*•] /, "• ")).replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>"),
+      items = secs.map((t, i) => ({ id: "ai" + i, n: "", b: (t.h ? [["h", fmt(t.h)]] : []).concat(t.p.map((t) => ["p", fmt(t)])) }));
+    items.push({ id: "aiSrc", n: "", b: [["h", "מקורות"]].concat(S.list.map((t, i) => ["p", (i + 1) + ". " + o(t.lbl)])).concat([["p", "<small>נכתב בעזרת בינה מלאכותית (" + o(P.n) + ") על סמך המקורות שלמעלה – העיקר במקור. · ברסלב PRO · חי אפליקציות</small>"]]) });
+    oo({ type: "custom", title: (S.whole ? (aiSumQ(q) ? "סיכום מעשי – " : "") + S.whole.lbl : q).slice(0, 80), items });
+  }
+  async function aiAnswer(q, c) {
+    const S = aiSrc(q);
+    if (!S.list.length) return void (c.innerHTML = '<div class="bot-say">🔎 לא מצאתי בספרים קטעים שקשורים לשאלה, אז אין לבינה על מה להתבסס. נסו לנסח אחרת – או לציין שם של תורה (למשל "תורה רפב").</div>');
+    const tok = String(Date.now());
+    c.dataset.aiTok = tok;
+    const msg = (t) => c.dataset.aiTok === tok && (c.innerHTML = '<div class="bot-say ai-wait"><span class="ai-spin"></span>' + o(t) + "</div>");
+    try {
+      const out = await aiRun(q, S, msg);
+      if (c.dataset.aiTok !== tok) return;
+      const P = AI_P[aiProv()];
+      c.innerHTML =
+        '<div class="bot-a ai-ans"><div class="ai-tag">✨ ' + o(P.n) + " · על סמך " + (S.whole ? o(S.whole.lbl) : S.list.length + " קטעים מהספרים") + "</div>" + aiMd(out, S) +
+        '<div class="ai-warn">תשובה של בינה מלאכותית – יש לבדוק במקור. בשאלות הלכה – לשאול רב.</div>' +
+        '<div class="bot-srcs">' + S.list.slice(0, 6).map((t, i) => '<button class="btn sm" data-ao="' + i + '">📖 [' + (i + 1) + "] " + o(t.lbl.length > 38 ? t.lbl.slice(0, 38) + "…" : t.lbl) + "</button>").join("") + "</div>" +
+        '<div class="bot-srcs"><button class="btn sm pri" id="aiPdf">📄 קובץ להורדה (PDF)</button><button class="btn sm" id="aiCp">📋 העתקה</button><button class="btn sm" id="aiWa">📤 וואטסאפ</button><button class="btn sm" id="aiSet">⚙️ הגדרות בינה</button></div></div>';
+      const go = (i) => {
+        const x = h[S.list[i].k];
+        (Wt(), setTimeout(() => We(x.si, x.ci, x.id), 230));
+      };
+      (a("[data-ao]", c).forEach((t) => (t.onclick = () => go(+t.dataset.ao))),
+        a("[data-ar]", c).forEach((t) => (t.onclick = () => go(+t.dataset.ar))),
+        (l("#aiPdf", c).onclick = () => (Wt(), setTimeout(() => aiFile(q, out, S), 250))),
+        (l("#aiCp", c).onclick = () => {
+          try {
+            navigator.clipboard.writeText(out.replace(/\*\*/g, "") + "\n\n(נכתב בעזרת בינה מלאכותית – ברסלב PRO)");
+            st("📋 הועתק", 1500);
+          } catch (t) {}
+        }),
+        (l("#aiWa", c).onclick = () => NAT.open("https://wa.me/?text=" + encodeURIComponent(out.replace(/\*\*/g, "*").slice(0, 3500) + "\n\n✨ נכתב בעזרת בינה מלאכותית באפליקציית ברסלב PRO"))),
+        (l("#aiSet", c).onclick = () => (Wt(), setTimeout(aiSheet, 230))));
+    } catch (e) {
+      c.dataset.aiTok === tok && (c.innerHTML = '<div class="bot-say">⚠️ ' + o(e.message || "שגיאה") + '</div><div class="bot-srcs"><button class="btn sm" id="aiSet">⚙️ הגדרות בינה</button></div>', (l("#aiSet", c).onclick = () => (Wt(), setTimeout(aiSheet, 230))));
+    }
+  }
+  const AI_ASKRE = /^(✨|תסכמ|סכמ|תסכם|סכם|סיכומ|סיכום|תסביר|הסבר|תפרש|פרש|תכתוב|כתוב|תנסח|תעשה לי סיכומ|תעשה לי סיכום|תכינ לי סיכומ|תכין לי סיכום)|סיכומ מעשי|סיכום מעשי|הלכה למעשה של|תסכמ לי|תסביר לי/;
+  function aiWants(t) {
+    const z = brN(t);
+    return /^✨/.test(String(t).trim()) || aiOn() || AI_ASKRE.test(z) || AI_ASKRE.test(String(t).trim());
+  }
+  // ---- מסך ההגדרות: הסבר מפורט על כל אפשרות, מה חינם ומה בתשלום ----
+  function aiSheet() {
+    const U = s.get("aiUse", {}) || {},
+      mo = new Date().toISOString().slice(0, 7),
+      R = U.mo === mo ? U.r || {} : {},
+      cur = aiProv(),
+      card = (p, lv, price, txt) => {
+        const P = AI_P[p],
+          has = aiHas(p);
+        return '<label class="ai-c' + (cur === p ? " on" : "") + (has ? "" : " dis") + '"><input type="radio" name="aiP" value="' + p + '"' + (cur === p ? " checked" : "") + (has ? "" : " disabled") + '><div><b>' + P.ic + " " + P.n + "</b> <span class=\"ai-lv\">" + lv + '</span><div class="ai-pr">' + price + "</div><small>" + txt + "</small>" + (R[p] ? '<small class="ai-us">החודש: ' + R[p].n + " בקשות" + (null != aiCost(p, R[p]) ? " · בערך $" + aiCost(p, R[p]).toFixed(2) : "") + "</small>" : "") + "</div></label>";
+      },
+      w = Ut(
+        '<h3>✨ בינה מלאכותית – מפתח אישי</h3><div class="sh-sub">העוזר יכול לענות, להסביר ולסכם תורות בעזרת בינה מלאכותית – על סמך הספרים שבאפליקציה, עם מקורות. כל אחד מחבר מפתח משלו: <b>החיבור ישיר מהטלפון שלכם לחברה, והחיוב (אם יש) אצלכם מולה.</b> אנחנו לא רואים את המפתח ולא גובים כלום.</div>' +
+          '<div class="ai-box"><div class="ai-bh">🆓 גוגל Gemini – <b>יש מסלול חינמי</b></div>' +
+          '<input id="aiGk" dir="ltr" placeholder="מפתח Gemini (AIza… או AQ.…)" value="' + o(ocrKey()) + '">' +
+          '<small>איך משיגים: נכנסים ל־<b>aistudio.google.com/apikey</b> עם חשבון גוגל ← Create API key ← מעתיקים. בלי כרטיס אשראי. אותו מפתח משמש גם לסריקת דפים.</small></div>' +
+          card("gem", "רמה טובה", "חינם – עם מכסה יומית מוגבלת", "מצוין לשאלות, הסברים וסיכומים קצרים. כשנגמרת המכסה – מחכים למחר. במסלול החינמי גוגל רשאית להשתמש בטקסט לשיפור המוצרים שלה.") +
+          card("gemPro", "רמה גבוהה", "בתשלום בלבד – צריך להפעיל חיוב בחשבון Google Cloud", "חזק יותר בהבנה ובסיכום. בלי חיוב פעיל – לא יעבוד (תופיע הודעת מכסה).") +
+          '<div class="ai-box"><div class="ai-bh">💎 Claude (של Anthropic) – <b>בתשלום בלבד, אין מסלול חינמי</b></div>' +
+          '<input id="aiCk" dir="ltr" placeholder="מפתח Claude (sk-ant-…)" value="' + o(aiClKey()) + '">' +
+          "<small>איך משיגים: נכנסים ל־<b>platform.claude.com</b> ← נרשמים ← Billing: טוענים קרדיט מראש (למשל 5$) ← API Keys ← Create Key ← מעתיקים. החיוב לפי שימוש, מהקרדיט שטענתם – כשהוא נגמר הבינה פשוט מפסיקה, בלי חיוב נוסף.</small></div>" +
+          card("clH", "רמה טובה, מהיר וזול מאוד", "0.10$ / 0.50$ למיליון ≈ <b>אגורות בודדות</b> לשאלה או לסיכום", "טוב לשאלות והסברים יומיומיים.") +
+          card("clS", "רמה גבוהה מאוד – מומלץ", "2$ / 10$ למיליון ≈ <b>10–40 אגורות</b> לסיכום תורה (עם בדיקה כפולה)", "קרוב מאוד לרמה של העבודה שעשינו כאן – סיכומים מעשיים מדויקים ומסודרים.") +
+          card("clO", "הרמה הכי גבוהה", "4$ / 20$ למיליון ≈ <b>20–80 אגורות</b> לסיכום תורה", "לסיכומים עמוקים ומורכבים במיוחד.") +
+          '<label class="ai-chk"><input type="checkbox" id="aiChk"' + (!1 !== s.get("aiCheck", !0) ? " checked" : "") + "> 🔍 בדיקה כפולה מול המקורות (מונעת המצאות; מכפילה את הזמן והעלות)</label>" +
+          '<label class="ai-chk"><input type="checkbox" id="aiMd"' + (s.get("aiMode", !1) ? " checked" : "") + "> ✨ כל שאלה בעוזר – תיענה בבינה (בלי זה: רק כשמבקשים \"תסכם\", \"תסביר\" או מתחילים ב־✨)</label>" +
+          '<div class="pv-note" style="margin-top:8px;line-height:1.7">💡 <b>המחירים בקירוב</b> ולפי מחירוני החברות היום – הם יכולים להשתנות; המחיר המדויק תמיד באתר של החברה. "מיליון" = מיליון יחידות טקסט (טוקנים); תורה ארוכה היא בערך 10–30 אלף. העוזר מראה כאן כמה השתמשתם החודש.<br>⚠️ הבינה עונה על סמך הספרים, אבל יכולה לטעות – תמיד לבדוק במקור, ובהלכה למעשה לשאול רב.</div>' +
+          '<div class="bot-srcs" style="margin-top:10px"><button class="btn pri" id="aiSave">💾 שמירה</button><button class="btn" id="aiTest">🧪 בדיקת המפתח</button></div><div id="aiTs" class="sh-sub"></div>',
+      ),
+      save = () => {
+        const gk = l("#aiGk", w).value.trim(),
+          ck = l("#aiCk", w).value.trim();
+        if (gk && ocrBad(gk)) return (st("⚠️ זה לא מפתח של Gemini (נראה כמו מפתח גיטהאב) – לא נשמר", 4e3), !1);
+        if (ck && !/^sk-ant-/.test(ck)) return (st("⚠️ מפתח של Claude מתחיל ב־sk-ant- – בדקו שהעתקתם נכון", 4e3), !1);
+        (s.set("gemKey", gk), s.set("clKey", ck));
+        const r = l('input[name="aiP"]:checked', w);
+        (s.set("aiProv", r ? r.value : ""), s.set("aiCheck", l("#aiChk", w).checked), s.set("aiMode", l("#aiMd", w).checked));
+        return !0;
+      };
+    (a('input[name="aiP"]', w).forEach((t) => (t.onchange = () => a(".ai-c", w).forEach((e) => e.classList.toggle("on", l("input", e).checked)))),
+      ["#aiGk", "#aiCk"].forEach((t) => {
+        l(t, w).oninput = () => {
+          const g0 = l("#aiGk", w).value.trim(),
+            c0 = /^sk-ant-/.test(l("#aiCk", w).value.trim());
+          a(".ai-c", w).forEach((e) => {
+            const p = l("input", e).value,
+              ok = /^cl/.test(p) ? c0 : !!g0 && !ocrBad(g0);
+            (e.classList.toggle("dis", !ok), (l("input", e).disabled = !ok));
+          });
+        };
+      }),
+      (l("#aiSave", w).onclick = () => save() && (st("✅ נשמר" + (aiProv() ? " – הבינה פעילה: " + AI_P[aiProv()].n : ""), 2500), Wt())),
+      (l("#aiTest", w).onclick = async () => {
+        if (!save()) return;
+        const T = l("#aiTs", w);
+        if (!aiProv()) return void (T.textContent = "אין מפתח שמור");
+        T.textContent = "⏳ בודק את " + AI_P[aiProv()].n + "…";
+        try {
+          const r = await aiCall("ענה בעברית במילה אחת.", 'כתוב רק: "עובד"', 50);
+          T.innerHTML = "✅ המפתח עובד! (" + o(AI_P[aiProv()].n) + " ענה: " + o(r.slice(0, 30)) + ")";
+        } catch (e) {
+          T.textContent = "❌ " + (e.message || "שגיאה");
+        }
+      }));
+    return w;
+  }
+  window.__aiSheet = aiSheet;
   function botBookletAsk(t) {
     const e = " " + botNorm(t) + " ";
     if (!/ (צור|תצור|תיצור|תכינ|הכנ|תעשה|לעשות|להכינ|ליצור|תבנה|תסדר|תכנ|אפשר|רוצה|תוכל)/.test(e) || !/ (חוברת|קונטרס|חוברות|דפ לימוד|דפי לימוד) /.test(e)) return null;
@@ -15151,16 +15461,17 @@ function MAIN(t) {
     const e = Ut(
       '<h3 class="bot-h"><span class="bot-av"></span>העוזר של ברסלב PRO</h3><div class="sh-sub">שאלו על האפליקציה – או על הספרים עצמם: איפה רבנו מדבר על נושא, כמה תורות יש על משהו, מתי נאמרה תורה. אפשר גם לבקש: "צור לי חוברת על שמחה".</div><div class="bot-wrap' +
         (s.get("botThr", !1) ? " thr" : "") +
-        '" id="botWrap"><div class="bot-opt"><label><input type="checkbox" id="botThr"' +
+        '" id="botWrap"><button type="button" class="ai-bar" id="aiBar">✨ <b>בינה מלאכותית</b> <span>' + (aiProv() ? "פעילה · " + AI_P[aiProv()].n + (aiOn() ? " · כל שאלה" : ' · כתבו "תסכם…" / "תסביר…"') : "לחיבור מפתח אישי – יש גם חינם") + '</span> ›</button><div class="bot-opt"><label><input type="checkbox" id="botThr"' +
         (s.get("botThr", !1) ? " checked" : "") +
         '> 💬 שרשור שיחה (התשובות הקודמות נשארות)</label><label><input type="checkbox" id="botFabC"' +
         (s.get("botFab", !1) ? " checked" : "") +
         '> 🔘 כפתור צף של העוזר על המסך</label><button class="btn sm" id="botClr">🗑️ ניקוי השיחה</button></div><details class="bot-ex" id="botEx"><summary><span>💡 דוגמאות – מה אפשר לבקש ממני</span><i>▾</i></summary>' +
-        [["🛠️ פעולות", ["פתח לי תהלים פרק צ ותריץ את המסך", "תקריא לי את התיקון הכללי עם סימון", "פתח לי שמות הצדיקים ותקריא", "צור לי סטטוס על מעלת ההתבודדות", "צור לי חוברת על שמחה", "תזכיר לי תיקון חצות"]], ["📚 על הספרים", ["איפה רבנו מדבר על התבודדות", "כמה תורות יש בחלק ב׳", "כמה פעמים מופיע רצון", "שם אמו של רבנו", "עצה להינצל מכעס"]], ["🧭 לימוד", ["מה כדאי ללמוד עכשיו?", "דיבורים על תפילה", "דיבורים על שמחה"]], ["📖 סיפורים", ["ספר לי סיפור על הבעל שם טוב", "ספר לי משל על שמחה", "תקריא לי את המעשה מהחכם והתם", "ספר לי סיפור", "עוד סיפור"]], ["💪 חיזוק", ["תחזק אותי באמונה", "אני מיואש, קשה לי", "תן לי חיזוק"]], ["🕯️ זמנים", ["מתי נכנסת שבת", "מתי השקיעה היום", "עד מתי קריאת שמע"]], ["⚙️ האפליקציה", ["איך מגדילים אותיות?", "איך משתפים כתמונה?", "מה חדש באפליקציה"]]]
+        [["🛠️ פעולות", ["פתח לי תהלים פרק צ ותריץ את המסך", "תקריא לי את התיקון הכללי עם סימון", "פתח לי שמות הצדיקים ותקריא", "צור לי סטטוס על מעלת ההתבודדות", "צור לי חוברת על שמחה", "תזכיר לי תיקון חצות"]], ["✨ בינה מלאכותית (מפתח אישי)", ["תעשה לי סיכום מעשי של תורה רפב", "תסביר לי בפשטות את תורה א", "✨ מה רבנו אומר על שמחה כשקשה?"]], ["📚 על הספרים", ["איפה רבנו מדבר על התבודדות", "כמה תורות יש בחלק ב׳", "כמה פעמים מופיע רצון", "שם אמו של רבנו", "עצה להינצל מכעס"]], ["🧭 לימוד", ["מה כדאי ללמוד עכשיו?", "דיבורים על תפילה", "דיבורים על שמחה"]], ["📖 סיפורים", ["ספר לי סיפור על הבעל שם טוב", "ספר לי משל על שמחה", "תקריא לי את המעשה מהחכם והתם", "ספר לי סיפור", "עוד סיפור"]], ["💪 חיזוק", ["תחזק אותי באמונה", "אני מיואש, קשה לי", "תן לי חיזוק"]], ["🕯️ זמנים", ["מתי נכנסת שבת", "מתי השקיעה היום", "עד מתי קריאת שמע"]], ["⚙️ האפליקציה", ["איך מגדילים אותיות?", "איך משתפים כתמונה?", "מה חדש באפליקציה"]]]
           .map((t) => '<div class="bx-g"><b>' + t[0] + '</b><div class="bx-l">' + t[1].map((t) => '<button type="button" class="bx-i" data-ch="' + o(t) + '">' + o(t) + "</button>").join("") + "</div></div>")
           .join("") +
         '</details><div id="botLog"></div><div class="bot-me" id="botMe" hidden></div><div id="botR" class="bot-res"></div><div class="bot-row"><div class="bot-in"><input type="text" id="botQ" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="למשל: איך מגדילים אותיות? · כמה תורות על שמחה?" enterkeyhint="send"><button id="botX" aria-label="ניקוי" hidden>✕</button></div><button class="btn pri" id="botGo">שאל</button></div></div>',
     );
+    l("#aiBar", e) && (l("#aiBar", e).onclick = () => (Wt(), setTimeout(aiSheet, 230)));
     const i = l("#botQ", e),
       c = l("#botR", e),
       LG = l("#botLog", e),
@@ -15328,6 +15639,19 @@ function MAIN(t) {
           );
         }
         if (CM) return ((c.innerHTML = '<div class="bot-say">' + CM.say + "</div>"), void setTimeout(() => (Wt(), setTimeout(CM.run, 250)), 1100));
+        // ✨ בינה מלאכותית (מפתח אישי): "תסכם לי את תורה רפב", "תסביר…", או מצב בינה קבוע
+        if (aiWants(t)) {
+          if (!aiProv()) {
+            if (/^✨/.test(t.trim()) || AI_ASKRE.test(brN(t)))
+              return void ((c.innerHTML = '<div class="bot-say">✨ כדי שאסכם ואסביר בעזרת בינה מלאכותית – צריך לחבר מפתח אישי (יש גם אפשרות חינמית של גוגל). לוקח דקה.</div><div class="bot-srcs"><button class="btn sm pri" id="aiSet">✨ לחיבור בינה מלאכותית</button></div>'), (l("#aiSet", c).onclick = () => (Wt(), setTimeout(aiSheet, 230))));
+          } else {
+            const q0 = t.replace(/^✨\s*/, ""),
+              R0 = aiRef(q0),
+              need = R0 ? [0] : lzBy((b, v) => (LITE ? ["rn"] : ["rn", "rnt", "anash", "tcherin"]).includes(b.cat) && ![1, 26].includes(v));
+            if (LZ.on && GATE(need, R0 ? "טוען את התורה…" : "טוען את הספרים…")) return;
+            return void aiAnswer(q0, c);
+          }
+        }
         // 🙏 "מה מברכים על…" – נוסח הברכה מהסידור והשולחן ערוך
         if (brAsk(t)) {
           const need = brFood(brAsk(t).w) ? [66, 136] : BR_V;
@@ -22955,6 +23279,7 @@ function doGet(e){
   const rr = {
     v: "2026-11-17b",
     items: [
+      ["2026-11-25", "✨", "בינה מלאכותית בעוזר – עם מפתח אישי", "חברו מפתח משלכם (Gemini של גוגל – יש חינם, או Claude – בתשלום, ברמה הגבוהה ביותר) וכתבו לעוזר: \"תעשה לי סיכום מעשי של תורה רפב\". הבינה קוראת את התורה מהספר, כותבת, בודקת את עצמה מול המקור – ומקבלים תשובה עם מקורות וכפתור 📄 לקובץ PDF. הכל מוסבר במסך ✨ בינה מלאכותית: מה חינם, מה בתשלום וכמה זה עולה."],
       ["2026-11-24e", "🕊️", "ברכות בביאת המשיח", "בברכות בשלוף ← ברכות נדירות: חמש הברכות שיברכו בביאת המשיח (חכם הרזים, שחלק מחכמתו, שחלק מכבודו, גואל ישראל ושהחיינו), עם המקורות."],
       ["2026-11-24d", "📖", "תהילים מחולק – בלי ספר כפול", "כששני מכשירים פתחו ספר קהילתי חדש באותו רגע – הופיעו שני ספרים. עכשיו מוצג רק אחד, וכולם קוראים בו. ספר שהוקדש (לרפואה, לעילוי נשמת) עדיין נפתח לצד הספר הקהילתי."],
       ["2026-11-24c", "📚", "רש\"י, מצודות ומלבי\"ם בתהלים", "בספר תהלים, מתחת לכל פסוק יש עכשיו כפתור \"רש\"י, מצודות ומלבי\"ם\". לוחצים – ובוחרים איזה מפרש לפתוח. המפרשים שפתחתם נפתחים מעצמם גם בפסוקים הבאים."],
@@ -24352,7 +24677,7 @@ function doGet(e){
         generationConfig: { temperature: 0 },
       });
     let last = "";
-    for (const md of ["gemini-2.5-flash", "gemini-flash-latest"]) {
+    for (const md of ["gemini-flash-latest", "gemini-3.8-flash", "gemini-2.5-flash"]) {
       const r = await fetch("https://generativelanguage.googleapis.com/v1beta/models/" + md + ":generateContent", { method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": ocrKey() }, body });
       if (404 === r.status) continue;
       const j = await r.json().catch(() => ({}));
