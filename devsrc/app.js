@@ -21961,6 +21961,42 @@ function doGet(e){
     } catch (t) {}
     return e;
   }
+  // 📍 מי שבחר "לפי מיקום" – המיקום מתעדכן לבד כשהאפליקציה נפתחת (בלי לשאול שוב), כדי שהזמנים וההתראות יהיו לפי איפה שהוא באמת
+  function locAuto() {
+    try {
+      const z = s.get("zmCity", null);
+      if (!z || !z.gps || !navigator.geolocation || Date.now() - (s.get("zmGpsT", 0) || 0) < 18e5) return;
+      const go = () =>
+        navigator.geolocation.getCurrentPosition(
+          (p) => {
+            s.set("zmGpsT", Date.now());
+            const t = p.coords.latitude,
+              e = p.coords.longitude;
+            if ((p.coords.accuracy || 0) > 5e3) return;
+            const cur = s.get("zmCity", null);
+            if (!cur || !cur.gps) return;
+            // זז פחות מ־~2 ק״מ – לא משנים כלום
+            if (Math.abs(cur.lat - t) < 0.02 && Math.abs(cur.lon - e) < 0.02) return;
+            let i = as[0],
+              c = 1e9;
+            as.forEach((l) => {
+              const a = (l[1] - t) ** 2 + (l[2] - e) ** 2;
+              a < c && ((c = a), (i = l));
+            });
+            s.set("zmCity", { name: "המיקום שלי (ליד " + i[0] + ")", lat: t, lon: e, cl: i[3], el: i[4], gps: 1 });
+            try {
+              bn();
+            } catch (t) {}
+          },
+          () => {},
+          { enableHighAccuracy: !1, maximumAge: 6e5, timeout: 2e4 },
+        );
+      navigator.permissions && navigator.permissions.query
+        ? navigator.permissions.query({ name: "geolocation" }).then((r) => "granted" === r.state && go()).catch(() => {})
+        : go();
+    } catch (t) {}
+  }
+  (setTimeout(locAuto, 5e3), document.addEventListener("visibilitychange", () => "visible" === document.visibilityState && setTimeout(locAuto, 2e3)));
   function bn() {
     const t = l("#zmBox");
     if (!t) return;
@@ -23474,6 +23510,7 @@ function doGet(e){
   const rr = {
     v: "2026-11-17b",
     items: [
+      ["2026-11-27b", "📍", "המיקום מתעדכן לבד", "מי שבחר זמנים \"לפי מיקום\" – המיקום מתעדכן לבד כשפותחים את האפליקציה (אם זזתם יותר מ־2 ק״מ), כך שהזמנים וההתראות תמיד לפי איפה שאתם באמת, ולא לפי המקום שבו לחצתם פעם \"לפי מיקום\"."],
       ["2026-11-27", "🌙", "תיקון חצות – הצעה בזמן חצות", "מי שנמצא באפליקציה בזמן חצות (לשיטת רבנו: 6 שעות אחרי צאת הכוכבים, למשך שעתיים – וגם לפי חצות הלילה שבלוח) מקבל הצעה עדינה: \"צדיק, אתה כבר ער? רוצה לקרוא תיקון חצות?\" – ולחיצה פותחת ישר את תיקון רחל. בימים שאין בהם תחנון (ראש חודש, ניסן, חנוכה ועוד) – ישר לתיקון לאה, עם הסבר קצר."],
       ["2026-11-26", "🏎️", "תזכורת תפילת הדרך – לפי מהירות", "הזיהוי בנסיעות נעשה חכם: התזכורת קופצת רק אחרי 10 דקות ברצף מעל 70 קמ״ש – כלומר כשבאמת יצאתם לכביש בין־עירוני, ולא בנסיעות בתוך העיר. עצירה קצרה ברמזור לא שוברת את הרצף, ואפשר לשנות את הדקות והמהירות. צריך לאשר מיקום \"כל הזמן\" (נמדד רק בזמן נסיעה ולא יוצא מהטלפון)."],
       ["2026-11-25c", "🔕", "לוח זמני שקט", "קובעים פעם אחת: שחרית, מנחה, ערבית, שיעורי תורה – באילו ימים ובאיזה שעות (או לפי זמני היום, למשל 20 דק׳ לפני השקיעה). הטלפון עובר לבד לרטט או לשקט – גם כשהאפליקציה סגורה – ובסוף חוזר למצב שהיה. בחיפוש: \"לוח זמני שקט\", או בשקט בזמן תפילה ← 🗓️."],
