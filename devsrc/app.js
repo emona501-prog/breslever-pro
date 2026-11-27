@@ -14492,6 +14492,92 @@ function MAIN(t) {
   }
   (setTimeout(botTip, 6e4), setInterval(botTip, 15 * 6e4));
   window.__botTip = () => botTip(!0);
+  // ===== 🌙 תיקון חצות: מי שנמצא באפליקציה בזמן חצות – הצעה עדינה לקרוא תיקון חצות =====
+  // זמן חצות לשיטת רבנו: 6 שעות אחרי צאת הכוכבים, למשך שעתיים. וגם לפי חצות הלילה שבלוח – שעתיים ממנו.
+  // בימים שאין בהם תחנון – רק תיקון לאה. בשבת, ביום טוב, ביום הכיפורים ובליל תשעה באב – לא מציעים.
+  function tcDay(t) {
+    const h = xs(t),
+      wd = Cs(t);
+    if (!h) return { skip: 1 };
+    const m = h.mon,
+      d = h.day,
+      purM = "Adar" === m || "Adar II" === m;
+    if (6 === wd) return { skip: 1, why: "שבת" };
+    if (ws(h)) return { skip: 1, why: ws(h) };
+    if ("Tishri" === m && (1 === d || 2 === d || 10 === d)) return { skip: 1 };
+    if ("Av" === m && (9 === d || (10 === d && 0 === wd))) return { skip: 1, why: "תשעה באב" };
+    let r = "";
+    30 === d || 1 === d
+      ? (r = "ראש חודש")
+      : "Nisan" === m
+        ? (r = "חודש ניסן")
+        : "Tishri" === m && d > 10
+          ? (r = Ls(h) || "הימים שבין יום הכיפורים לסוף חודש תשרי")
+          : Ss(t - 1) > 0
+            ? (r = "חנוכה")
+            : "Shevat" === m && 15 === d
+              ? (r = "ט״ו בשבט")
+              : purM && (14 === d || 15 === d)
+                ? (r = "פורים")
+                : "Adar I" === m && (14 === d || 15 === d)
+                  ? (r = "פורים קטן")
+                  : "Iyar" === m && 14 === d
+                    ? (r = "פסח שני")
+                    : "Iyar" === m && 18 === d
+                      ? (r = "ל״ג בעומר")
+                      : "Sivan" === m && d <= 12
+                        ? (r = "ימי חודש סיוון עד אחרי שבועות")
+                        : "Av" === m && 15 === d && (r = "ט״ו באב");
+    return { leah: !!r, why: r };
+  }
+  function tcNow() {
+    const now = new Date(),
+      base = now.getHours() < 12 ? -1 : 0,
+      Z = ms(base).v,
+      tz = Yd(Z.tzeit),
+      cl = Yd(Z.chatzotLayla);
+    if (!tz) return null;
+    const rb = tz + 216e5,
+      t = now.getTime(),
+      inRb = t >= rb && t < rb + 72e5,
+      inCl = cl && t >= cl && t < cl + 72e5;
+    return inRb || inCl ? { key: "n" + hs(base).y + "-" + hs(base).m + "-" + hs(base).d, day: tcDay(base + 1), rb } : null;
+  }
+  function tcOpen(leah, why) {
+    const v = 27,
+      si = n.findIndex((t) => t.g === "V" + v),
+      ci = si >= 0 ? (n[si].c || []).findIndex((t) => (leah ? /לאה/ : /רחל/).test(String(t.t || "").replace(/[֑-ׇ]/g, ""))) : -1;
+    si >= 0 && We(si, Math.max(0, ci));
+    leah && setTimeout(() => st("🌙 הלילה אומרים רק תיקון לאה – כי " + why + " ואין אומרים בו תחנון. תיקון רחל לא אומרים בימים כאלה.", 9e3), 1800);
+  }
+  function tcCheck() {
+    try {
+      if (!s.get("tcOn", !0) || Gt || (mf && mf.on) || ld.on) return;
+      const T = tcNow();
+      if (!T || T.day.skip || s.get("tcShown", "") === T.key) return;
+      s.set("tcShown", T.key);
+      const L = T.day.leah,
+        why = T.day.why;
+      let c = document.getElementById("botTip");
+      (c && c.remove(), (c = document.createElement("div")), (c.id = "botTip"),
+        (c.innerHTML =
+          '<span class="bot-av"></span><div class="bt-b"><p>🌙 <b>צדיק, אתה כבר ער?</b> זה עכשיו זמן חצות' + (L ? " – והלילה, כי " + o(why) + ", אומרים <b>רק תיקון לאה</b>" : "") + '. רוצה לקרוא תיקון חצות?</p><div class="bt-a"><button class="btn sm pri" data-a="y">' + (L ? "כן – לתיקון לאה" : "כן – לתיקון רחל") + '</button><button class="btn sm" data-a="n">לא עכשיו</button></div><button class="bt-off" data-a="off">אל תציע לי בחצות</button></div>'),
+        document.body.appendChild(c),
+        requestAnimationFrame(() => c.classList.add("on")));
+      const a = () => (c.classList.remove("on"), setTimeout(() => c.remove(), 400));
+      ((c.onclick = (t) => {
+        const i = t.target.closest("[data-a]");
+        i && ("y" === i.dataset.a ? (a(), setTimeout(() => tcOpen(L, why), 120)) : "off" === i.dataset.a ? (s.set("tcOn", !1), a(), st("בסדר 🙂 לא אציע יותר בחצות", 3e3)) : a());
+      }),
+        setTimeout(a, 6e4));
+    } catch (t) {
+      console.warn("tcCheck", t);
+    }
+  }
+  (setTimeout(tcCheck, 8e3), setInterval(tcCheck, 3e5), document.addEventListener("visibilitychange", () => "visible" === document.visibilityState && setTimeout(tcCheck, 1500)));
+  window.__tcDay = (d) => tcDay(d);
+  window.__tcTest = () => (s.set("tcShown", ""), tcOpen(!0, "ראש חודש"));
+
   // 💪 חיזוק: מילים חמות + דיבורים מליקוטי עצות לפי מה שהכותב מרגיש/מבקש
   const CHZ = [
     { k: "general", w: "", c: ["התחזקות"], f: [["v0g1.74.0", "אין שום יאוש בעולם"], ["v0g0.262.0", "שיתחיל מחדש"], ["v0g1.44.0", "גשר צר מאד"], ["v0g1.23.0", "מצוה גדולה להיות בשמחה"]], o: ["אחי יקר, הנה חיזוק בשבילך 💪 תזכור: השם אוהב אותך, כל מאמץ קטן שלך יקר בעיניו, וכל יום אפשר להתחיל מחדש. הנה כמה דיבורים מרבנו:", "בשמחה, אחי! 😊 \"גם אם אתה במקום הכי רחוק – השם איתך\". הנה כמה דיבורים חזקים מרבנו:"] },
@@ -23385,6 +23471,7 @@ function doGet(e){
   const rr = {
     v: "2026-11-17b",
     items: [
+      ["2026-11-27", "🌙", "תיקון חצות – הצעה בזמן חצות", "מי שנמצא באפליקציה בזמן חצות (לשיטת רבנו: 6 שעות אחרי צאת הכוכבים, למשך שעתיים – וגם לפי חצות הלילה שבלוח) מקבל הצעה עדינה: \"צדיק, אתה כבר ער? רוצה לקרוא תיקון חצות?\" – ולחיצה פותחת ישר את תיקון רחל. בימים שאין בהם תחנון (ראש חודש, ניסן, חנוכה ועוד) – ישר לתיקון לאה, עם הסבר קצר."],
       ["2026-11-26", "🏎️", "תזכורת תפילת הדרך – לפי מהירות", "הזיהוי בנסיעות נעשה חכם: התזכורת קופצת רק אחרי 10 דקות ברצף מעל 70 קמ״ש – כלומר כשבאמת יצאתם לכביש בין־עירוני, ולא בנסיעות בתוך העיר. עצירה קצרה ברמזור לא שוברת את הרצף, ואפשר לשנות את הדקות והמהירות. צריך לאשר מיקום \"כל הזמן\" (נמדד רק בזמן נסיעה ולא יוצא מהטלפון)."],
       ["2026-11-25c", "🔕", "לוח זמני שקט", "קובעים פעם אחת: שחרית, מנחה, ערבית, שיעורי תורה – באילו ימים ובאיזה שעות (או לפי זמני היום, למשל 20 דק׳ לפני השקיעה). הטלפון עובר לבד לרטט או לשקט – גם כשהאפליקציה סגורה – ובסוף חוזר למצב שהיה. בחיפוש: \"לוח זמני שקט\", או בשקט בזמן תפילה ← 🗓️."],
       ["2026-11-25b", "🕯️", "שיתוף הילולה מההודעה", "כשהעוזר מזכיר שהיום הילולה – יש כפתור 📤 שתף שמכין מיד תמונה מעוצבת של ההילולה. ובעוזר: \"מה מברכים כשרואים את המשיח\" מביא את חמש הברכות. ובתהילים מחולק – ספרים קהילתיים כפולים מתאחדים לספר אחד."],
