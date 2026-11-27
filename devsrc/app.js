@@ -16383,13 +16383,13 @@ function doGet(e){
       }, 700)));
   }
   // יעד חדש שתוכנן בסולם (מגיע דרך פתיחת האפליקציה עם ng:...)
-  function sulamNewGoal(o) {
+  function sulamNewGoal(o, quiet) {
     try {
-      if (!o || !GOAL_T[o.k]) return void goalsOpen();
+      if (!o || !GOAL_T[o.k]) return void (quiet || goalsOpen());
       const i = GOAL_T[o.k],
-        c = { id: "g" + Date.now().toString(36), k: o.k, q: i.q ? Math.max(1, Math.min(50, +o.q || i.q[0])) : 1, pos: 0 };
+        c = { id: o.id && /^[a-z0-9]{2,24}$/.test(o.id) ? String(o.id) : "g" + Date.now().toString(36), k: o.k, q: i.q ? Math.max(1, Math.min(50, +o.q || i.q[0])) : 1, pos: 0 };
       if ("book" === o.k) {
-        if (!(+o.b >= 0 && $t[+o.b])) return void goalsOpen();
+        if (!(+o.b >= 0 && $t[+o.b])) return void (quiet || goalsOpen());
         c.b = +o.b;
       }
       "free" === o.k && (c.txt = String(o.txt || "יעד אישי").slice(0, 60));
@@ -16398,9 +16398,12 @@ function doGet(e){
         ((c.hv = 1), (c.v2 = 1), (c.pos = halIdx(0)));
       }
       (o.once && (c.once = 1), o.cur && "smt" === o.k && (c.cur = 1));
-      (goalsSave(goals().concat([c])), st('🎯 היעד מ"הסולם שלי" נוסף!', 3e3), setTimeout(goalsOpen, 300));
+      goalsSave(goals().concat([c]));
+      if (quiet) { try { setTimeout(sulamSync, 1500); } catch (t) {} return c; }
+      (st('🎯 היעד מ"הסולם שלי" נוסף!', 3e3), setTimeout(goalsOpen, 300));
+      return c;
     } catch (t) {
-      goalsOpen();
+      quiet || goalsOpen();
     }
   }
   window.__sulamNewGoal = sulamNewGoal;
@@ -31904,6 +31907,13 @@ function doGet(e){
           const id = String(t).slice(2),
             G = goals().find((g) => g.id === id),
             td = G ? goalToday(G) : null;
+          td && td.go ? setTimeout(td.go, 200) : goalsOpen();
+        } else if ("ngo:" === String(t).slice(0, 4)) {
+          // 🪜 מהסולם: יעד שנקבע בסולם – יוצרים בשקט (אם עוד אין) ופותחים ישר את המנה של היום
+          const o = JSON.parse(scUnhex(String(t).slice(4)));
+          let G = o && o.id ? goals().find((g) => g.id === o.id) : null;
+          if (!G && window.__sulamNewGoal) G = window.__sulamNewGoal(o, !0);
+          const td = G ? goalToday(G) : null;
           td && td.go ? setTimeout(td.go, 200) : goalsOpen();
         } else if ("ng:" === String(t).slice(0, 3)) window.__sulamNewGoal && window.__sulamNewGoal(JSON.parse(scUnhex(String(t).slice(3))));
         else if ("haderech" === t) hdOpen();
